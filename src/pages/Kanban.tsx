@@ -52,8 +52,8 @@ const DraggableCard = ({ demand, clientName, professionalName }: CardProps) => {
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white rounded-xl p-3 shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none ${
-        overdue ? 'border-red-200' : 'border-slate-100'
+      className={`bg-white rounded-xl p-3 border cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none ${
+        overdue ? 'border-red-200' : 'border-slate-200'
       }`}
       {...attributes}
       {...listeners}

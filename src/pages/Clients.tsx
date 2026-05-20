@@ -98,14 +98,14 @@ export const Clients = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Clientes</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Clientes</h1>
+          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">
             {clients.filter(c => c.status === 'active').length} ativo(s) · {clients.length} total
           </p>
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
         >
           <Plus className="w-4 h-4" />
           Novo Cliente
@@ -120,13 +120,13 @@ export const Clients = () => {
             placeholder="Buscar por empresa, responsável ou e-mail..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           />
         </div>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-          className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         >
           <option value="all">Todos os status</option>
           <option value="active">Ativos</option>
@@ -136,7 +136,7 @@ export const Clients = () => {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl p-16 text-center shadow-sm border border-slate-100">
+        <div className="bg-white rounded-xl p-16 text-center border border-slate-200">
           <Building2 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
           <p className="text-slate-500 text-sm font-medium">Nenhum cliente encontrado</p>
           <p className="text-slate-400 text-xs mt-1">Clique em "Novo Cliente" para começar</p>
@@ -147,10 +147,10 @@ export const Clients = () => {
             const clientDemands = demands.filter(d => d.clientId === client.id);
             const openCount = clientDemands.filter(d => !['completed', 'paid'].includes(d.status)).length;
             return (
-              <div key={client.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all">
+              <div key={client.id} className="bg-white rounded-xl p-5 border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-gradient-to-br from-violet-400 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+                    <div className="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0">
                       {client.companyName.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -229,8 +229,8 @@ export const Clients = () => {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 z-10">
               <h2 className="text-lg font-bold text-slate-800">
                 {editingId ? 'Editar Cliente' : 'Novo Cliente'}
@@ -246,7 +246,7 @@ export const Clients = () => {
                   type="text"
                   value={form.companyName}
                   onChange={e => setForm({ ...form, companyName: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Empresa XYZ Ltda."
                   autoFocus
                 />
@@ -258,7 +258,7 @@ export const Clients = () => {
                     type="text"
                     value={form.contactName}
                     onChange={e => setForm({ ...form, contactName: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="João Silva"
                   />
                 </div>
@@ -268,7 +268,7 @@ export const Clients = () => {
                     type="text"
                     value={form.phone}
                     onChange={e => setForm({ ...form, phone: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="(00) 00000-0000"
                   />
                 </div>
@@ -278,7 +278,7 @@ export const Clients = () => {
                     type="email"
                     value={form.email}
                     onChange={e => setForm({ ...form, email: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="contato@empresa.com"
                   />
                 </div>
@@ -287,7 +287,7 @@ export const Clients = () => {
                   <select
                     value={form.status}
                     onChange={e => setForm({ ...form, status: e.target.value as ClientStatus })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="active">Ativo</option>
                     <option value="inactive">Inativo</option>
@@ -301,7 +301,7 @@ export const Clients = () => {
                   type="text"
                   value={form.plan}
                   onChange={e => setForm({ ...form, plan: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Ex: Plano Social Media Completo"
                 />
               </div>
@@ -311,19 +311,19 @@ export const Clients = () => {
                   value={form.notes}
                   onChange={e => setForm({ ...form, notes: e.target.value })}
                   rows={3}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Informações adicionais sobre o cliente..."
                 />
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-slate-100">
-              <button onClick={() => setShowModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">
+              <button onClick={() => setShowModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={!form.companyName.trim()}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-xl text-sm font-semibold"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-lg text-sm font-semibold"
               >
                 {editingId ? 'Salvar' : 'Cadastrar cliente'}
               </button>
@@ -334,8 +334,8 @@ export const Clients = () => {
 
       {/* View Modal */}
       {showViewModal && viewingClient && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">Detalhes do Cliente</h2>
               <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
@@ -344,7 +344,7 @@ export const Clients = () => {
             </div>
             <div className="p-6 space-y-5">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-violet-400 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl">
+                <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
                   {viewingClient.companyName.charAt(0)}
                 </div>
                 <div>
@@ -396,13 +396,13 @@ export const Clients = () => {
 
       {/* Delete confirmation */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar exclusão</h3>
             <p className="text-slate-500 text-sm mb-6">Tem certeza que deseja excluir este cliente? As demandas associadas não serão excluídas.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">Cancelar</button>
-              <button onClick={handleDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold">Excluir</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">Cancelar</button>
+              <button onClick={handleDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold">Excluir</button>
             </div>
           </div>
         </div>

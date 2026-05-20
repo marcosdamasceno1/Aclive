@@ -124,12 +124,12 @@ export const Reports = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Relatórios</h1>
-          <p className="text-slate-500 text-sm mt-1">Análise de produção e financeiro</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Relatórios</h1>
+          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Análise de produção e financeiro</p>
         </div>
         <button
           onClick={exportCSV}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
         >
           <Download className="w-4 h-4" />
           Exportar CSV
@@ -137,7 +137,7 @@ export const Reports = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+      <div className="bg-white rounded-xl p-4 border border-slate-200">
         <p className="text-sm font-semibold text-slate-600 mb-3">Filtros do relatório</p>
         <div className="flex flex-wrap gap-3">
           <div>
@@ -196,24 +196,22 @@ export const Reports = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total de demandas', value: stats.totalDemands, icon: Users, color: 'bg-blue-500' },
-          { label: 'Concluídas', value: stats.completedDemands, icon: TrendingUp, color: 'bg-emerald-500' },
-          { label: 'Valor total', value: formatCurrency(stats.totalValue), icon: DollarSign, color: 'bg-violet-500' },
-          { label: 'Atrasadas', value: stats.overdueCount, icon: AlertTriangle, color: 'bg-red-500' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
-              <Icon className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-2xl font-bold text-slate-800">{value}</p>
-            <p className="text-sm text-slate-500 mt-0.5">{label}</p>
+          { label: 'Total de demandas', value: stats.totalDemands, accent: 'bg-blue-600' },
+          { label: 'Concluídas', value: stats.completedDemands, accent: 'bg-emerald-500' },
+          { label: 'Valor total', value: formatCurrency(stats.totalValue), accent: 'bg-violet-500' },
+          { label: 'Atrasadas', value: stats.overdueCount, accent: 'bg-red-500' },
+        ].map(({ label, value, accent }) => (
+          <div key={label} className="bg-white rounded-xl p-5 border border-slate-200">
+            <div className={`inline-block w-1 h-6 rounded-full mb-3 ${accent}`} />
+            <p className="text-3xl font-extrabold text-slate-900 tracking-tight leading-none">{value}</p>
+            <p className="text-xs font-medium text-slate-500 mt-2 uppercase tracking-wide">{label}</p>
           </div>
         ))}
       </div>
 
       {/* Charts row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-4 h-4 text-slate-400" />
             <h3 className="text-base font-bold text-slate-800">Ranking de Produtividade</h3>
@@ -238,7 +236,7 @@ export const Reports = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
             <Building2 className="w-4 h-4 text-slate-400" />
             <h3 className="text-base font-bold text-slate-800">Custo Operacional por Cliente</h3>
@@ -265,7 +263,7 @@ export const Reports = () => {
 
       {/* Charts row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
             <DollarSign className="w-4 h-4 text-slate-400" />
             <h3 className="text-base font-bold text-slate-800">Resumo Financeiro</h3>
@@ -311,7 +309,7 @@ export const Reports = () => {
         </div>
 
         {/* Overdue demands */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-4 h-4 text-red-400" />
             <h3 className="text-base font-bold text-slate-800">Demandas Atrasadas ({overdueDemands.length})</h3>
@@ -346,25 +344,25 @@ export const Reports = () => {
 
       {/* Professional productivity table */}
       {productionByProfessional.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
             <h3 className="text-base font-bold text-slate-800">Produção Detalhada por Profissional</h3>
           </div>
           <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-slate-900">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Profissional</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Total</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Concluídas</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Taxa</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Valor gerado</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Profissional</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Total</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Concluídas</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Taxa</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor gerado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-100">
               {productionByProfessional.map((row, idx) => {
                 const rate = row.total > 0 ? Math.round((row.completed / row.total) * 100) : 0;
                 return (
-                  <tr key={row.name} className="hover:bg-slate-50 transition-colors">
+                  <tr key={row.name} className="hover:bg-blue-50/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center text-xs font-bold text-slate-500">

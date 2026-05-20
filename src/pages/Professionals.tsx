@@ -113,12 +113,12 @@ export const Professionals = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Profissionais</h1>
-          <p className="text-slate-500 text-sm mt-1">{professionals.length} profissional(is) cadastrado(s)</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Profissionais</h1>
+          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">{professionals.length} profissional(is) cadastrado(s)</p>
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
         >
           <Plus className="w-4 h-4" />
           Novo Profissional
@@ -133,13 +133,13 @@ export const Professionals = () => {
             placeholder="Buscar por nome, função ou e-mail..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           />
         </div>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-          className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         >
           <option value="all">Todos os status</option>
           <option value="active">Ativos</option>
@@ -148,7 +148,7 @@ export const Professionals = () => {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl p-16 text-center shadow-sm border border-slate-100">
+        <div className="bg-white rounded-xl p-16 text-center border border-slate-200">
           <User className="w-12 h-12 mx-auto mb-3 text-slate-300" />
           <p className="text-slate-500 text-sm font-medium">Nenhum profissional encontrado</p>
           <p className="text-slate-400 text-xs mt-1">Clique em "Novo Profissional" para começar</p>
@@ -159,10 +159,10 @@ export const Professionals = () => {
             const balance = getProfessionalBalance(pro.id);
             const taskCount = demands.filter(d => d.professionalId === pro.id).length;
             return (
-              <div key={pro.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all">
+              <div key={pro.id} className="bg-white rounded-xl p-5 border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+                    <div className="w-11 h-11 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0">
                       {pro.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -247,8 +247,8 @@ export const Professionals = () => {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 z-10">
               <h2 className="text-lg font-bold text-slate-800">
                 {editingId ? 'Editar Profissional' : 'Novo Profissional'}
@@ -266,7 +266,7 @@ export const Professionals = () => {
                     type="text"
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Nome do profissional"
                     autoFocus
                   />
@@ -276,7 +276,7 @@ export const Professionals = () => {
                   <select
                     value={form.profession}
                     onChange={e => setForm({ ...form, profession: e.target.value as ProfessionType })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {PROFESSIONS.map(p => (
                       <option key={p} value={p}>{getProfessionLabel(p)}</option>
@@ -288,7 +288,7 @@ export const Professionals = () => {
                   <select
                     value={form.status}
                     onChange={e => setForm({ ...form, status: e.target.value as 'active' | 'inactive' })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="active">Ativo</option>
                     <option value="inactive">Inativo</option>
@@ -300,7 +300,7 @@ export const Professionals = () => {
                     type="email"
                     value={form.email}
                     onChange={e => setForm({ ...form, email: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="email@exemplo.com"
                   />
                 </div>
@@ -310,7 +310,7 @@ export const Professionals = () => {
                     type="text"
                     value={form.phone}
                     onChange={e => setForm({ ...form, phone: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="(00) 00000-0000"
                   />
                 </div>
@@ -320,7 +320,7 @@ export const Professionals = () => {
                     type="text"
                     value={form.pixKey}
                     onChange={e => setForm({ ...form, pixKey: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="CPF, e-mail, telefone ou chave aleatória"
                   />
                 </div>
@@ -353,14 +353,14 @@ export const Professionals = () => {
             <div className="sticky bottom-0 bg-white flex gap-3 px-6 py-4 border-t border-slate-100">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
+                className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={!form.name.trim() || !form.email.trim()}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors"
               >
                 {editingId ? 'Salvar alterações' : 'Cadastrar profissional'}
               </button>
@@ -371,8 +371,8 @@ export const Professionals = () => {
 
       {/* View Modal */}
       {showViewModal && viewingPro && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 z-10">
               <h2 className="text-lg font-bold text-slate-800">Perfil do Profissional</h2>
               <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
@@ -381,7 +381,7 @@ export const Professionals = () => {
             </div>
             <div className="p-6 space-y-6">
               <div className="flex items-center gap-5">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl">
+                <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl">
                   {viewingPro.name.charAt(0)}
                 </div>
                 <div>
@@ -465,17 +465,17 @@ export const Professionals = () => {
 
       {/* Delete confirmation */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar exclusão</h3>
             <p className="text-slate-500 text-sm mb-6">
               Tem certeza que deseja excluir este profissional? O histórico financeiro será mantido, mas o profissional não poderá receber novas tarefas.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">
+              <button onClick={() => setDeleteId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">
                 Cancelar
               </button>
-              <button onClick={handleDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold">
+              <button onClick={handleDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold">
                 Excluir
               </button>
             </div>

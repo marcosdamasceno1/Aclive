@@ -140,13 +140,13 @@ export const Demands = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Demandas</h1>
-          <p className="text-slate-500 text-sm mt-1">{filtered.length} demanda(s) encontrada(s)</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Demandas</h1>
+          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">{filtered.length} demanda(s) encontrada(s)</p>
         </div>
         {canCreate && (
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nova Demanda
@@ -155,7 +155,7 @@ export const Demands = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+      <div className="bg-white rounded-xl p-4 border border-slate-200">
         <div className="flex items-center gap-2 mb-3">
           <Filter className="w-4 h-4 text-slate-400" />
           <span className="text-sm font-medium text-slate-600">Filtros</span>
@@ -195,7 +195,7 @@ export const Demands = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-16 text-center">
             <AlertTriangle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
@@ -204,26 +204,26 @@ export const Demands = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-100">
+              <thead className="bg-slate-900">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Tarefa</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Cliente</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Profissional</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Tipo</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Prioridade</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Prazo</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Valor</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ações</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Tarefa</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Profissional</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Tipo</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Prioridade</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Prazo</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-100">
                 {filtered.map(demand => {
                   const client = clients.find(c => c.id === demand.clientId);
                   const prof = professionals.find(p => p.id === demand.professionalId);
                   const overdue = isOverdue(demand.deadline, demand.status);
                   return (
-                    <tr key={demand.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={demand.id} className="hover:bg-blue-50/50 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-start gap-2">
                           {overdue && <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />}
@@ -242,7 +242,7 @@ export const Demands = () => {
                       <td className="px-4 py-3">
                         {prof ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                               {prof.name.charAt(0)}
                             </div>
                             <span className="text-sm text-slate-600">{prof.name}</span>
@@ -313,8 +313,8 @@ export const Demands = () => {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 z-10">
               <h2 className="text-lg font-bold text-slate-800">
                 {editingId ? 'Editar Demanda' : 'Nova Demanda'}
@@ -330,7 +330,7 @@ export const Demands = () => {
                   type="text"
                   value={form.title}
                   onChange={e => setForm({ ...form, title: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Ex: Criação de post para Instagram"
                   autoFocus
                 />
@@ -342,7 +342,7 @@ export const Demands = () => {
                   <select
                     value={form.clientId}
                     onChange={e => setForm({ ...form, clientId: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">Selecionar cliente</option>
                     {clients.filter(c => c.status === 'active').map(c => (
@@ -355,7 +355,7 @@ export const Demands = () => {
                   <select
                     value={form.taskType}
                     onChange={e => setForm({ ...form, taskType: e.target.value as TaskType })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {TASK_TYPES.map(t => <option key={t} value={t}>{getTaskTypeLabel(t)}</option>)}
                   </select>
@@ -365,7 +365,7 @@ export const Demands = () => {
                   <select
                     value={form.professionalId}
                     onChange={e => setForm({ ...form, professionalId: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">Selecionar profissional</option>
                     {professionals.filter(p => p.status === 'active').map(p => (
@@ -386,7 +386,7 @@ export const Demands = () => {
                     step="0.01"
                     value={form.value}
                     onChange={e => setForm({ ...form, value: parseFloat(e.target.value) || 0 })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -395,7 +395,7 @@ export const Demands = () => {
                     type="date"
                     value={form.deadline}
                     onChange={e => setForm({ ...form, deadline: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -403,7 +403,7 @@ export const Demands = () => {
                   <select
                     value={form.priority}
                     onChange={e => setForm({ ...form, priority: e.target.value as Priority })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {PRIORITIES.map(p => <option key={p} value={p}>{getPriorityLabel(p)}</option>)}
                   </select>
@@ -414,7 +414,7 @@ export const Demands = () => {
                     <select
                       value={form.status}
                       onChange={e => setForm({ ...form, status: e.target.value as KanbanStatus })}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       {STATUSES.map(s => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
                     </select>
@@ -428,19 +428,19 @@ export const Demands = () => {
                   value={form.description}
                   onChange={e => setForm({ ...form, description: e.target.value })}
                   rows={4}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Descreva detalhes da tarefa, requisitos, referências..."
                 />
               </div>
             </div>
             <div className="sticky bottom-0 bg-white flex gap-3 px-6 py-4 border-t border-slate-100">
-              <button onClick={() => setShowModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">
+              <button onClick={() => setShowModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={!form.title.trim() || !form.clientId || !form.professionalId}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-xl text-sm font-semibold"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-lg text-sm font-semibold"
               >
                 {editingId ? 'Salvar alterações' : 'Criar demanda'}
               </button>
@@ -451,8 +451,8 @@ export const Demands = () => {
 
       {/* View/Comment Modal */}
       {showViewModal && viewingDemand && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 z-10">
               <h2 className="text-lg font-bold text-slate-800 truncate flex-1 mr-4">{viewingDemand.title}</h2>
               <button onClick={() => { setShowViewModal(false); setCommentText(''); }} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 flex-shrink-0">
@@ -527,10 +527,10 @@ export const Demands = () => {
                   <div className="space-y-3 max-h-48 overflow-y-auto mb-3">
                     {viewingDemand.comments.map(comment => (
                       <div key={comment.id} className="flex gap-3">
-                        <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {comment.authorName.charAt(0)}
                         </div>
-                        <div className="flex-1 bg-slate-50 rounded-xl p-3">
+                        <div className="flex-1 bg-slate-50 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-xs font-semibold text-slate-700">{comment.authorName}</span>
                             <span className="text-xs text-slate-400">{formatDateTime(comment.createdAt)}</span>
@@ -548,12 +548,12 @@ export const Demands = () => {
                     onChange={e => setCommentText(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleAddComment()}
                     placeholder="Adicionar comentário interno..."
-                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={handleAddComment}
                     disabled={!commentText.trim()}
-                    className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white rounded-xl transition-colors"
+                    className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white rounded-lg transition-colors"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -566,13 +566,13 @@ export const Demands = () => {
 
       {/* Delete confirmation */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar exclusão</h3>
             <p className="text-slate-500 text-sm mb-6">Esta ação não pode ser desfeita. Deseja excluir esta demanda?</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">Cancelar</button>
-              <button onClick={handleDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold">Excluir</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">Cancelar</button>
+              <button onClick={handleDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold">Excluir</button>
             </div>
           </div>
         </div>

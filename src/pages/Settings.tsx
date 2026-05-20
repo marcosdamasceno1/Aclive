@@ -51,8 +51,8 @@ export const Settings = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Configurações</h1>
-        <p className="text-slate-500 text-sm mt-1">Gerenciamento do sistema</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Configurações</h1>
+        <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Gerenciamento do sistema</p>
       </div>
 
       {/* Tabs */}
@@ -87,30 +87,30 @@ export const Settings = () => {
             <h2 className="text-base font-bold text-slate-800">Usuários do sistema</h2>
             <button
               onClick={() => { setUserForm(emptyUserForm); setShowUserModal(true); }}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
               <Plus className="w-4 h-4" />
               Novo usuário
             </button>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-100">
+              <thead className="bg-slate-900">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Nome</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">E-mail</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Função</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Criado em</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ação</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Nome</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">E-mail</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Função</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Criado em</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-100">
                 {users.map(user => (
-                  <tr key={user.id} className={`hover:bg-slate-50 transition-colors ${user.id === currentUser?.id ? 'bg-blue-50/50' : ''}`}>
+                  <tr key={user.id} className={`hover:bg-blue-50/50 transition-colors ${user.id === currentUser?.id ? 'bg-blue-50/50' : ''}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {user.name.charAt(0)}
                         </div>
                         <span className="text-sm font-semibold text-slate-800">
@@ -149,7 +149,7 @@ export const Settings = () => {
           </div>
 
           {/* Permission matrix */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div className="bg-white rounded-xl p-6 border border-slate-200">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="w-4 h-4 text-slate-400" />
               <h3 className="text-sm font-bold text-slate-800">Matriz de permissões</h3>
@@ -165,7 +165,7 @@ export const Settings = () => {
                     <th className="text-center py-2 px-3 font-semibold text-orange-600">Financeiro</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100">
                   {[
                     { label: 'Dashboard completo', admin: true, manager: true, professional: false, financial: true },
                     { label: 'Gerenciar clientes', admin: true, manager: true, professional: false, financial: false },
@@ -200,7 +200,7 @@ export const Settings = () => {
 
       {activeTab === 'system' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
+          <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-4">
             <h3 className="text-base font-bold text-slate-800">Informações do sistema</h3>
 
             <div className="grid grid-cols-2 gap-4">
@@ -244,7 +244,7 @@ export const Settings = () => {
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
             <p className="text-sm font-semibold text-amber-800 mb-1">Sobre o armazenamento</p>
             <p className="text-sm text-amber-700">
               Os dados são armazenados localmente no navegador via localStorage. Para produção real,
@@ -256,8 +256,8 @@ export const Settings = () => {
 
       {/* Create User Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">Novo usuário</h2>
               <button onClick={() => setShowUserModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
@@ -271,7 +271,7 @@ export const Settings = () => {
                   type="text"
                   value={userForm.name}
                   onChange={e => setUserForm({ ...userForm, name: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nome do usuário"
                   autoFocus
                 />
@@ -282,7 +282,7 @@ export const Settings = () => {
                   type="email"
                   value={userForm.email}
                   onChange={e => setUserForm({ ...userForm, email: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="email@agencia.com"
                 />
               </div>
@@ -291,7 +291,7 @@ export const Settings = () => {
                 <select
                   value={userForm.role}
                   onChange={e => setUserForm({ ...userForm, role: e.target.value as UserRole })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
                     <option key={role} value={role}>{label}</option>
@@ -304,19 +304,19 @@ export const Settings = () => {
                   type="password"
                   value={userForm.password}
                   onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-slate-100">
-              <button onClick={() => setShowUserModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">
+              <button onClick={() => setShowUserModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">
                 Cancelar
               </button>
               <button
                 onClick={handleCreateUser}
                 disabled={!userForm.name.trim() || !userForm.email.trim() || !userForm.password.trim()}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-xl text-sm font-semibold"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-lg text-sm font-semibold"
               >
                 Criar usuário
               </button>
@@ -327,13 +327,13 @@ export const Settings = () => {
 
       {/* Delete user confirmation */}
       {deleteUserId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar exclusão</h3>
             <p className="text-slate-500 text-sm mb-6">Deseja excluir este usuário? O acesso ao sistema será revogado imediatamente.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteUserId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50">Cancelar</button>
-              <button onClick={handleDeleteUser} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold">Excluir</button>
+              <button onClick={() => setDeleteUserId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">Cancelar</button>
+              <button onClick={handleDeleteUser} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold">Excluir</button>
             </div>
           </div>
         </div>

@@ -1,0 +1,54 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
+import { Layout } from './components/layout/Layout';
+import { Login } from './pages/Login';
+import { Dashboard } from './pages/Dashboard';
+import { Professionals } from './pages/Professionals';
+import { Clients } from './pages/Clients';
+import { Demands } from './pages/Demands';
+import { Kanban } from './pages/Kanban';
+import { Financial } from './pages/Financial';
+import { Reports } from './pages/Reports';
+import { Settings } from './pages/Settings';
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser } = useAuthStore();
+  if (!currentUser) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
+function App() {
+  const { currentUser } = useAuthStore();
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/login"
+          element={currentUser ? <Navigate to="/dashboard" replace /> : <Login />}
+        />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="clients" element={<Clients />} />
+          <Route path="professionals" element={<Professionals />} />
+          <Route path="demands" element={<Demands />} />
+          <Route path="kanban" element={<Kanban />} />
+          <Route path="financial" element={<Financial />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

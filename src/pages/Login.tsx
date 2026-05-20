@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Briefcase, Lock, Mail, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -15,87 +15,100 @@ export const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     setTimeout(() => {
-      const success = login(email, password);
-      if (success) {
-        navigate('/dashboard');
-      } else {
-        setError('E-mail ou senha incorretos. Verifique os dados e tente novamente.');
-      }
+      const ok = login(email, password);
+      if (ok) navigate('/dashboard');
+      else setError('E-mail ou senha incorretos.');
       setLoading(false);
-    }, 400);
+    }, 350);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg mb-4">
-            <Briefcase className="w-8 h-8 text-white" />
+    <div className="min-h-screen flex">
+      {/* Left panel */}
+      <div className="hidden lg:flex lg:w-1/2 bg-[#0f172a] flex-col justify-between p-12">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white text-sm font-black">A</span>
           </div>
-          <h1 className="text-white text-2xl font-bold">Gestão Operacional</h1>
-          <p className="text-slate-400 text-sm mt-1">Agência de Marketing</p>
+          <span className="text-white font-bold text-lg">Aclive</span>
         </div>
+        <div>
+          <h1 className="text-white text-5xl font-extrabold leading-tight tracking-tight mb-4">
+            Operação<br />sem<br />fricção.
+          </h1>
+          <p className="text-slate-400 text-base max-w-xs leading-relaxed">
+            Gerencie demandas, profissionais e financeiro da sua agência em um único lugar.
+          </p>
+        </div>
+        <div className="flex items-center gap-6">
+          {[['Demandas', 'Kanban completo'], ['Financeiro', 'Automático'], ['Relatórios', 'Em tempo real']].map(([t, s]) => (
+            <div key={t}>
+              <p className="text-white text-sm font-semibold">{t}</p>
+              <p className="text-slate-500 text-xs">{s}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-slate-800 text-xl font-semibold mb-6">Entrar na plataforma</h2>
+      {/* Right panel */}
+      <div className="flex-1 flex items-center justify-center bg-white px-8">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-2 mb-10">
+            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-xs font-black">A</span>
+            </div>
+            <span className="text-slate-900 font-bold text-lg">Aclive</span>
+          </div>
+
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-1 tracking-tight">Entrar</h2>
+          <p className="text-slate-500 text-sm mb-8">Acesse o painel da sua agência.</p>
 
           {error && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                E-mail
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="seu@email.com"
-                  required
-                  autoFocus
-                />
-              </div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">E-mail</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50 text-slate-900"
+                placeholder="seu@email.com"
+                required
+                autoFocus
+              />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Senha
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Senha</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50 text-slate-900"
+                placeholder="••••••••"
+                required
+              />
             </div>
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-sm mt-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors mt-2"
             >
-              {loading ? 'Verificando...' : 'Entrar'}
+              {loading ? 'Verificando...' : 'Entrar na plataforma'}
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <p className="text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Credenciais de acesso</p>
-            <div className="space-y-2">
+          {/* Demo access */}
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Acesso de demonstração</p>
+            <div className="space-y-1.5">
               {[
                 { email: 'admin@agencia.com', pass: 'admin123', role: 'Administrador' },
                 { email: 'gestor@agencia.com', pass: 'gestor123', role: 'Gestor' },
@@ -105,13 +118,13 @@ export const Login = () => {
                   key={e}
                   type="button"
                   onClick={() => { setEmail(e); setPassword(pass); }}
-                  className="w-full text-left p-2 rounded-lg hover:bg-white transition-colors group"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all group text-left"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500 font-mono">{e}</span>
-                    <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">usar</span>
+                  <div>
+                    <p className="text-xs font-medium text-slate-700">{role}</p>
+                    <p className="text-xs text-slate-400">{e}</p>
                   </div>
-                  <span className="text-xs text-slate-400">{role} • senha: {pass}</span>
+                  <span className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity font-medium">usar →</span>
                 </button>
               ))}
             </div>

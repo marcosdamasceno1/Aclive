@@ -8,24 +8,17 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts';
-import {
-  ClipboardList, AlertTriangle, CheckCircle2, Building2,
-  Clock, TrendingUp,
-} from 'lucide-react';
+import { ClipboardList, AlertTriangle, MessageSquare } from 'lucide-react';
 import { formatCurrency, getStatusLabel, isOverdue, getPriorityColor, getPriorityLabel } from '../utils/formatters';
 
-const COLORS = ['#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#14b8a6', '#64748b'];
+const COLORS = ['#1d4ed8', '#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#14b8a6', '#64748b'];
 
-const StatCard = ({
-  icon: Icon, label, value, color, sub
-}: { icon: React.ElementType; label: string; value: string | number; color: string; sub?: string }) => (
-  <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${color}`}>
-      <Icon className="w-5 h-5 text-white" />
-    </div>
-    <div className="text-2xl font-bold text-slate-800">{value}</div>
-    <div className="text-sm text-slate-500 mt-0.5">{label}</div>
-    {sub && <div className="text-xs text-slate-400 mt-1">{sub}</div>}
+const StatCard = ({ label, value, accent, sub }: { label: string; value: string | number; accent: string; sub?: string }) => (
+  <div className="bg-white rounded-xl p-5 border border-slate-200">
+    <div className={`inline-block w-1 h-6 rounded-full mb-3 ${accent}`} />
+    <p className="text-3xl font-extrabold text-slate-900 tracking-tight leading-none">{value}</p>
+    <p className="text-xs font-medium text-slate-500 mt-2 uppercase tracking-wide">{label}</p>
+    {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
   </div>
 );
 
@@ -94,26 +87,28 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-        <p className="text-slate-500 text-sm mt-1">Visão geral da operação — {now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
+        <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">
+          {now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={ClipboardList} label="Demandas abertas" value={stats.open} color="bg-blue-500" />
-        <StatCard icon={AlertTriangle} label="Atrasadas" value={stats.overdue} color="bg-red-500" />
-        <StatCard icon={CheckCircle2} label="Concluídas este mês" value={stats.completedThisMonth} color="bg-emerald-500" />
-        <StatCard icon={Building2} label="Clientes ativos" value={stats.activeClients} color="bg-violet-500" />
+        <StatCard label="Demandas abertas" value={stats.open} accent="bg-blue-600" />
+        <StatCard label="Atrasadas" value={stats.overdue} accent="bg-red-500" />
+        <StatCard label="Concluídas este mês" value={stats.completedThisMonth} accent="bg-emerald-500" />
+        <StatCard label="Clientes ativos" value={stats.activeClients} accent="bg-violet-500" />
       </div>
 
       {isAdmin && (
         <div className="grid grid-cols-2 gap-4">
-          <StatCard icon={Clock} label="Valores a pagar" value={formatCurrency(stats.pendingPayment)} color="bg-orange-500" />
-          <StatCard icon={TrendingUp} label="Pagamentos este mês" value={formatCurrency(stats.paidThisMonth)} color="bg-green-600" />
+          <StatCard label="Valores a pagar" value={formatCurrency(stats.pendingPayment)} accent="bg-orange-500" />
+          <StatCard label="Pagamentos este mês" value={formatCurrency(stats.paidThisMonth)} accent="bg-green-600" />
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Demandas por Status</h3>
           {demandsByStatus.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
@@ -122,7 +117,7 @@ export const Dashboard = () => {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Demandas" />
+                <Bar dataKey="total" fill="#1d4ed8" radius={[4, 4, 0, 0]} name="Demandas" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -132,7 +127,7 @@ export const Dashboard = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Demandas por Profissional</h3>
           {demandsByProfessional.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
@@ -161,7 +156,7 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100">
+      <div className="bg-white rounded-xl border border-slate-200">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="text-base font-semibold text-slate-800">Demandas Recentes</h3>
           <span className="text-xs text-slate-400">{recentDemands.length} demanda(s)</span>
@@ -172,17 +167,23 @@ export const Dashboard = () => {
             <p className="text-slate-400 text-sm">Nenhuma demanda cadastrada ainda.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-slate-100">
             {recentDemands.map(demand => {
               const prof = professionals.find(p => p.id === demand.professionalId);
               const client = clients.find(c => c.id === demand.clientId);
               const overdue = isOverdue(demand.deadline, demand.status);
               return (
-                <div key={demand.id} className="px-6 py-3 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                <div key={demand.id} className="px-6 py-3 flex items-center gap-4 hover:bg-blue-50/50 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">{demand.title}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
                       {client?.companyName || '—'} · {prof?.name || '—'}
+                      {demand.comments.length > 0 && (
+                        <span className="flex items-center gap-0.5 text-slate-400 ml-1">
+                          <MessageSquare className="w-3 h-3" />
+                          {demand.comments.length}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${getPriorityColor(demand.priority)}`}>

@@ -11,16 +11,17 @@ export const Login = () => {
   const { login } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setTimeout(() => {
-      const ok = login(email, password);
-      if (ok) navigate('/dashboard');
-      else setError('E-mail ou senha incorretos.');
+    const ok = await login(email, password);
+    if (ok) {
+      navigate('/dashboard');
+    } else {
+      setError('E-mail ou senha incorretos.');
       setLoading(false);
-    }, 350);
+    }
   };
 
   return (

@@ -1,102 +1,114 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
+import { fromDb, toDb } from '../lib/dbMapper';
 import type { User, UserRole } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 
 interface AuthState {
   currentUser: User | null;
   users: User[];
-  passwords: Record<string, string>;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  addUser: (user: Omit<User, 'id' | 'createdAt'>, password: string) => User;
-  updateUser: (id: string, updates: Partial<Omit<User, 'id' | 'createdAt'>>, newPassword?: string) => void;
-  deleteUser: (id: string) => void;
+  loading: boolean;
+  initialized: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  addUser: (user: Omit<User, 'id' | 'createdAt'>, password: string) => Promise<User>;
+  updateUser: (id: string, updates: Partial<Omit<User, 'id' | 'createdAt'>>, newPassword?: string) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  initAuth: () => Promise<void>;
+  loadUsers: () => Promise<void>;
 }
 
-const DEFAULT_USERS: User[] = [
-  {
-    id: 'admin-1',
-    name: 'Administrador',
-    email: 'admin@agencia.com',
-    role: 'admin' as UserRole,
-    createdAt: new Date().toISOString(),
+// Suppress unused import warning
+void (undefined as unknown as UserRole);
+
+export const useAuthStore = create<AuthState>()((set, get) => ({
+  currentUser: null,
+  users: [],
+  loading: true,
+  initialized: false,
+
+  initAuth: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      if (profile) {
+        set({ currentUser: fromDb<User>(profile as Record<string, unknown>), loading: false, initialized: true });
+        return;
+      }
+    }
+    set({ loading: false, initialized: true });
   },
-  {
-    id: 'financial-1',
-    name: 'Setor Financeiro',
-    email: 'financeiro@agencia.com',
-    role: 'financial' as UserRole,
-    createdAt: new Date().toISOString(),
+
+  loadUsers: async () => {
+    const { data } = await supabase.from('profiles').select('*').order('created_at');
+    if (data) {
+      set({ users: data.map(r => fromDb<User>(r as Record<string, unknown>)) });
+    }
   },
-  {
-    id: 'manager-1',
-    name: 'Gestor de Projetos',
-    email: 'gestor@agencia.com',
-    role: 'manager' as UserRole,
-    createdAt: new Date().toISOString(),
+
+  login: async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return false;
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+    if (!profile) return false;
+    set({ currentUser: fromDb<User>(profile as Record<string, unknown>) });
+    return true;
   },
-];
 
-const DEFAULT_PASSWORDS: Record<string, string> = {
-  'admin-1': 'admin123',
-  'financial-1': 'fin123',
-  'manager-1': 'gestor123',
-};
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ currentUser: null });
+  },
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      currentUser: null,
-      users: DEFAULT_USERS,
-      passwords: DEFAULT_PASSWORDS,
+  addUser: async (userData, password) => {
+    const { data: authData, error } = await supabase.auth.admin.createUser({
+      email: userData.email,
+      password,
+      email_confirm: true,
+    });
+    if (error || !authData.user) throw new Error(error?.message || 'Failed to create user');
 
-      login: (email: string, password: string) => {
-        const state = get();
-        const user = state.users.find((u) => u.email === email);
-        if (!user) return false;
-        if (state.passwords[user.id] !== password) return false;
-        set({ currentUser: user });
-        return true;
-      },
+    const profile = {
+      id: authData.user.id,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      professional_id: userData.professionalId || null,
+      active: userData.active ?? true,
+      created_at: new Date().toISOString(),
+    };
+    await supabase.from('profiles').insert(profile);
+    const newUser = fromDb<User>(profile as unknown as Record<string, unknown>);
+    set(state => ({ users: [...state.users, newUser] }));
+    return newUser;
+  },
 
-      logout: () => {
-        set({ currentUser: null });
-      },
+  updateUser: async (id, updates, newPassword) => {
+    if (newPassword) {
+      await supabase.auth.admin.updateUserById(id, { password: newPassword });
+    }
+    const dbUpdates = toDb(updates as Record<string, unknown>);
+    await supabase.from('profiles').update(dbUpdates).eq('id', id);
+    set(state => ({
+      users: state.users.map(u => u.id === id ? { ...u, ...updates } : u),
+      currentUser: state.currentUser?.id === id ? { ...state.currentUser, ...updates } : state.currentUser,
+    }));
+  },
 
-      addUser: (userData, password) => {
-        const newUser: User = {
-          ...userData,
-          id: uuidv4(),
-          createdAt: new Date().toISOString(),
-        };
-        set((state) => ({
-          users: [...state.users, newUser],
-          passwords: { ...state.passwords, [newUser.id]: password },
-        }));
-        return newUser;
-      },
+  deleteUser: async (id) => {
+    await supabase.auth.admin.deleteUser(id);
+    await supabase.from('profiles').delete().eq('id', id);
+    set(state => ({ users: state.users.filter(u => u.id !== id) }));
+  },
+}));
 
-      updateUser: (id, updates, newPassword) => {
-        set((state) => ({
-          users: state.users.map((u) => (u.id === id ? { ...u, ...updates } : u)),
-          passwords: newPassword
-            ? { ...state.passwords, [id]: newPassword }
-            : state.passwords,
-        }));
-      },
-
-      deleteUser: (id) => {
-        set((state) => {
-          const newPasswords = { ...state.passwords };
-          delete newPasswords[id];
-          return {
-            users: state.users.filter((u) => u.id !== id),
-            passwords: newPasswords,
-          };
-        });
-      },
-    }),
-    { name: 'auth-store' }
-  )
-);
+// Re-export for convenience
+export type { AuthState };
+export const { getState: getAuthState } = useAuthStore;

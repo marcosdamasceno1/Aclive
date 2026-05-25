@@ -43,6 +43,7 @@ export interface User {
   email: string;
   role: UserRole;
   professionalId?: string;
+  active?: boolean;
   createdAt: string;
 }
 

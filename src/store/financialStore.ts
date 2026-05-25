@@ -1,11 +1,14 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { FinancialMovement, AuditLog } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '../lib/supabase';
+import { fromDb, toDb } from '../lib/dbMapper';
+import type { FinancialMovement, AuditLog } from '../types';
 
 interface FinancialState {
   movements: FinancialMovement[];
   auditLog: AuditLog[];
+  loading: boolean;
+  init: () => Promise<void>;
   registerMovement: (m: Omit<FinancialMovement, 'id'>) => void;
   markAsPaid: (movementId: string, paidBy: string, paidByName: string) => void;
   updateMovementValue: (movementId: string, newValue: number, updatedBy: string, updatedByName: string) => void;
@@ -14,96 +17,99 @@ interface FinancialState {
   addAuditLog: (log: Omit<AuditLog, 'id' | 'createdAt'>) => void;
 }
 
-export const useFinancialStore = create<FinancialState>()(
-  persist(
-    (set, get) => ({
-      movements: [],
-      auditLog: [],
+export const useFinancialStore = create<FinancialState>()((set, get) => ({
+  movements: [],
+  auditLog: [],
+  loading: false,
 
-      registerMovement: (data) => {
-        const state = get();
-        const existing = state.movements.find(
-          (m) => m.demandId === data.demandId && m.type === 'credit'
-        );
-        if (existing) return;
+  init: async () => {
+    set({ loading: true });
+    const [movementsResult, auditResult] = await Promise.all([
+      supabase.from('financial_movements').select('*').order('created_at'),
+      supabase.from('audit_logs').select('*').order('created_at'),
+    ]);
+    set({
+      movements: (movementsResult.data || []).map(r => fromDb<FinancialMovement>(r as Record<string, unknown>)),
+      auditLog: (auditResult.data || []).map(r => fromDb<AuditLog>(r as Record<string, unknown>)),
+      loading: false,
+    });
+  },
 
-        const newMovement: FinancialMovement = { ...data, id: uuidv4() };
-        set((state) => ({ movements: [...state.movements, newMovement] }));
-      },
+  registerMovement: (data) => {
+    // Deduplication: check local state first
+    const existing = get().movements.find(m => m.demandId === data.demandId && m.type === 'credit');
+    if (existing) return;
 
-      markAsPaid: (movementId, paidBy, paidByName) => {
-        const state = get();
-        const movement = state.movements.find((m) => m.id === movementId);
-        if (!movement || movement.status === 'paid') return;
+    const newMovement: FinancialMovement = { ...data, id: uuidv4() };
+    set(state => ({ movements: [...state.movements, newMovement] }));
+    supabase.from('financial_movements').insert(toDb({ ...newMovement }) as Record<string, unknown>);
+  },
 
-        set((state) => ({
-          movements: state.movements.map((m) =>
-            m.id === movementId
-              ? { ...m, status: 'paid', paidAt: new Date().toISOString(), paidBy }
-              : m
-          ),
-        }));
+  markAsPaid: (movementId, paidBy, paidByName) => {
+    const state = get();
+    const movement = state.movements.find(m => m.id === movementId);
+    if (!movement || movement.status === 'paid') return;
 
-        get().addAuditLog({
-          entityType: 'financial',
-          entityId: movementId,
-          action: 'payment_marked',
-          oldValue: 'pending',
-          newValue: 'paid',
-          userId: paidBy,
-          userName: paidByName,
-        });
-      },
+    const updates = { status: 'paid' as const, paidAt: new Date().toISOString(), paidBy };
+    set(s => ({
+      movements: s.movements.map(m => m.id === movementId ? { ...m, ...updates } : m),
+    }));
+    supabase.from('financial_movements').update(toDb(updates as Record<string, unknown>)).eq('id', movementId);
 
-      updateMovementValue: (movementId, newValue, updatedBy, updatedByName) => {
-        const state = get();
-        const movement = state.movements.find((m) => m.id === movementId);
-        if (!movement) return;
+    get().addAuditLog({
+      entityType: 'financial',
+      entityId: movementId,
+      action: 'payment_marked',
+      oldValue: 'pending',
+      newValue: 'paid',
+      userId: paidBy,
+      userName: paidByName,
+    });
+  },
 
-        const oldValue = movement.value;
-        set((state) => ({
-          movements: state.movements.map((m) =>
-            m.id === movementId ? { ...m, value: newValue } : m
-          ),
-        }));
+  updateMovementValue: (movementId, newValue, updatedBy, updatedByName) => {
+    const state = get();
+    const movement = state.movements.find(m => m.id === movementId);
+    if (!movement) return;
 
-        get().addAuditLog({
-          entityType: 'financial',
-          entityId: movementId,
-          action: 'value_updated',
-          oldValue: String(oldValue),
-          newValue: String(newValue),
-          userId: updatedBy,
-          userName: updatedByName,
-        });
-      },
+    const oldValue = movement.value;
+    const updates = { value: newValue };
+    set(s => ({
+      movements: s.movements.map(m => m.id === movementId ? { ...m, ...updates } : m),
+    }));
+    supabase.from('financial_movements').update(updates).eq('id', movementId);
 
-      getProfessionalBalance: (professionalId) => {
-        const movements = get().movements.filter(
-          (m) => m.professionalId === professionalId && m.type === 'credit'
-        );
-        const pending = movements
-          .filter((m) => m.status === 'pending')
-          .reduce((sum, m) => sum + m.value, 0);
-        const paid = movements
-          .filter((m) => m.status === 'paid')
-          .reduce((sum, m) => sum + m.value, 0);
-        return { pending, paid, total: pending + paid };
-      },
+    get().addAuditLog({
+      entityType: 'financial',
+      entityId: movementId,
+      action: 'value_updated',
+      oldValue: String(oldValue),
+      newValue: String(newValue),
+      userId: updatedBy,
+      userName: updatedByName,
+    });
+  },
 
-      getMovementsByProfessional: (professionalId) => {
-        return get().movements.filter((m) => m.professionalId === professionalId);
-      },
+  getProfessionalBalance: (professionalId) => {
+    const movements = get().movements.filter(
+      m => m.professionalId === professionalId && m.type === 'credit'
+    );
+    const pending = movements.filter(m => m.status === 'pending').reduce((sum, m) => sum + m.value, 0);
+    const paid = movements.filter(m => m.status === 'paid').reduce((sum, m) => sum + m.value, 0);
+    return { pending, paid, total: pending + paid };
+  },
 
-      addAuditLog: (logData) => {
-        const newLog: AuditLog = {
-          ...logData,
-          id: uuidv4(),
-          createdAt: new Date().toISOString(),
-        };
-        set((state) => ({ auditLog: [...state.auditLog, newLog] }));
-      },
-    }),
-    { name: 'financial-store' }
-  )
-);
+  getMovementsByProfessional: (professionalId) => {
+    return get().movements.filter(m => m.professionalId === professionalId);
+  },
+
+  addAuditLog: (logData) => {
+    const newLog: AuditLog = {
+      ...logData,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    };
+    set(state => ({ auditLog: [...state.auditLog, newLog] }));
+    supabase.from('audit_logs').insert(toDb({ ...newLog }) as Record<string, unknown>);
+  },
+}));

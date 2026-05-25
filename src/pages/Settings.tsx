@@ -30,20 +30,34 @@ export const Settings = () => {
   const [userForm, setUserForm] = useState(emptyUserForm);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'system'>('users');
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
-  const handleCreateUser = () => {
+  const handleCreateUser = async () => {
     if (!userForm.name.trim() || !userForm.email.trim() || !userForm.password.trim()) return;
-    addUser(
-      { name: userForm.name, email: userForm.email, role: userForm.role },
-      userForm.password
-    );
-    setUserForm(emptyUserForm);
-    setShowUserModal(false);
+    setSubmitting(true);
+    setFormError('');
+    try {
+      await addUser(
+        { name: userForm.name, email: userForm.email, role: userForm.role },
+        userForm.password
+      );
+      setUserForm(emptyUserForm);
+      setShowUserModal(false);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Erro ao criar usuário.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (deleteUserId && deleteUserId !== currentUser?.id) {
-      deleteUser(deleteUserId);
+      try {
+        await deleteUser(deleteUserId);
+      } catch {
+        // ignore errors silently
+      }
       setDeleteUserId(null);
     }
   };
@@ -86,7 +100,7 @@ export const Settings = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-800">Usuários do sistema</h2>
             <button
-              onClick={() => { setUserForm(emptyUserForm); setShowUserModal(true); }}
+              onClick={() => { setUserForm(emptyUserForm); setFormError(''); setShowUserModal(true); }}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -309,16 +323,21 @@ export const Settings = () => {
                 />
               </div>
             </div>
+            {formError && (
+              <div className="px-6 pb-2">
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>
+              </div>
+            )}
             <div className="flex gap-3 px-6 py-4 border-t border-slate-100">
               <button onClick={() => setShowUserModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">
                 Cancelar
               </button>
               <button
                 onClick={handleCreateUser}
-                disabled={!userForm.name.trim() || !userForm.email.trim() || !userForm.password.trim()}
+                disabled={submitting || !userForm.name.trim() || !userForm.email.trim() || !userForm.password.trim()}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-lg text-sm font-semibold"
               >
-                Criar usuário
+                {submitting ? 'Criando...' : 'Criar usuário'}
               </button>
             </div>
           </div>

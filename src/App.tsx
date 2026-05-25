@@ -1,5 +1,11 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/authStore';
+import { useProfessionalsStore } from './store/professionalsStore';
+import { useClientsStore } from './store/clientsStore';
+import { useDemandsStore } from './store/demandsStore';
+import { useFinancialStore } from './store/financialStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -18,23 +24,40 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
-  const { currentUser } = useAuthStore();
+  const { currentUser, initialized, initAuth } = useAuthStore();
+  const { init: initProfessionals } = useProfessionalsStore();
+  const { init: initClients } = useClientsStore();
+  const { init: initDemands } = useDemandsStore();
+  const { init: initFinancial } = useFinancialStore();
+
+  useEffect(() => {
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN') {
+        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial()]);
+        useAuthStore.getState().loadUsers();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-500">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route
-          path="/login"
-          element={currentUser ? <Navigate to="/dashboard" replace /> : <Login />}
-        />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
+        <Route path="/login" element={currentUser ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="clients" element={<Clients />} />

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './lib/supabase';
+import { supabaseAuth } from './lib/supabase';
 import { useAuthStore } from './store/authStore';
 import { useProfessionalsStore } from './store/professionalsStore';
 import { useClientsStore } from './store/clientsStore';
@@ -38,7 +38,7 @@ function App() {
 
     initAuth().finally(() => clearTimeout(timeout));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
         await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial()]);
         useAuthStore.getState().loadUsers();

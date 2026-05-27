@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAuth } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { User, UserRole } from '../types';
 
@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   initAuth: async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseAuth.auth.getSession();
       if (session?.user) {
         const { data: rows } = await supabase
           .from('profiles')
@@ -60,7 +60,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       console.log('[login] chamando signInWithPassword...');
       const { data, error } = await Promise.race([
-        supabase.auth.signInWithPassword({ email, password }),
+        supabaseAuth.auth.signInWithPassword({ email, password }),
         timeout<never>(10000),
       ]);
       console.log('[login] auth result:', { userId: data?.user?.id, error: error?.message });
@@ -86,7 +86,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   logout: async () => {
-    await supabase.auth.signOut();
+    await supabaseAuth.auth.signOut();
     set({ currentUser: null });
   },
 

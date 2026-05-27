@@ -22,14 +22,14 @@ import { AlertTriangle, Calendar, DollarSign } from 'lucide-react';
 import { canMoveDemands } from '../utils/permissions';
 
 const COLUMNS: { id: KanbanStatus; label: string; headerColor: string; bgColor: string; textColor: string }[] = [
-  { id: 'new', label: 'Nova Demanda', headerColor: 'bg-slate-500', bgColor: 'bg-slate-50', textColor: 'text-slate-700' },
-  { id: 'briefing', label: 'Em Briefing', headerColor: 'bg-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700' },
+  { id: 'new', label: 'Nova Demanda', headerColor: 'bg-[#161b22]0', bgColor: 'bg-[#161b22]', textColor: 'text-slate-200' },
+  { id: 'briefing', label: 'Em Briefing', headerColor: 'bg-blue-500/[0.1]0', bgColor: 'bg-blue-500/[0.1]', textColor: 'text-blue-400' },
   { id: 'production', label: 'Em Produção', headerColor: 'bg-indigo-500', bgColor: 'bg-indigo-50', textColor: 'text-indigo-700' },
-  { id: 'review', label: 'Em Revisão', headerColor: 'bg-purple-500', bgColor: 'bg-purple-50', textColor: 'text-purple-700' },
-  { id: 'adjustments', label: 'Ajustes', headerColor: 'bg-orange-500', bgColor: 'bg-orange-50', textColor: 'text-orange-700' },
-  { id: 'approved', label: 'Aprovado', headerColor: 'bg-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700' },
-  { id: 'completed', label: 'Concluído', headerColor: 'bg-emerald-600', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700' },
-  { id: 'paid', label: 'Pago', headerColor: 'bg-gray-500', bgColor: 'bg-gray-50', textColor: 'text-gray-600' },
+  { id: 'review', label: 'Em Revisão', headerColor: 'bg-purple-500/[0.1]0', bgColor: 'bg-purple-500/[0.1]', textColor: 'text-purple-400' },
+  { id: 'adjustments', label: 'Ajustes', headerColor: 'bg-orange-500', bgColor: 'bg-orange-50', textColor: 'text-orange-400' },
+  { id: 'approved', label: 'Aprovado', headerColor: 'bg-green-500/[0.1]0', bgColor: 'bg-green-500/[0.1]', textColor: 'text-green-400' },
+  { id: 'completed', label: 'Concluído', headerColor: 'bg-emerald-600', bgColor: 'bg-emerald-500/[0.1]', textColor: 'text-emerald-400' },
+  { id: 'paid', label: 'Pago', headerColor: 'bg-gray-500', bgColor: 'bg-gray-50', textColor: 'text-slate-400' },
 ];
 
 interface CardProps {
@@ -52,14 +52,14 @@ const DraggableCard = ({ demand, clientName, professionalName }: CardProps) => {
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white rounded-xl p-3 border cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none ${
-        overdue ? 'border-red-200' : 'border-slate-200'
+      className={`bg-[#21262d] rounded-xl p-3 border cursor-grab active:cursor-grabbing hover:shadow-black/40 transition-all select-none ${
+        overdue ? 'border-red-500/[0.3]' : 'border-white/[0.08]'
       }`}
       {...attributes}
       {...listeners}
     >
       <div className="flex items-start justify-between mb-2 gap-1">
-        <p className="text-xs font-semibold text-slate-800 leading-tight flex-1">{demand.title}</p>
+        <p className="text-xs font-semibold text-slate-100 leading-tight flex-1">{demand.title}</p>
         <span className={`text-xs px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${getPriorityColor(demand.priority)}`}>
           {getPriorityLabel(demand.priority).charAt(0)}
         </span>
@@ -80,7 +80,7 @@ const DraggableCard = ({ demand, clientName, professionalName }: CardProps) => {
           <Calendar className="w-3 h-3" />
           {demand.deadline ? new Date(demand.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—'}
         </div>
-        <span className="text-xs font-bold text-slate-700">{formatCurrency(demand.value)}</span>
+        <span className="text-xs font-bold text-slate-200">{formatCurrency(demand.value)}</span>
       </div>
     </div>
   );
@@ -89,10 +89,10 @@ const DraggableCard = ({ demand, clientName, professionalName }: CardProps) => {
 const StaticCard = ({ demand, clientName }: CardProps) => {
   const overdue = isOverdue(demand.deadline, demand.status);
   return (
-    <div className={`bg-white rounded-xl p-3 shadow-md border-2 rotate-1 ${overdue ? 'border-red-300' : 'border-blue-300'}`}>
-      <p className="text-xs font-semibold text-slate-800 truncate">{demand.title}</p>
+    <div className={`bg-[#21262d] rounded-xl p-3 shadow-md border-2 rotate-1 ${overdue ? 'border-red-300' : 'border-blue-500/[0.4]'}`}>
+      <p className="text-xs font-semibold text-slate-100 truncate">{demand.title}</p>
       <p className="text-xs text-slate-500 mt-1">{clientName}</p>
-      <p className="text-xs font-bold text-slate-700 mt-1">{formatCurrency(demand.value)}</p>
+      <p className="text-xs font-bold text-slate-200 mt-1">{formatCurrency(demand.value)}</p>
     </div>
   );
 };
@@ -128,7 +128,7 @@ const KanbanColumn = ({ id, label, headerColor, bgColor, demands, clients, profe
     >
       <div className={`${headerColor} rounded-t-2xl px-3 py-2.5 flex items-center justify-between`}>
         <h3 className="text-xs font-bold text-white">{label}</h3>
-        <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+        <span className="bg-[#21262d]/20 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
           {demands.length}
         </span>
       </div>
@@ -149,8 +149,8 @@ const KanbanColumn = ({ id, label, headerColor, bgColor, demands, clients, profe
           })}
         </SortableContext>
         {demands.length === 0 && (
-          <div className="h-12 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center">
-            <p className="text-xs text-slate-300">Soltar aqui</p>
+          <div className="h-12 border-2 border-dashed border-white/[0.08] rounded-xl flex items-center justify-center">
+            <p className="text-xs text-slate-500">Soltar aqui</p>
           </div>
         )}
       </div>
@@ -289,13 +289,13 @@ export const Kanban = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Esteira de Produção</h1>
+          <h1 className="text-2xl font-bold text-slate-100">Esteira de Produção</h1>
           <p className="text-slate-500 text-sm mt-1">
             {totals.open} em aberto · {totals.completed} concluída(s) · {totals.paid} paga(s)
           </p>
         </div>
         {!canMove && (
-          <div className="text-xs text-slate-400 bg-slate-100 px-3 py-2 rounded-lg">
+          <div className="text-xs text-slate-400 bg-[#0d1117] px-3 py-2 rounded-lg">
             Somente visualização
           </div>
         )}
@@ -332,8 +332,8 @@ export const Kanban = () => {
               />
             </div>
           ) : activeDemand ? (
-            <div className="w-64 bg-white rounded-xl p-3 shadow-xl border-2 border-blue-300">
-              <p className="text-xs font-semibold text-slate-800">{activeDemand.title}</p>
+            <div className="w-64 bg-[#21262d] rounded-xl p-3 shadow-xl border-2 border-blue-500/[0.4]">
+              <p className="text-xs font-semibold text-slate-100">{activeDemand.title}</p>
             </div>
           ) : null}
         </DragOverlay>
@@ -342,20 +342,20 @@ export const Kanban = () => {
       {/* Confirm completion dialog */}
       {confirmMove && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+          <div className="bg-[#21262d] rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 bg-emerald-500/[0.12] rounded-2xl flex items-center justify-center flex-shrink-0">
                 <DollarSign className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-800">Registrar conclusão</h3>
+                <h3 className="text-lg font-bold text-slate-100">Registrar conclusão</h3>
                 <p className="text-xs text-slate-400">Esta ação gera uma movimentação financeira</p>
               </div>
             </div>
-            <div className="bg-emerald-50 rounded-xl p-4 mb-5 border border-emerald-100">
-              <p className="text-sm text-slate-700 leading-relaxed">
+            <div className="bg-emerald-500/[0.1] rounded-xl p-4 mb-5 border border-emerald-500/[0.2]">
+              <p className="text-sm text-slate-200 leading-relaxed">
                 Mover para <strong>Concluído</strong> vai registrar automaticamente{' '}
-                <span className="text-emerald-700 font-bold text-base">{formatCurrency(confirmMove.value)}</span>{' '}
+                <span className="text-emerald-400 font-bold text-base">{formatCurrency(confirmMove.value)}</span>{' '}
                 no saldo de <strong>{confirmMove.professionalName}</strong>.
               </p>
               <p className="text-xs text-slate-500 mt-2">Esta ação só pode ser feita uma vez por tarefa.</p>
@@ -363,7 +363,7 @@ export const Kanban = () => {
             <div className="flex gap-3">
               <button
                 onClick={handleCancelMove}
-                className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
+                className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-xl text-sm font-medium hover:bg-white/[0.04] transition-colors"
               >
                 Cancelar
               </button>

@@ -14,9 +14,9 @@ import { formatCurrency, getStatusLabel, isOverdue, getPriorityColor, getPriorit
 const COLORS = ['#1d4ed8', '#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#14b8a6', '#64748b'];
 
 const StatCard = ({ label, value, accent, sub }: { label: string; value: string | number; accent: string; sub?: string }) => (
-  <div className="bg-white rounded-xl p-5 border border-slate-200">
+  <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
     <div className={`inline-block w-1 h-6 rounded-full mb-3 ${accent}`} />
-    <p className="text-3xl font-extrabold text-slate-900 tracking-tight leading-none">{value}</p>
+    <p className="text-3xl font-extrabold text-white tracking-tight leading-none">{value}</p>
     <p className="text-xs font-medium text-slate-500 mt-2 uppercase tracking-wide">{label}</p>
     {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
   </div>
@@ -87,7 +87,7 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-white">Dashboard</h1>
         <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">
           {now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
@@ -95,8 +95,8 @@ export const Dashboard = () => {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Demandas abertas" value={stats.open} accent="bg-blue-600" />
-        <StatCard label="Atrasadas" value={stats.overdue} accent="bg-red-500" />
-        <StatCard label="Concluídas este mês" value={stats.completedThisMonth} accent="bg-emerald-500" />
+        <StatCard label="Atrasadas" value={stats.overdue} accent="bg-red-500/[0.1]0" />
+        <StatCard label="Concluídas este mês" value={stats.completedThisMonth} accent="bg-emerald-500/[0.1]0" />
         <StatCard label="Clientes ativos" value={stats.activeClients} accent="bg-violet-500" />
       </div>
 
@@ -108,8 +108,8 @@ export const Dashboard = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-slate-200">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Demandas por Status</h3>
+        <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
+          <h3 className="text-base font-semibold text-slate-100 mb-4">Demandas por Status</h3>
           {demandsByStatus.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={demandsByStatus} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -127,8 +127,8 @@ export const Dashboard = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-slate-200">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Demandas por Profissional</h3>
+        <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
+          <h3 className="text-base font-semibold text-slate-100 mb-4">Demandas por Profissional</h3>
           {demandsByProfessional.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -156,26 +156,26 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-800">Demandas Recentes</h3>
+      <div className="bg-[#21262d] rounded-xl border border-white/[0.08]">
+        <div className="px-6 py-4 border-b border-white/[0.05] flex items-center justify-between">
+          <h3 className="text-base font-semibold text-slate-100">Demandas Recentes</h3>
           <span className="text-xs text-slate-400">{recentDemands.length} demanda(s)</span>
         </div>
         {recentDemands.length === 0 ? (
           <div className="p-12 text-center">
-            <ClipboardList className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <ClipboardList className="w-10 h-10 text-slate-500 mx-auto mb-3" />
             <p className="text-slate-400 text-sm">Nenhuma demanda cadastrada ainda.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-white/[0.05]">
             {recentDemands.map(demand => {
               const prof = professionals.find(p => p.id === demand.professionalId);
               const client = clients.find(c => c.id === demand.clientId);
               const overdue = isOverdue(demand.deadline, demand.status);
               return (
-                <div key={demand.id} className="px-6 py-3 flex items-center gap-4 hover:bg-blue-50/50 transition-colors">
+                <div key={demand.id} className="px-6 py-3 flex items-center gap-4 hover:bg-white/[0.04] transition-colors">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">{demand.title}</p>
+                    <p className="text-sm font-medium text-slate-100 truncate">{demand.title}</p>
                     <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
                       {client?.companyName || '—'} · {prof?.name || '—'}
                       {demand.comments.length > 0 && (
@@ -189,10 +189,10 @@ export const Dashboard = () => {
                   <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${getPriorityColor(demand.priority)}`}>
                     {getPriorityLabel(demand.priority)}
                   </span>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${overdue ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${overdue ? 'bg-red-100 text-red-400' : 'bg-[#0d1117] text-slate-500'}`}>
                     {overdue ? 'Atrasada' : getStatusLabel(demand.status)}
                   </span>
-                  <div className="text-sm font-bold text-slate-700 flex-shrink-0">{formatCurrency(demand.value)}</div>
+                  <div className="text-sm font-bold text-slate-200 flex-shrink-0">{formatCurrency(demand.value)}</div>
                 </div>
               );
             })}

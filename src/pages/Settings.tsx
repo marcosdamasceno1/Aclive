@@ -14,10 +14,10 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  admin: 'bg-purple-100 text-purple-700',
-  manager: 'bg-blue-100 text-blue-700',
-  professional: 'bg-green-100 text-green-700',
-  financial: 'bg-orange-100 text-orange-700',
+  admin: 'bg-purple-500/[0.1] text-purple-400',
+  manager: 'bg-blue-500/[0.1] text-blue-400',
+  professional: 'bg-green-500/[0.1] text-green-400',
+  financial: 'bg-orange-500/[0.1] text-orange-400',
 };
 
 const PROFESSIONS: ProfessionType[] = [
@@ -119,16 +119,16 @@ export const Settings = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Configurações</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-white">Configurações</h1>
         <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Gerenciamento do sistema</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit">
         <button
           onClick={() => setActiveTab('users')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'users' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            activeTab === 'users' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -139,7 +139,7 @@ export const Settings = () => {
         <button
           onClick={() => setActiveTab('system')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'system' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            activeTab === 'system' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export const Settings = () => {
       {activeTab === 'users' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-800">Usuários do sistema</h2>
+            <h2 className="text-base font-bold text-slate-100">Usuários do sistema</h2>
             {isAdmin ? (
               <button
                 onClick={() => { setUserForm(emptyUserForm); setFormError(''); setShowUserModal(true); }}
@@ -169,7 +169,7 @@ export const Settings = () => {
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
             <table className="w-full">
               <thead className="bg-slate-900">
                 <tr>
@@ -182,16 +182,16 @@ export const Settings = () => {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-white/[0.05]">
                 {users.map(user => (
-                  <tr key={user.id} className={`hover:bg-blue-50/50 transition-colors ${user.id === currentUser?.id ? 'bg-blue-50/50' : ''}`}>
+                  <tr key={user.id} className={`hover:bg-white/[0.04] transition-colors ${user.id === currentUser?.id ? 'bg-blue-500/[0.08]' : ''}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {user.name.charAt(0)}
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-slate-800">
+                          <span className="text-sm font-semibold text-slate-100">
                             {user.name}
                             {user.id === currentUser?.id && (
                               <span className="ml-2 text-xs text-blue-600 font-normal">(você)</span>
@@ -206,7 +206,7 @@ export const Settings = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{user.email}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500">{user.email}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${ROLE_COLORS[user.role]}`}>
                         {ROLE_LABELS[user.role]}
@@ -220,12 +220,12 @@ export const Settings = () => {
                         {user.id !== currentUser?.id ? (
                           <button
                             onClick={() => setDeleteUserId(user.id)}
-                            className="p-1.5 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-red-400 hover:text-red-400 hover:bg-red-600/[0.12] rounded-lg transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         ) : (
-                          <span className="text-xs text-slate-300">—</span>
+                          <span className="text-xs text-slate-500">—</span>
                         )}
                       </td>
                     )}
@@ -236,23 +236,23 @@ export const Settings = () => {
           </div>
 
           {/* Permission matrix */}
-          <div className="bg-white rounded-xl p-6 border border-slate-200">
+          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="w-4 h-4 text-slate-400" />
-              <h3 className="text-sm font-bold text-slate-800">Matriz de permissões padrão</h3>
+              <h3 className="text-sm font-bold text-slate-100">Matriz de permissões padrão</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr>
-                    <th className="text-left py-2 pr-4 font-semibold text-slate-600">Recurso</th>
+                    <th className="text-left py-2 pr-4 font-semibold text-slate-500">Recurso</th>
                     <th className="text-center py-2 px-3 font-semibold text-purple-600">Admin</th>
                     <th className="text-center py-2 px-3 font-semibold text-blue-600">Gestor</th>
                     <th className="text-center py-2 px-3 font-semibold text-green-600">Profissional</th>
                     <th className="text-center py-2 px-3 font-semibold text-orange-600">Financeiro</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-white/[0.05]">
                   {[
                     { label: 'Dashboard completo', admin: true, manager: true, professional: true, financial: true },
                     { label: 'Gerenciar clientes', admin: true, manager: true, professional: false, financial: false },
@@ -264,8 +264,8 @@ export const Settings = () => {
                     { label: 'Ver relatórios', admin: true, manager: false, professional: false, financial: true },
                     { label: 'Configurações', admin: true, manager: false, professional: false, financial: false },
                   ].map(row => (
-                    <tr key={row.label} className="hover:bg-slate-50">
-                      <td className="py-2 pr-4 text-slate-600">{row.label}</td>
+                    <tr key={row.label} className="hover:bg-white/[0.04]">
+                      <td className="py-2 pr-4 text-slate-500">{row.label}</td>
                       {(['admin', 'manager', 'professional', 'financial'] as const).map(role => (
                         <td key={role} className="py-2 px-3 text-center">
                           {row[role] ? (
@@ -286,8 +286,8 @@ export const Settings = () => {
 
       {activeTab === 'system' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-4">
-            <h3 className="text-base font-bold text-slate-800">Informações do sistema</h3>
+          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-4">
+            <h3 className="text-base font-bold text-slate-100">Informações do sistema</h3>
 
             <div className="grid grid-cols-2 gap-4">
               {[
@@ -296,34 +296,34 @@ export const Settings = () => {
                 { label: 'Banco de dados', value: 'Supabase (PostgreSQL)' },
                 { label: 'Tecnologia', value: 'React + TypeScript + Tailwind CSS' },
               ].map(({ label, value }) => (
-                <div key={label} className="p-3 bg-slate-50 rounded-xl">
+                <div key={label} className="p-3 bg-[#161b22] rounded-xl">
                   <p className="text-xs text-slate-400 mb-0.5">{label}</p>
-                  <p className="text-sm font-semibold text-slate-700">{value}</p>
+                  <p className="text-sm font-semibold text-slate-200">{value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="border-t border-slate-100 pt-4">
-              <p className="text-sm font-semibold text-slate-700 mb-2">Regras do sistema</p>
-              <ul className="space-y-2 text-sm text-slate-600">
+            <div className="border-t border-white/[0.05] pt-4">
+              <p className="text-sm font-semibold text-slate-200 mb-2">Regras do sistema</p>
+              <ul className="space-y-2 text-sm text-slate-500">
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
+                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
                   Uma tarefa só gera valor financeiro uma única vez (ao ser movida para "Concluído").
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
+                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
                   O saldo do profissional aumenta automaticamente ao concluir uma tarefa.
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
+                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
                   Apenas administradores podem criar novos usuários e definir seus acessos.
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
+                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
                   Profissionais visualizam apenas suas próprias tarefas e valores.
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
+                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
                   Pagamentos duplicados são bloqueados automaticamente pelo sistema.
                 </li>
               </ul>
@@ -335,42 +335,42 @@ export const Settings = () => {
       {/* Create User Modal */}
       {showUserModal && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-bold text-slate-800">Novo usuário</h2>
-              <button onClick={() => setShowUserModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] sticky top-0 bg-[#21262d] z-10">
+              <h2 className="text-lg font-bold text-slate-100">Novo usuário</h2>
+              <button onClick={() => setShowUserModal(false)} className="text-slate-400 hover:text-slate-500 p-1 rounded-lg hover:bg-white/[0.06]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               {/* Basic info */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nome completo *</label>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">Nome completo *</label>
                 <input
                   type="text"
                   value={userForm.name}
                   onChange={e => setUserForm({ ...userForm, name: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nome do usuário"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">E-mail *</label>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">E-mail *</label>
                 <input
                   type="email"
                   value={userForm.email}
                   onChange={e => setUserForm({ ...userForm, email: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="email@agencia.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Função *</label>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">Função *</label>
                 <select
                   value={userForm.role}
                   onChange={e => handleRoleChange(e.target.value as UserRole)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
                     <option key={role} value={role}>{label}</option>
@@ -378,31 +378,31 @@ export const Settings = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Senha *</label>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">Senha *</label>
                 <input
                   type="password"
                   value={userForm.password}
                   onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
 
               {/* Permissions */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-200 mb-2">
                   <div className="flex items-center gap-1.5">
                     <Shield className="w-4 h-4 text-slate-400" />
                     Acessos permitidos
                   </div>
                 </label>
                 {userForm.role === 'admin' ? (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2.5 text-sm text-purple-700 flex items-center gap-2">
+                  <div className="bg-purple-500/[0.1] border border-purple-500/[0.3] rounded-lg px-3 py-2.5 text-sm text-purple-400 flex items-center gap-2">
                     <Shield className="w-4 h-4 flex-shrink-0" />
                     Administradores têm acesso completo a todos os módulos.
                   </div>
                 ) : (
-                  <div className="border border-slate-200 rounded-lg p-3 grid grid-cols-2 gap-2">
+                  <div className="border border-white/[0.08] rounded-lg p-3 grid grid-cols-2 gap-2">
                     {PAGE_PERMISSIONS.filter(p => p.key !== 'settings').map(p => (
                       <label key={p.key} className="flex items-center gap-2.5 cursor-pointer group">
                         <input
@@ -411,7 +411,7 @@ export const Settings = () => {
                           onChange={() => togglePermission(p.key)}
                           className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
-                        <span className="text-sm text-slate-700 group-hover:text-slate-900">{p.label}</span>
+                        <span className="text-sm text-slate-200 group-hover:text-white">{p.label}</span>
                       </label>
                     ))}
                   </div>
@@ -419,7 +419,7 @@ export const Settings = () => {
               </div>
 
               {/* Professional profile */}
-              <div className="border-t border-slate-100 pt-4">
+              <div className="border-t border-white/[0.05] pt-4">
                 <label className="flex items-center gap-2.5 cursor-pointer mb-3">
                   <input
                     type="checkbox"
@@ -429,18 +429,18 @@ export const Settings = () => {
                   />
                   <div className="flex items-center gap-1.5">
                     <Briefcase className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-700">Criar perfil de profissional vinculado</span>
+                    <span className="text-sm font-medium text-slate-200">Criar perfil de profissional vinculado</span>
                   </div>
                 </label>
 
                 {userForm.createProfessional && (
-                  <div className="space-y-3 pl-6 border-l-2 border-slate-100">
+                  <div className="space-y-3 pl-6 border-l-2 border-white/[0.05]">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Profissão *</label>
+                      <label className="block text-sm font-medium text-slate-200 mb-1.5">Profissão *</label>
                       <select
                         value={userForm.profession}
                         onChange={e => setUserForm({ ...userForm, profession: e.target.value as ProfessionType })}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         {PROFESSIONS.map(p => (
                           <option key={p} value={p}>{getProfessionLabel(p)}</option>
@@ -448,22 +448,22 @@ export const Settings = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Telefone</label>
+                      <label className="block text-sm font-medium text-slate-200 mb-1.5">Telefone</label>
                       <input
                         type="text"
                         value={userForm.phone}
                         onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="(11) 99999-9999"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Chave PIX</label>
+                      <label className="block text-sm font-medium text-slate-200 mb-1.5">Chave PIX</label>
                       <input
                         type="text"
                         value={userForm.pixKey}
                         onChange={e => setUserForm({ ...userForm, pixKey: e.target.value })}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="CPF, e-mail ou telefone"
                       />
                     </div>
@@ -474,12 +474,12 @@ export const Settings = () => {
 
             {formError && (
               <div className="px-6 pb-2">
-                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>
+                <p className="text-sm text-red-600 bg-red-500/[0.1] border border-red-500/[0.3] rounded-lg px-3 py-2">{formError}</p>
               </div>
             )}
 
-            <div className="flex gap-3 px-6 py-4 border-t border-slate-100 sticky bottom-0 bg-white">
-              <button onClick={() => setShowUserModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">
+            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05] sticky bottom-0 bg-[#21262d]">
+              <button onClick={() => setShowUserModal(false)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
                 Cancelar
               </button>
               <button
@@ -497,11 +497,11 @@ export const Settings = () => {
       {/* Delete user confirmation */}
       {deleteUserId && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar exclusão</h3>
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-slate-100 mb-2">Confirmar exclusão</h3>
             <p className="text-slate-500 text-sm mb-6">Deseja excluir este usuário? O acesso ao sistema será revogado imediatamente.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteUserId(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">Cancelar</button>
+              <button onClick={() => setDeleteUserId(null)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">Cancelar</button>
               <button onClick={handleDeleteUser} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold">Excluir</button>
             </div>
           </div>

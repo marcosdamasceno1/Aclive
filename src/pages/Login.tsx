@@ -61,21 +61,21 @@ export const Login = () => {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center bg-white px-8">
+      <div className="flex-1 flex items-center justify-center bg-[#0d1117] px-8">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-10">
             <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white text-xs font-black">A</span>
             </div>
-            <span className="text-slate-900 font-bold text-lg">Aclive</span>
+            <span className="text-white font-bold text-lg">Aclive</span>
           </div>
 
-          <h2 className="text-2xl font-extrabold text-slate-900 mb-1 tracking-tight">Entrar</h2>
-          <p className="text-slate-500 text-sm mb-8">Acesse o painel da sua agência.</p>
+          <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">Entrar</h2>
+          <p className="text-slate-400 text-sm mb-8">Acesse o painel da sua agência.</p>
 
           {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
+            <div className="flex items-center gap-2 bg-red-500/[0.1] border border-red-500/[0.3] text-red-400 rounded-lg px-4 py-3 mb-5 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -83,24 +83,24 @@ export const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">E-mail</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">E-mail</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50 text-slate-900"
+                className="w-full px-3 py-2.5 border border-white/[0.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="seu@email.com"
                 required
                 autoFocus
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Senha</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Senha</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50 text-slate-900"
+                className="w-full px-3 py-2.5 border border-white/[0.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="••••••••"
                 required
               />
@@ -115,8 +115,8 @@ export const Login = () => {
           </form>
 
           {/* Demo access */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Acesso de demonstração</p>
+          <div className="mt-8 pt-6 border-t border-white/[0.05]">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Acesso de demonstração</p>
             <div className="space-y-1.5">
               {[
                 { email: 'admin@agencia.com', pass: 'admin123', role: 'Administrador' },
@@ -127,13 +127,13 @@ export const Login = () => {
                   key={e}
                   type="button"
                   onClick={() => { setEmail(e); setPassword(pass); }}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all group text-left"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.04] border border-transparent hover:border-white/[0.08] transition-all group text-left"
                 >
                   <div>
-                    <p className="text-xs font-medium text-slate-700">{role}</p>
-                    <p className="text-xs text-slate-400">{e}</p>
+                    <p className="text-xs font-medium text-slate-300">{role}</p>
+                    <p className="text-xs text-slate-500">{e}</p>
                   </div>
-                  <span className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity font-medium">usar →</span>
+                  <span className="text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium">usar →</span>
                 </button>
               ))}
             </div>

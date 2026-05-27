@@ -36,16 +36,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           .eq('id', session.user.id)
           .single();
         if (profile) {
-          set({ currentUser: fromDb<User>(profile as Record<string, unknown>), loading: false, initialized: true });
-          return;
+          set({ currentUser: fromDb<User>(profile as Record<string, unknown>) });
         }
-        // session exists but no profile — sign out to reset
-        await supabase.auth.signOut();
       }
     } catch (e) {
       console.error('initAuth error:', e);
+    } finally {
+      set({ loading: false, initialized: true });
     }
-    set({ loading: false, initialized: true });
   },
 
   loadUsers: async () => {

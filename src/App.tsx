@@ -31,7 +31,12 @@ function App() {
   const { init: initFinancial } = useFinancialStore();
 
   useEffect(() => {
-    initAuth();
+    // Timeout fallback: never stay stuck loading more than 6s
+    const timeout = setTimeout(() => {
+      useAuthStore.setState({ initialized: true, loading: false });
+    }, 6000);
+
+    initAuth().finally(() => clearTimeout(timeout));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
@@ -39,7 +44,10 @@ function App() {
         useAuthStore.getState().loadUsers();
       }
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   if (!initialized) {

@@ -9,4 +9,9 @@ if (!supabaseUrl || !supabaseKey) {
 
 console.log('[supabase] URL:', supabaseUrl?.slice(0, 30));
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+});

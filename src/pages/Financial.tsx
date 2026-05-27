@@ -3,35 +3,231 @@ import { useFinancialStore } from '../store/financialStore';
 import { useProfessionalsStore } from '../store/professionalsStore';
 import { useClientsStore } from '../store/clientsStore';
 import { useAuthStore } from '../store/authStore';
-import { canManagePayments } from '../utils/permissions';
 import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters';
 import {
-  CheckCircle2, Clock, DollarSign, Search, Edit2, X, History
+  CheckCircle2, X, History, Edit2, Search,
+  TrendingUp, TrendingDown, Plus, Trash2, ArrowUpCircle, ArrowDownCircle,
+  DollarSign, Users, BarChart3,
 } from 'lucide-react';
 
-export const Financial = () => {
+// ─── Shared helpers ──────────────────────────────────────────────────────────
+
+const MONTHS = (() => {
+  const list = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - i);
+    list.push({
+      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+    });
+  }
+  return list;
+})();
+
+const INCOME_CATEGORIES = ['Pagamento de Cliente', 'Contrato', 'Projeto Pontual', 'Outros'];
+const EXPENSE_CATEGORIES = ['Ferramentas / Software', 'Infraestrutura', 'Marketing', 'Pessoal', 'Impostos', 'Outros'];
+
+// ─── Professional View (simple) ──────────────────────────────────────────────
+
+const ProfessionalView = () => {
   const { currentUser } = useAuthStore();
-  const { movements, markAsPaid, updateMovementValue, auditLog, getProfessionalBalance } = useFinancialStore();
+  const { movements } = useFinancialStore();
+  const { clients } = useClientsStore();
+
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
+
+  const myMovements = useMemo(() => {
+    if (!currentUser?.professionalId) return [];
+    return movements
+      .filter(m =>
+        m.professionalId === currentUser.professionalId &&
+        m.type === 'credit' &&
+        (m.completedAt || '').startsWith(selectedMonth)
+      )
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+  }, [movements, currentUser, selectedMonth]);
+
+  const filtered = useMemo(() =>
+    statusFilter === 'all' ? myMovements : myMovements.filter(m => m.status === statusFilter),
+    [myMovements, statusFilter]
+  );
+
+  const totals = useMemo(() => {
+    const pending = myMovements.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
+    const paid = myMovements.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
+    return { pending, paid, total: pending + paid };
+  }, [myMovements]);
+
+  if (!currentUser?.professionalId) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">Meu Financeiro</h1>
+          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Acompanhe seus ganhos</p>
+        </div>
+        <div className="bg-[#21262d] rounded-xl border border-white/[0.08] p-12 text-center">
+          <DollarSign className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+          <p className="text-slate-400 text-sm">Sua conta ainda não está vinculada a um perfil profissional.</p>
+          <p className="text-slate-500 text-xs mt-1">Fale com o administrador.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">Meu Financeiro</h1>
+          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Acompanhe seus ganhos</p>
+        </div>
+        <select
+          value={selectedMonth}
+          onChange={e => setSelectedMonth(e.target.value)}
+          className="border border-white/[0.08] rounded-lg px-3 py-2 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {MONTHS.map(m => (
+            <option key={m.value} value={m.value}>{m.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center">
+              <ArrowDownCircle className="w-4 h-4 text-orange-400" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.pending)}</p>
+          <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">A Receber</p>
+          <p className="text-xs text-slate-500 mt-0.5">{myMovements.filter(m => m.status === 'pending').length} demanda(s)</p>
+        </div>
+        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-emerald-500/[0.12] rounded-lg flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.paid)}</p>
+          <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Recebido</p>
+          <p className="text-xs text-slate-500 mt-0.5">{myMovements.filter(m => m.status === 'paid').length} pagamento(s)</p>
+        </div>
+        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-4 h-4 text-blue-400" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.total)}</p>
+          <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Total do Mês</p>
+          <p className="text-xs text-slate-500 mt-0.5">{myMovements.length} tarefa(s) concluída(s)</p>
+        </div>
+      </div>
+
+      {/* Filter */}
+      <div className="flex gap-2">
+        {(['all', 'pending', 'paid'] as const).map(s => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              statusFilter === s
+                ? 'bg-blue-600 text-white'
+                : 'bg-[#21262d] text-slate-400 hover:text-slate-200 border border-white/[0.08]'
+            }`}
+          >
+            {s === 'all' ? 'Todos' : s === 'pending' ? 'A Receber' : 'Recebido'}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-slate-900">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Demanda</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Conclusão</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/[0.05]">
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-12 text-center text-slate-500 text-sm">
+                  Nenhuma movimentação para este mês.
+                </td>
+              </tr>
+            ) : filtered.map(m => (
+              <tr key={m.id} className="hover:bg-white/[0.04] transition-colors">
+                <td className="px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-100">{m.demandTitle}</p>
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-400">{m.clientName}</td>
+                <td className="px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
+                <td className="px-4 py-3 text-right">
+                  <span className="text-sm font-bold text-slate-100">{formatCurrency(m.value)}</span>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {m.status === 'paid' ? (
+                    <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/[0.1] text-emerald-400 inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Pago
+                    </span>
+                  ) : (
+                    <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-orange-500/[0.1] text-orange-400">
+                      Aguardando
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ─── Admin View (complete) ────────────────────────────────────────────────────
+
+const emptyEntry = {
+  type: 'income' as 'income' | 'expense',
+  category: '',
+  description: '',
+  value: '',
+  date: new Date().toISOString().split('T')[0],
+  notes: '',
+};
+
+const AdminView = () => {
+  const { currentUser } = useAuthStore();
+  const { movements, markAsPaid, updateMovementValue, deleteMovement, addManualEntry, auditLog } = useFinancialStore();
   const { professionals } = useProfessionalsStore();
   const { clients } = useClientsStore();
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'professionals' | 'demands' | 'entries'>('overview');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
   const [professionalFilter, setProfessionalFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [confirmPay, setConfirmPay] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<{ id: string; value: string } | null>(null);
   const [showAuditLog, setShowAuditLog] = useState(false);
-  const [activeTab, setActiveTab] = useState<'movements' | 'balances'>('movements');
+  const [showEntryModal, setShowEntryModal] = useState(false);
+  const [entryForm, setEntryForm] = useState(emptyEntry);
+  const [submitting, setSubmitting] = useState(false);
 
-  const canPay = currentUser ? canManagePayments(currentUser.role) : false;
-
-  const filteredMovements = useMemo(() => {
+  // Demand movements (credits from professionals)
+  const demandMovements = useMemo(() => {
     let list = movements.filter(m => m.type === 'credit');
-
-    if (currentUser?.role === 'professional' && currentUser.professionalId) {
-      list = list.filter(m => m.professionalId === currentUser.professionalId);
-    }
-
     if (statusFilter !== 'all') list = list.filter(m => m.status === statusFilter);
     if (professionalFilter !== 'all') list = list.filter(m => m.professionalId === professionalFilter);
     if (search) {
@@ -41,23 +237,41 @@ export const Financial = () => {
         m.clientName.toLowerCase().includes(s)
       );
     }
-
     return list.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
-  }, [movements, statusFilter, professionalFilter, search, currentUser]);
+  }, [movements, statusFilter, professionalFilter, search]);
 
-  const totals = useMemo(() => {
-    const pending = filteredMovements.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
-    const paid = filteredMovements.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
-    return { pending, paid, total: pending + paid, count: filteredMovements.length };
-  }, [filteredMovements]);
+  // Manual entries
+  const manualEntries = useMemo(() =>
+    movements
+      .filter(m => m.type === 'income' || m.type === 'expense')
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()),
+    [movements]
+  );
 
+  // Professional balances
   const professionalsWithBalance = useMemo(() => {
+    const allCredits = movements.filter(m => m.type === 'credit');
     return professionals
       .filter(p => p.status === 'active')
-      .map(p => ({ ...p, balance: getProfessionalBalance(p.id) }))
+      .map(p => {
+        const mine = allCredits.filter(m => m.professionalId === p.id);
+        const pending = mine.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
+        const paid = mine.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
+        return { ...p, balance: { pending, paid, total: pending + paid } };
+      })
       .filter(p => p.balance.total > 0)
       .sort((a, b) => b.balance.pending - a.balance.pending);
-  }, [professionals, getProfessionalBalance]);
+  }, [professionals, movements]);
+
+  // Summary totals
+  const summary = useMemo(() => {
+    const credits = movements.filter(m => m.type === 'credit');
+    const pendingPro = credits.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
+    const paidPro = credits.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
+    const income = manualEntries.filter(m => m.type === 'income').reduce((s, m) => s + m.value, 0);
+    const expense = manualEntries.filter(m => m.type === 'expense').reduce((s, m) => s + m.value, 0);
+    return { pendingPro, paidPro, income, expense, balance: income - expense - pendingPro };
+  }, [movements, manualEntries]);
 
   const handleMarkPaid = (movementId: string) => {
     if (!currentUser) return;
@@ -73,87 +287,153 @@ export const Financial = () => {
     setEditingValue(null);
   };
 
+  const handleAddEntry = () => {
+    if (!entryForm.description.trim() || !entryForm.value || !currentUser) return;
+    const val = parseFloat(entryForm.value);
+    if (isNaN(val) || val <= 0) return;
+    setSubmitting(true);
+    addManualEntry({
+      type: entryForm.type,
+      category: entryForm.category || 'Outros',
+      description: entryForm.description,
+      value: val,
+      date: entryForm.date,
+      createdBy: currentUser.name,
+    });
+    setEntryForm(emptyEntry);
+    setShowEntryModal(false);
+    setSubmitting(false);
+  };
+
   const recentAudit = [...auditLog]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 20);
 
-  const getAuditActionLabel = (action: string) => {
-    const labels: Record<string, string> = {
-      payment_marked: 'Pagamento marcado como realizado',
-      value_updated: 'Valor atualizado manualmente',
-    };
-    return labels[action] || action;
-  };
+  const TABS = [
+    { key: 'overview', label: 'Visão Geral', icon: BarChart3 },
+    { key: 'professionals', label: 'Profissionais', icon: Users },
+    { key: 'demands', label: 'Demandas', icon: DollarSign },
+    { key: 'entries', label: 'Lançamentos', icon: TrendingUp },
+  ] as const;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">Financeiro</h1>
-          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Controle de pagamentos e saldos</p>
+          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Gestão financeira completa</p>
         </div>
-        {canPay && (
-          <button
-            onClick={() => setShowAuditLog(true)}
-            className="flex items-center gap-2 border border-white/[0.08] text-slate-500 hover:bg-white/[0.04] px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <History className="w-4 h-4" />
-            Log de alterações
-          </button>
-        )}
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
-          <div className="inline-block w-1 h-6 rounded-full mb-3 bg-orange-500" />
-          <p className="text-3xl font-extrabold text-white tracking-tight leading-none">{formatCurrency(totals.pending)}</p>
-          <p className="text-xs font-medium text-slate-500 mt-2 uppercase tracking-wide">Pendente</p>
-          <p className="text-xs text-slate-400 mt-0.5">{filteredMovements.filter(m => m.status === 'pending').length} pagamento(s)</p>
-        </div>
-        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
-          <div className="inline-block w-1 h-6 rounded-full mb-3 bg-emerald-500/[0.1]0" />
-          <p className="text-3xl font-extrabold text-white tracking-tight leading-none">{formatCurrency(totals.paid)}</p>
-          <p className="text-xs font-medium text-slate-500 mt-2 uppercase tracking-wide">Pago</p>
-          <p className="text-xs text-slate-400 mt-0.5">{filteredMovements.filter(m => m.status === 'paid').length} pagamento(s)</p>
-        </div>
-        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
-          <div className="inline-block w-1 h-6 rounded-full mb-3 bg-blue-600" />
-          <p className="text-3xl font-extrabold text-white tracking-tight leading-none">{formatCurrency(totals.total)}</p>
-          <p className="text-xs font-medium text-slate-500 mt-2 uppercase tracking-wide">Total</p>
-          <p className="text-xs text-slate-400 mt-0.5">{totals.count} registro(s)</p>
-        </div>
+        <button
+          onClick={() => setShowAuditLog(true)}
+          className="flex items-center gap-2 border border-white/[0.08] text-slate-400 hover:bg-white/[0.04] px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          <History className="w-4 h-4" />
+          Histórico
+        </button>
       </div>
 
       {/* Tabs */}
-      {canPay && (
-        <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit">
+        {TABS.map(({ key, label, icon: Icon }) => (
           <button
-            onClick={() => setActiveTab('movements')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'movements' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === key ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
             }`}
           >
-            Movimentações
+            <Icon className="w-4 h-4" />
+            {label}
           </button>
-          <button
-            onClick={() => setActiveTab('balances')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'balances' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
-            }`}
-          >
-            Saldo por Profissional
-          </button>
+        ))}
+      </div>
+
+      {/* ── Overview Tab ── */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+              <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-3">
+                <DollarSign className="w-4 h-4 text-orange-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.pendingPro)}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">A Pagar (Profissionais)</p>
+            </div>
+            <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+              <div className="w-8 h-8 bg-emerald-500/[0.12] rounded-lg flex items-center justify-center mb-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.paidPro)}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Pago (Profissionais)</p>
+            </div>
+            <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+              <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center mb-3">
+                <TrendingUp className="w-4 h-4 text-blue-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.income)}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Entradas</p>
+            </div>
+            <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+              <div className="w-8 h-8 bg-red-500/[0.12] rounded-lg flex items-center justify-center mb-3">
+                <TrendingDown className="w-4 h-4 text-red-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.expense)}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Saídas</p>
+            </div>
+          </div>
+
+          {/* Saldo */}
+          <div className={`rounded-xl p-5 border ${summary.balance >= 0 ? 'bg-emerald-500/[0.06] border-emerald-500/[0.2]' : 'bg-red-500/[0.06] border-red-500/[0.2]'}`}>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Saldo Operacional (Entradas − Saídas − A Pagar)</p>
+            <p className={`text-3xl font-extrabold tracking-tight ${summary.balance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {formatCurrency(summary.balance)}
+            </p>
+          </div>
+
+          {/* Recent demand movements */}
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/[0.05]">
+              <h3 className="text-sm font-bold text-slate-100">Últimas movimentações de demandas</h3>
+            </div>
+            {movements.filter(m => m.type === 'credit').slice(0, 5).length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">Nenhuma movimentação registrada</div>
+            ) : (
+              <div className="divide-y divide-white/[0.05]">
+                {movements.filter(m => m.type === 'credit')
+                  .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+                  .slice(0, 5)
+                  .map(m => {
+                    const prof = professionals.find(p => p.id === m.professionalId);
+                    return (
+                      <div key={m.id} className="px-6 py-3 flex items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-100 truncate">{m.demandTitle}</p>
+                          <p className="text-xs text-slate-500">{prof?.name || '—'} · {m.clientName}</p>
+                        </div>
+                        <span className="text-sm font-bold text-slate-100 flex-shrink-0">{formatCurrency(m.value)}</span>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${
+                          m.status === 'paid' ? 'bg-emerald-500/[0.1] text-emerald-400' : 'bg-orange-500/[0.1] text-orange-400'
+                        }`}>
+                          {m.status === 'paid' ? 'Pago' : 'Pendente'}
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {(activeTab === 'balances' && canPay) && (
+      {/* ── Professionals Tab ── */}
+      {activeTab === 'professionals' && (
         <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
           <div className="px-6 py-4 border-b border-white/[0.05]">
             <h3 className="text-base font-bold text-slate-100">Saldo por Profissional</h3>
           </div>
           {professionalsWithBalance.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">Nenhum profissional com saldo</div>
+            <div className="p-12 text-center text-slate-500 text-sm">Nenhum profissional com saldo registrado</div>
           ) : (
             <div className="divide-y divide-white/[0.05]">
               {professionalsWithBalance.map(pro => (
@@ -163,19 +443,19 @@ export const Financial = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-100">{pro.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Pix: {pro.pixKey || 'Não cadastrado'}</p>
+                    <p className="text-xs text-slate-500">Pix: {pro.pixKey || 'Não cadastrado'}</p>
                   </div>
-                  <div className="flex items-center gap-6 text-right flex-shrink-0">
+                  <div className="flex items-center gap-6 text-right">
                     <div>
-                      <p className="text-xs text-slate-400">Pendente</p>
-                      <p className="text-sm font-bold text-orange-600">{formatCurrency(pro.balance.pending)}</p>
+                      <p className="text-xs text-slate-500">Pendente</p>
+                      <p className="text-sm font-bold text-orange-400">{formatCurrency(pro.balance.pending)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Pago</p>
-                      <p className="text-sm font-bold text-green-600">{formatCurrency(pro.balance.paid)}</p>
+                      <p className="text-xs text-slate-500">Pago</p>
+                      <p className="text-sm font-bold text-emerald-400">{formatCurrency(pro.balance.paid)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Total</p>
+                      <p className="text-xs text-slate-500">Total</p>
                       <p className="text-sm font-bold text-slate-100">{formatCurrency(pro.balance.total)}</p>
                     </div>
                   </div>
@@ -186,9 +466,9 @@ export const Financial = () => {
         </div>
       )}
 
-      {(activeTab === 'movements' || !canPay) && (
-        <>
-          {/* Filters */}
+      {/* ── Demands Tab ── */}
+      {activeTab === 'demands' && (
+        <div className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-52">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -197,53 +477,50 @@ export const Financial = () => {
                 placeholder="Buscar por demanda ou cliente..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-white/[0.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#21262d]"
+                className="w-full pl-9 pr-4 py-2.5 border border-white/[0.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">Todos</option>
+              <option value="all">Todos os status</option>
               <option value="pending">Pendentes</option>
               <option value="paid">Pagos</option>
             </select>
-            {canPay && (
-              <select
-                value={professionalFilter}
-                onChange={e => setProfessionalFilter(e.target.value)}
-                className="border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Todos os profissionais</option>
-                {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            )}
+            <select
+              value={professionalFilter}
+              onChange={e => setProfessionalFilter(e.target.value)}
+              className="border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Todos os profissionais</option>
+              {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </div>
 
-          {/* Movements table */}
           <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-900">
                   <tr>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Demanda</th>
-                    {canPay && <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Profissional</th>}
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Profissional</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Conclusão</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
                     <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
-                    {canPay && <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>}
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.05]">
-                  {filteredMovements.length === 0 ? (
+                  {demandMovements.length === 0 ? (
                     <tr>
-                      <td colSpan={canPay ? 7 : 5} className="px-4 py-12 text-center text-slate-400 text-sm">
+                      <td colSpan={7} className="px-4 py-12 text-center text-slate-500 text-sm">
                         Nenhuma movimentação encontrada.
                       </td>
                     </tr>
-                  ) : filteredMovements.map(m => {
+                  ) : demandMovements.map(m => {
                     const prof = professionals.find(p => p.id === m.professionalId);
                     const client = clients.find(c => c.id === m.clientId);
                     return (
@@ -251,18 +528,16 @@ export const Financial = () => {
                         <td className="px-4 py-3">
                           <p className="text-sm font-semibold text-slate-100">{m.demandTitle}</p>
                         </td>
-                        {canPay && (
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                {(prof?.name || '?').charAt(0)}
-                              </div>
-                              <span className="text-sm text-slate-500">{prof?.name || '—'}</span>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                              {(prof?.name || '?').charAt(0)}
                             </div>
-                          </td>
-                        )}
-                        <td className="px-4 py-3 text-sm text-slate-500">{client?.companyName || m.clientName}</td>
-                        <td className="px-4 py-3 text-sm text-slate-500">{formatDate(m.completedAt)}</td>
+                            <span className="text-sm text-slate-400">{prof?.name || '—'}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-400">{client?.companyName || m.clientName}</td>
+                        <td className="px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
                         <td className="px-4 py-3 text-right">
                           {editingValue?.id === m.id ? (
                             <div className="flex items-center justify-end gap-2">
@@ -274,18 +549,14 @@ export const Financial = () => {
                                 autoFocus
                                 onKeyDown={e => { if (e.key === 'Enter') handleUpdateValue(); if (e.key === 'Escape') setEditingValue(null); }}
                               />
-                              <button onClick={handleUpdateValue} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
-                              <button onClick={() => setEditingValue(null)} className="text-slate-400 hover:text-slate-500"><X className="w-4 h-4" /></button>
+                              <button onClick={handleUpdateValue} className="text-emerald-400 hover:text-emerald-300"><CheckCircle2 className="w-4 h-4" /></button>
+                              <button onClick={() => setEditingValue(null)} className="text-slate-400 hover:text-slate-300"><X className="w-4 h-4" /></button>
                             </div>
                           ) : (
                             <div className="flex items-center justify-end gap-2">
                               <span className="text-sm font-bold text-slate-100">{formatCurrency(m.value)}</span>
-                              {canPay && m.status === 'pending' && (
-                                <button
-                                  onClick={() => setEditingValue({ id: m.id, value: String(m.value) })}
-                                  className="text-slate-500 hover:text-slate-500 transition-colors"
-                                  title="Corrigir valor"
-                                >
+                              {m.status === 'pending' && (
+                                <button onClick={() => setEditingValue({ id: m.id, value: String(m.value) })} className="text-slate-500 hover:text-slate-300 transition-colors" title="Corrigir valor">
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                               )}
@@ -294,28 +565,26 @@ export const Financial = () => {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                            m.status === 'paid' ? 'bg-green-500/[0.1] text-green-400' : 'bg-orange-500/[0.1] text-orange-400'
+                            m.status === 'paid' ? 'bg-emerald-500/[0.1] text-emerald-400' : 'bg-orange-500/[0.1] text-orange-400'
                           }`}>
                             {m.status === 'paid' ? 'Pago' : 'Pendente'}
                           </span>
                         </td>
-                        {canPay && (
-                          <td className="px-4 py-3 text-center">
-                            {m.status === 'pending' ? (
-                              <button
-                                onClick={() => setConfirmPay(m.id)}
-                                className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors"
-                              >
-                                Marcar Pago
-                              </button>
-                            ) : (
-                              <div className="text-xs text-slate-400">
-                                <p>Pago em</p>
-                                <p className="font-medium">{m.paidAt ? formatDate(m.paidAt) : '—'}</p>
-                              </div>
-                            )}
-                          </td>
-                        )}
+                        <td className="px-4 py-3 text-center">
+                          {m.status === 'pending' ? (
+                            <button
+                              onClick={() => setConfirmPay(m.id)}
+                              className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors"
+                            >
+                              Marcar Pago
+                            </button>
+                          ) : (
+                            <div className="text-xs text-slate-500">
+                              <p>Pago em</p>
+                              <p className="font-medium">{m.paidAt ? formatDate(m.paidAt) : '—'}</p>
+                            </div>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -323,24 +592,119 @@ export const Financial = () => {
               </table>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      {/* Confirm pay dialog */}
+      {/* ── Entries Tab ── */}
+      {activeTab === 'entries' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-400">Registre entradas (receitas) e saídas (despesas) manualmente.</p>
+            <button
+              onClick={() => { setEntryForm(emptyEntry); setShowEntryModal(true); }}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Lançamento
+            </button>
+          </div>
+
+          {/* Entries summary */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08] flex items-center gap-4">
+              <div className="w-10 h-10 bg-blue-500/[0.12] rounded-xl flex items-center justify-center flex-shrink-0">
+                <ArrowUpCircle className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">Total Entradas</p>
+                <p className="text-lg font-bold text-blue-400">{formatCurrency(summary.income)}</p>
+              </div>
+            </div>
+            <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08] flex items-center gap-4">
+              <div className="w-10 h-10 bg-red-500/[0.12] rounded-xl flex items-center justify-center flex-shrink-0">
+                <ArrowDownCircle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">Total Saídas</p>
+                <p className="text-lg font-bold text-red-400">{formatCurrency(summary.expense)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-900">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Tipo</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Descrição</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Categoria</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Data</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.05]">
+                {manualEntries.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-slate-500 text-sm">
+                      Nenhum lançamento registrado. Clique em "Novo Lançamento" para começar.
+                    </td>
+                  </tr>
+                ) : manualEntries.map(m => (
+                  <tr key={m.id} className="hover:bg-white/[0.04] transition-colors">
+                    <td className="px-4 py-3">
+                      {m.type === 'income' ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold bg-blue-500/[0.1] text-blue-400">
+                          <ArrowUpCircle className="w-3.5 h-3.5" /> Entrada
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold bg-red-500/[0.1] text-red-400">
+                          <ArrowDownCircle className="w-3.5 h-3.5" /> Saída
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-slate-100">{m.demandTitle}</p>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-400">{m.clientName}</td>
+                    <td className="px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={`text-sm font-bold ${m.type === 'income' ? 'text-blue-400' : 'text-red-400'}`}>
+                        {m.type === 'income' ? '+' : '-'}{formatCurrency(m.value)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => deleteMovement(m.id)}
+                        className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/[0.1] rounded-lg transition-colors"
+                        title="Excluir lançamento"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirm Pay Modal ── */}
       {confirmPay && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
           <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-sm p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-green-500/[0.12] rounded-xl flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
               </div>
               <h3 className="text-lg font-bold text-slate-100">Confirmar pagamento</h3>
             </div>
-            <p className="text-slate-500 text-sm mb-6">
+            <p className="text-slate-400 text-sm mb-6">
               Confirmar que este pagamento foi realizado? Esta ação ficará registrada no histórico.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmPay(null)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+              <button onClick={() => setConfirmPay(null)} className="flex-1 border border-white/[0.08] text-slate-400 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
                 Cancelar
               </button>
               <button onClick={() => handleMarkPaid(confirmPay)} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-bold">
@@ -351,32 +715,137 @@ export const Financial = () => {
         </div>
       )}
 
-      {/* Audit log modal */}
+      {/* ── New Entry Modal ── */}
+      {showEntryModal && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
+              <h2 className="text-lg font-bold text-slate-100">Novo Lançamento</h2>
+              <button onClick={() => setShowEntryModal(false)} className="text-slate-400 hover:text-slate-300 p-1 rounded-lg hover:bg-white/[0.06]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Type selector */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Tipo *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEntryForm(f => ({ ...f, type: 'income', category: '' }))}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+                      entryForm.type === 'income'
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : 'border-white/[0.08] text-slate-400 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <ArrowUpCircle className="w-4 h-4" /> Entrada
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEntryForm(f => ({ ...f, type: 'expense', category: '' }))}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+                      entryForm.type === 'expense'
+                        ? 'bg-red-600 border-red-600 text-white'
+                        : 'border-white/[0.08] text-slate-400 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <ArrowDownCircle className="w-4 h-4" /> Saída
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Categoria *</label>
+                <select
+                  value={entryForm.category}
+                  onChange={e => setEntryForm(f => ({ ...f, category: e.target.value }))}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecione...</option>
+                  {(entryForm.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Descrição *</label>
+                <input
+                  type="text"
+                  value={entryForm.description}
+                  onChange={e => setEntryForm(f => ({ ...f, description: e.target.value }))}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Descreva o lançamento..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Valor (R$) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={entryForm.value}
+                    onChange={e => setEntryForm(f => ({ ...f, value: e.target.value }))}
+                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0,00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Data *</label>
+                  <input
+                    type="date"
+                    value={entryForm.date}
+                    onChange={e => setEntryForm(f => ({ ...f, date: e.target.value }))}
+                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05]">
+              <button onClick={() => setShowEntryModal(false)} className="flex-1 border border-white/[0.08] text-slate-400 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddEntry}
+                disabled={submitting || !entryForm.description.trim() || !entryForm.value || !entryForm.category}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:text-blue-500 text-white py-2.5 rounded-lg text-sm font-semibold"
+              >
+                {submitting ? 'Salvando...' : 'Salvar Lançamento'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Audit Log Modal ── */}
       {showAuditLog && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
           <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-              <h2 className="text-lg font-bold text-slate-100">Log de Alterações</h2>
-              <button onClick={() => setShowAuditLog(false)} className="text-slate-400 hover:text-slate-500 p-1 rounded-lg hover:bg-white/[0.06]">
+              <h2 className="text-lg font-bold text-slate-100">Histórico de Alterações</h2>
+              <button onClick={() => setShowAuditLog(false)} className="text-slate-400 hover:text-slate-300 p-1 rounded-lg hover:bg-white/[0.06]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="overflow-y-auto flex-1">
               {recentAudit.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-sm">Nenhuma alteração registrada</div>
+                <div className="p-8 text-center text-slate-500 text-sm">Nenhuma alteração registrada</div>
               ) : (
                 <div className="divide-y divide-white/[0.05]">
                   {recentAudit.map(log => (
                     <div key={log.id} className="px-6 py-3">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-semibold text-slate-100">{getAuditActionLabel(log.action)}</p>
-                        <span className="text-xs text-slate-400">{formatDateTime(log.createdAt)}</span>
-                      </div>
-                      <p className="text-xs text-slate-500">Por: <span className="font-medium">{log.userName}</span></p>
-                      {log.oldValue && log.newValue && (
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {log.oldValue} → {log.newValue}
+                        <p className="text-sm font-semibold text-slate-100">
+                          {log.action === 'payment_marked' ? 'Pagamento confirmado' : 'Valor atualizado'}
                         </p>
+                        <span className="text-xs text-slate-500">{formatDateTime(log.createdAt)}</span>
+                      </div>
+                      <p className="text-xs text-slate-500">Por: <span className="font-medium text-slate-400">{log.userName}</span></p>
+                      {log.oldValue && log.newValue && (
+                        <p className="text-xs text-slate-500 mt-0.5">{log.oldValue} → {log.newValue}</p>
                       )}
                     </div>
                   ))}
@@ -388,4 +857,12 @@ export const Financial = () => {
       )}
     </div>
   );
+};
+
+// ─── Main export ─────────────────────────────────────────────────────────────
+
+export const Financial = () => {
+  const { currentUser } = useAuthStore();
+  if (currentUser?.role === 'professional') return <ProfessionalView />;
+  return <AdminView />;
 };

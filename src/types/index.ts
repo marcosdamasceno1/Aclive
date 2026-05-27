@@ -107,12 +107,13 @@ export interface FinancialMovement {
   clientId: string;
   clientName: string;
   value: number;
-  type: 'credit' | 'debit' | 'payment';
+  type: 'credit' | 'debit' | 'income' | 'expense';
   status: 'pending' | 'paid';
   completedAt: string;
   paidAt?: string;
   paidBy?: string;
   notes?: string;
+  category?: string;
 }
 
 export interface AuditLog {

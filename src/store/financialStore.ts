@@ -4,6 +4,15 @@ import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { FinancialMovement, AuditLog } from '../types';
 
+interface ManualEntryInput {
+  type: 'income' | 'expense';
+  category: string;
+  description: string;
+  value: number;
+  date: string;
+  createdBy: string;
+}
+
 interface FinancialState {
   movements: FinancialMovement[];
   auditLog: AuditLog[];
@@ -12,6 +21,8 @@ interface FinancialState {
   registerMovement: (m: Omit<FinancialMovement, 'id'>) => void;
   markAsPaid: (movementId: string, paidBy: string, paidByName: string) => void;
   updateMovementValue: (movementId: string, newValue: number, updatedBy: string, updatedByName: string) => void;
+  addManualEntry: (data: ManualEntryInput) => void;
+  deleteMovement: (id: string) => void;
   getProfessionalBalance: (professionalId: string) => { pending: number; paid: number; total: number };
   getMovementsByProfessional: (professionalId: string) => FinancialMovement[];
   addAuditLog: (log: Omit<AuditLog, 'id' | 'createdAt'>) => void;
@@ -88,6 +99,42 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       userId: updatedBy,
       userName: updatedByName,
     });
+  },
+
+  addManualEntry: (data) => {
+    const newEntry: FinancialMovement = {
+      id: uuidv4(),
+      professionalId: '',
+      demandId: '',
+      demandTitle: data.description,
+      clientId: '',
+      clientName: data.category,
+      value: data.value,
+      type: data.type,
+      status: 'paid',
+      completedAt: data.date,
+      paidAt: data.date,
+      paidBy: data.createdBy,
+      category: data.category,
+    };
+    set(state => ({ movements: [...state.movements, newEntry] }));
+    supabase.from('financial_movements').insert({
+      id: newEntry.id,
+      demand_title: data.description,
+      client_name: data.category,
+      category: data.category,
+      value: data.value,
+      type: data.type,
+      status: 'paid',
+      completed_at: data.date,
+      paid_at: data.date,
+      paid_by: data.createdBy,
+    } as Record<string, unknown>);
+  },
+
+  deleteMovement: (id) => {
+    set(state => ({ movements: state.movements.filter(m => m.id !== id) }));
+    supabase.from('financial_movements').delete().eq('id', id);
   },
 
   getProfessionalBalance: (professionalId) => {

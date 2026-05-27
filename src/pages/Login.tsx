@@ -15,11 +15,19 @@ export const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const ok = await login(email, password);
-    if (ok) {
-      navigate('/dashboard');
-    } else {
-      setError('E-mail ou senha incorretos.');
+    try {
+      console.log('[login] iniciando...');
+      const ok = await login(email, password);
+      console.log('[login] resultado:', ok);
+      if (ok) {
+        navigate('/dashboard');
+      } else {
+        setError('E-mail ou senha incorretos.');
+      }
+    } catch (err) {
+      console.error('[login] erro:', err);
+      setError('Erro de conexão. Tente novamente.');
+    } finally {
       setLoading(false);
     }
   };

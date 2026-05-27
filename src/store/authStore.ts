@@ -24,6 +24,7 @@ const metaToUser = (u: { id: string; email?: string; user_metadata?: Record<stri
     email: u.email || '',
     role: ((meta.role as string) || 'admin') as UserRole,
     permissions: meta.permissions !== undefined ? (meta.permissions as string[]) : undefined,
+    professionalId: meta.professionalId as string | undefined,
     active: true,
     createdAt: u.created_at || new Date().toISOString(),
   };
@@ -114,6 +115,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
     if (updates.name !== undefined) meta.name = updates.name;
     if (updates.role !== undefined) meta.role = updates.role;
     if (updates.permissions !== undefined) meta.permissions = updates.permissions;
+    if (updates.professionalId !== undefined) meta.professionalId = updates.professionalId;
 
     await supabase.auth.admin.updateUserById(id, {
       ...(newPassword ? { password: newPassword } : {}),

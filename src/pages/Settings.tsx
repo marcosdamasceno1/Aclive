@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { useProfessionalsStore } from '../store/professionalsStore';
 import { PAGE_PERMISSIONS } from '../utils/permissions';
-import type { UserRole } from '../types';
-import { Plus, Trash2, X, Shield, Users, Info, Lock } from 'lucide-react';
+import { getProfessionLabel } from '../utils/formatters';
+import type { UserRole, ProfessionType } from '../types';
+import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -18,16 +20,26 @@ const ROLE_COLORS: Record<UserRole, string> = {
   financial: 'bg-orange-100 text-orange-700',
 };
 
+const PROFESSIONS: ProfessionType[] = [
+  'editor_video', 'designer', 'social_media', 'traffic_manager',
+  'copywriter', 'account_manager', 'financial', 'manager', 'other',
+];
+
 const emptyUserForm = {
   name: '',
   email: '',
   role: 'professional' as UserRole,
   password: '',
   permissions: [] as string[],
+  createProfessional: true,
+  profession: 'designer' as ProfessionType,
+  phone: '',
+  pixKey: '',
 };
 
 export const Settings = () => {
-  const { users, currentUser, addUser, deleteUser } = useAuthStore();
+  const { users, currentUser, addUser, updateUser, deleteUser } = useAuthStore();
+  const { addProfessional } = useProfessionalsStore();
   const [showUserModal, setShowUserModal] = useState(false);
   const [userForm, setUserForm] = useState(emptyUserForm);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
@@ -46,12 +58,21 @@ export const Settings = () => {
     }));
   };
 
+  const handleRoleChange = (role: UserRole) => {
+    setUserForm(f => ({
+      ...f,
+      role,
+      permissions: [],
+      createProfessional: role === 'professional',
+    }));
+  };
+
   const handleCreateUser = async () => {
     if (!userForm.name.trim() || !userForm.email.trim() || !userForm.password.trim()) return;
     setSubmitting(true);
     setFormError('');
     try {
-      await addUser(
+      const newUser = await addUser(
         {
           name: userForm.name,
           email: userForm.email,
@@ -60,6 +81,21 @@ export const Settings = () => {
         },
         userForm.password
       );
+
+      if (userForm.createProfessional) {
+        const newPro = addProfessional({
+          name: userForm.name,
+          email: userForm.email,
+          profession: userForm.profession,
+          phone: userForm.phone,
+          pixKey: userForm.pixKey,
+          status: 'active',
+          defaultValues: {},
+          userId: newUser.id,
+        });
+        await updateUser(newUser.id, { professionalId: newPro.id });
+      }
+
       setUserForm(emptyUserForm);
       setShowUserModal(false);
     } catch (err: unknown) {
@@ -154,12 +190,20 @@ export const Settings = () => {
                         <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {user.name.charAt(0)}
                         </div>
-                        <span className="text-sm font-semibold text-slate-800">
-                          {user.name}
-                          {user.id === currentUser?.id && (
-                            <span className="ml-2 text-xs text-blue-600 font-normal">(você)</span>
+                        <div>
+                          <span className="text-sm font-semibold text-slate-800">
+                            {user.name}
+                            {user.id === currentUser?.id && (
+                              <span className="ml-2 text-xs text-blue-600 font-normal">(você)</span>
+                            )}
+                          </span>
+                          {user.professionalId && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Briefcase className="w-3 h-3 text-slate-400" />
+                              <span className="text-xs text-slate-400">Profissional vinculado</span>
+                            </div>
                           )}
-                        </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">{user.email}</td>
@@ -299,6 +343,7 @@ export const Settings = () => {
               </button>
             </div>
             <div className="p-6 space-y-4">
+              {/* Basic info */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Nome completo *</label>
                 <input
@@ -324,7 +369,7 @@ export const Settings = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Função *</label>
                 <select
                   value={userForm.role}
-                  onChange={e => setUserForm({ ...userForm, role: e.target.value as UserRole, permissions: [] })}
+                  onChange={e => handleRoleChange(e.target.value as UserRole)}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
@@ -372,12 +417,67 @@ export const Settings = () => {
                   </div>
                 )}
               </div>
+
+              {/* Professional profile */}
+              <div className="border-t border-slate-100 pt-4">
+                <label className="flex items-center gap-2.5 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={userForm.createProfessional}
+                    onChange={e => setUserForm({ ...userForm, createProfessional: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <Briefcase className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm font-medium text-slate-700">Criar perfil de profissional vinculado</span>
+                  </div>
+                </label>
+
+                {userForm.createProfessional && (
+                  <div className="space-y-3 pl-6 border-l-2 border-slate-100">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Profissão *</label>
+                      <select
+                        value={userForm.profession}
+                        onChange={e => setUserForm({ ...userForm, profession: e.target.value as ProfessionType })}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {PROFESSIONS.map(p => (
+                          <option key={p} value={p}>{getProfessionLabel(p)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Telefone</label>
+                      <input
+                        type="text"
+                        value={userForm.phone}
+                        onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="(11) 99999-9999"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Chave PIX</label>
+                      <input
+                        type="text"
+                        value={userForm.pixKey}
+                        onChange={e => setUserForm({ ...userForm, pixKey: e.target.value })}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="CPF, e-mail ou telefone"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
             {formError && (
               <div className="px-6 pb-2">
                 <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>
               </div>
             )}
+
             <div className="flex gap-3 px-6 py-4 border-t border-slate-100 sticky bottom-0 bg-white">
               <button onClick={() => setShowUserModal(false)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-50">
                 Cancelar

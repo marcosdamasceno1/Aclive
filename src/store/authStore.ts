@@ -54,19 +54,33 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   login: async (email, password) => {
+    const timeout = <T>(ms: number): Promise<T> =>
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout ${ms}ms`)), ms));
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      console.log('[login] chamando signInWithPassword...');
+      const { data, error } = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        timeout<never>(10000),
+      ]);
+      console.log('[login] auth result:', { userId: data?.user?.id, error: error?.message });
       if (error || !data.user) return false;
-      const { data: rows } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id);
-      const profile = rows?.[0];
-      if (!profile) return false;
-      set({ currentUser: fromDb<User>(profile as Record<string, unknown>) });
+
+      console.log('[login] buscando perfil...');
+      const { data: rows, error: profileError } = await Promise.race([
+        supabase.from('profiles').select('*').eq('id', data.user.id),
+        timeout<never>(8000),
+      ]);
+      console.log('[login] perfil result:', { rows, profileError });
+      const profile = (rows as Record<string, unknown>[] | null)?.[0];
+      if (!profile) {
+        console.warn('[login] perfil não encontrado para id:', data.user.id);
+        return false;
+      }
+      set({ currentUser: fromDb<User>(profile) });
       return true;
     } catch (e) {
-      console.error('login error:', e);
+      console.error('[login] erro:', e);
       return false;
     }
   },

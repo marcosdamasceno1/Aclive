@@ -27,17 +27,23 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   initialized: false,
 
   initAuth: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-      if (profile) {
-        set({ currentUser: fromDb<User>(profile as Record<string, unknown>), loading: false, initialized: true });
-        return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        if (profile) {
+          set({ currentUser: fromDb<User>(profile as Record<string, unknown>), loading: false, initialized: true });
+          return;
+        }
+        // session exists but no profile — sign out to reset
+        await supabase.auth.signOut();
       }
+    } catch (e) {
+      console.error('initAuth error:', e);
     }
     set({ loading: false, initialized: true });
   },

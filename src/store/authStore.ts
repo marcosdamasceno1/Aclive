@@ -30,11 +30,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data: profile } = await supabase
+        const { data: rows } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', session.user.id)
-          .single();
+          .eq('id', session.user.id);
+        const profile = rows?.[0];
         if (profile) {
           set({ currentUser: fromDb<User>(profile as Record<string, unknown>) });
         }
@@ -54,16 +54,21 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   login: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) return false;
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-    if (!profile) return false;
-    set({ currentUser: fromDb<User>(profile as Record<string, unknown>) });
-    return true;
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.user) return false;
+      const { data: rows } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id);
+      const profile = rows?.[0];
+      if (!profile) return false;
+      set({ currentUser: fromDb<User>(profile as Record<string, unknown>) });
+      return true;
+    } catch (e) {
+      console.error('login error:', e);
+      return false;
+    }
   },
 
   logout: async () => {

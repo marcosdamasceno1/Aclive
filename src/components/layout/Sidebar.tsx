@@ -4,7 +4,8 @@ import {
   Kanban, DollarSign, BarChart3, Settings, LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { canManageClients, canManageProfessionals, canViewFinancial } from '../../utils/permissions';
+import { hasPageAccess } from '../../utils/permissions';
+import type { PageKey } from '../../utils/permissions';
 
 const getRoleLabel = (role: string) => {
   const labels: Record<string, string> = {
@@ -30,26 +31,28 @@ interface NavItemDef {
   to: string;
   icon: React.ElementType;
   label: string;
-  show: boolean;
+  pageKey: string;
 }
 
 export const Sidebar = () => {
   const { currentUser, logout } = useAuthStore();
   const navigate = useNavigate();
 
+  const access = (key: string) => currentUser ? hasPageAccess(currentUser, key as PageKey) : false;
+
   const generalItems: NavItemDef[] = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', show: true },
-    { to: '/demands', icon: ClipboardList, label: 'Demandas', show: true },
-    { to: '/kanban', icon: Kanban, label: 'Esteira de Produção', show: true },
-  ];
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', pageKey: 'dashboard' },
+    { to: '/demands', icon: ClipboardList, label: 'Demandas', pageKey: 'demands' },
+    { to: '/kanban', icon: Kanban, label: 'Esteira de Produção', pageKey: 'kanban' },
+  ].filter(i => access(i.pageKey));
 
   const adminItems: NavItemDef[] = [
-    { to: '/clients', icon: Building2, label: 'Clientes', show: currentUser ? canManageClients(currentUser.role) : false },
-    { to: '/professionals', icon: Users, label: 'Profissionais', show: currentUser ? canManageProfessionals(currentUser.role) : false },
-    { to: '/financial', icon: DollarSign, label: 'Financeiro', show: currentUser ? canViewFinancial(currentUser.role) : false },
-    { to: '/reports', icon: BarChart3, label: 'Relatórios', show: currentUser ? canViewFinancial(currentUser.role) : false },
-    { to: '/settings', icon: Settings, label: 'Configurações', show: currentUser?.role === 'admin' },
-  ].filter(i => i.show);
+    { to: '/clients', icon: Building2, label: 'Clientes', pageKey: 'clients' },
+    { to: '/professionals', icon: Users, label: 'Profissionais', pageKey: 'professionals' },
+    { to: '/financial', icon: DollarSign, label: 'Financeiro', pageKey: 'financial' },
+    { to: '/reports', icon: BarChart3, label: 'Relatórios', pageKey: 'reports' },
+    { to: '/settings', icon: Settings, label: 'Configurações', pageKey: 'settings' },
+  ].filter(i => access(i.pageKey));
 
   const NavGroup = ({ label, items }: { label: string; items: NavItemDef[] }) => (
     <div className="mb-6">
@@ -92,7 +95,7 @@ export const Sidebar = () => {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <NavGroup label="Geral" items={generalItems.filter(i => i.show)} />
+        {generalItems.length > 0 && <NavGroup label="Geral" items={generalItems} />}
         {adminItems.length > 0 && <NavGroup label="Administração" items={adminItems} />}
       </nav>
 

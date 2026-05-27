@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { supabase, supabaseAuth } from '../lib/supabase';
-import { fromDb, toDb } from '../lib/dbMapper';
 import type { User, UserRole } from '../types';
 
 interface AuthState {
@@ -17,10 +16,20 @@ interface AuthState {
   loadUsers: () => Promise<void>;
 }
 
-// Suppress unused import warning
-void (undefined as unknown as UserRole);
+const metaToUser = (u: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }): User => {
+  const meta = u.user_metadata || {};
+  return {
+    id: u.id,
+    name: (meta.name as string) || u.email?.split('@')[0] || 'Usuário',
+    email: u.email || '',
+    role: ((meta.role as string) || 'admin') as UserRole,
+    permissions: meta.permissions !== undefined ? (meta.permissions as string[]) : undefined,
+    active: true,
+    createdAt: u.created_at || new Date().toISOString(),
+  };
+};
 
-export const useAuthStore = create<AuthState>()((set, get) => ({
+export const useAuthStore = create<AuthState>()((set) => ({
   currentUser: null,
   users: [],
   loading: true,
@@ -30,18 +39,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       if (session?.user) {
-        const u = session.user;
-        const meta = u.user_metadata || {};
-        set({
-          currentUser: {
-            id: u.id,
-            name: (meta.name as string) || u.email?.split('@')[0] || 'Usuário',
-            email: u.email || '',
-            role: ((meta.role as string) || 'admin') as import('../types').UserRole,
-            createdAt: u.created_at || new Date().toISOString(),
-            active: true,
-          },
-        });
+        set({ currentUser: metaToUser(session.user) });
       }
     } catch (e) {
       console.error('initAuth error:', e);
@@ -51,9 +49,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   loadUsers: async () => {
-    const { data } = await supabase.from('profiles').select('*').order('created_at');
-    if (data) {
-      set({ users: data.map(r => fromDb<User>(r as Record<string, unknown>)) });
+    const { data, error } = await supabase.auth.admin.listUsers();
+    if (!error && data?.users) {
+      set({ users: data.users.map(u => metaToUser(u)) });
     }
   },
 
@@ -70,15 +68,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       console.log('[login] auth result:', { userId: data?.user?.id, error: error?.message });
       if (error || !data.user) return false;
 
-      const meta = data.user.user_metadata || {};
-      const currentUser: User = {
-        id: data.user.id,
-        name: (meta.name as string) || data.user.email?.split('@')[0] || 'Usuário',
-        email: data.user.email || email,
-        role: ((meta.role as string) || 'admin') as import('../types').UserRole,
-        createdAt: data.user.created_at || new Date().toISOString(),
-        active: true,
-      };
+      const currentUser = metaToUser(data.user);
       console.log('[login] currentUser:', currentUser);
       set({ currentUser });
       return true;
@@ -98,30 +88,37 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       email: userData.email,
       password,
       email_confirm: true,
+      user_metadata: {
+        name: userData.name,
+        role: userData.role,
+        ...(userData.role !== 'admin' && { permissions: userData.permissions || [] }),
+      },
     });
     if (error || !authData.user) throw new Error(error?.message || 'Failed to create user');
 
-    const profile = {
+    const newUser: User = {
       id: authData.user.id,
       name: userData.name,
       email: userData.email,
       role: userData.role,
-      professional_id: userData.professionalId || null,
       active: userData.active ?? true,
-      created_at: new Date().toISOString(),
+      permissions: userData.role !== 'admin' ? (userData.permissions || []) : undefined,
+      createdAt: authData.user.created_at || new Date().toISOString(),
     };
-    await supabase.from('profiles').insert(profile);
-    const newUser = fromDb<User>(profile as unknown as Record<string, unknown>);
     set(state => ({ users: [...state.users, newUser] }));
     return newUser;
   },
 
   updateUser: async (id, updates, newPassword) => {
-    if (newPassword) {
-      await supabase.auth.admin.updateUserById(id, { password: newPassword });
-    }
-    const dbUpdates = toDb(updates as Record<string, unknown>);
-    await supabase.from('profiles').update(dbUpdates).eq('id', id);
+    const meta: Record<string, unknown> = {};
+    if (updates.name !== undefined) meta.name = updates.name;
+    if (updates.role !== undefined) meta.role = updates.role;
+    if (updates.permissions !== undefined) meta.permissions = updates.permissions;
+
+    await supabase.auth.admin.updateUserById(id, {
+      ...(newPassword ? { password: newPassword } : {}),
+      ...(Object.keys(meta).length > 0 ? { user_metadata: meta } : {}),
+    });
     set(state => ({
       users: state.users.map(u => u.id === id ? { ...u, ...updates } : u),
       currentUser: state.currentUser?.id === id ? { ...state.currentUser, ...updates } : state.currentUser,
@@ -130,11 +127,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   deleteUser: async (id) => {
     await supabase.auth.admin.deleteUser(id);
-    await supabase.from('profiles').delete().eq('id', id);
     set(state => ({ users: state.users.filter(u => u.id !== id) }));
   },
 }));
 
-// Re-export for convenience
 export type { AuthState };
 export const { getState: getAuthState } = useAuthStore;

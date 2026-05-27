@@ -44,6 +44,7 @@ export interface User {
   role: UserRole;
   professionalId?: string;
   active?: boolean;
+  permissions?: string[];
   createdAt: string;
 }
 

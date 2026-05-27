@@ -29,11 +29,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   initAuth: async () => {
     try {
       const { data: { session } } = await supabaseAuth.auth.getSession();
-      if (session?.user) {
+      if (session?.user?.email) {
         const { data: rows } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', session.user.id);
+          .eq('email', session.user.email);
         const profile = rows?.[0];
         if (profile) {
           set({ currentUser: fromDb<User>(profile as Record<string, unknown>) });
@@ -68,7 +68,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
       console.log('[login] buscando perfil...');
       const { data: rows, error: profileError } = await Promise.race([
-        supabase.from('profiles').select('*').eq('id', data.user.id),
+        supabase.from('profiles').select('*').eq('email', email),
         timeout<never>(8000),
       ]);
       console.log('[login] perfil result:', { rows, profileError });

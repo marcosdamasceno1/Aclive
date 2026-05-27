@@ -1,19 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_KEY as string;
-const SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY as string;
+const SUPABASE_URL = 'https://nkxyecdxgaxpnezfjkap.supabase.co';
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reHllY2R4Z2F4cG5lemZqa2FwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTY3ODMxMSwiZXhwIjoyMDk1MjU0MzExfQ.TC0J65z6-ZeVsTjvHOXKqGuJzx7bbT0ndfInexQMs38';
 
-if (!SUPABASE_URL || !ANON_KEY) {
-  console.error('❌ VITE_SUPABASE_URL ou VITE_SUPABASE_KEY não definidos no .env');
-}
+export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
-console.log('[supabase] URL:', SUPABASE_URL?.slice(0, 30));
-
-const authOptions = { auth: { persistSession: false, autoRefreshToken: false } };
-
-// Auth client — anon key, usado apenas para signInWithPassword / signOut
-export const supabaseAuth = createClient(SUPABASE_URL, ANON_KEY, authOptions);
-
-// DB client — service role key, bypassa RLS e permissões para todas as queries de dados
-export const supabase = createClient(SUPABASE_URL, SERVICE_KEY || ANON_KEY, authOptions);
+export const supabaseAuth = supabase;

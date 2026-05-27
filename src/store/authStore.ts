@@ -29,15 +29,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   initAuth: async () => {
     try {
       const { data: { session } } = await supabaseAuth.auth.getSession();
-      if (session?.user?.email) {
-        const { data: rows } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('email', session.user.email);
-        const profile = rows?.[0];
-        if (profile) {
-          set({ currentUser: fromDb<User>(profile as Record<string, unknown>) });
-        }
+      if (session?.user) {
+        const u = session.user;
+        const meta = u.user_metadata || {};
+        set({
+          currentUser: {
+            id: u.id,
+            name: (meta.name as string) || u.email?.split('@')[0] || 'Usuário',
+            email: u.email || '',
+            role: ((meta.role as string) || 'admin') as import('../types').UserRole,
+            createdAt: u.created_at || new Date().toISOString(),
+            active: true,
+          },
+        });
       }
     } catch (e) {
       console.error('initAuth error:', e);
@@ -66,18 +70,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       console.log('[login] auth result:', { userId: data?.user?.id, error: error?.message });
       if (error || !data.user) return false;
 
-      console.log('[login] buscando perfil...');
-      const { data: rows, error: profileError } = await Promise.race([
-        supabase.from('profiles').select('*').eq('email', email),
-        timeout<never>(8000),
-      ]);
-      console.log('[login] perfil result:', { rows, profileError });
-      const profile = (rows as Record<string, unknown>[] | null)?.[0];
-      if (!profile) {
-        console.warn('[login] perfil não encontrado para id:', data.user.id);
-        return false;
-      }
-      set({ currentUser: fromDb<User>(profile) });
+      const meta = data.user.user_metadata || {};
+      const currentUser: User = {
+        id: data.user.id,
+        name: (meta.name as string) || data.user.email?.split('@')[0] || 'Usuário',
+        email: data.user.email || email,
+        role: ((meta.role as string) || 'admin') as import('../types').UserRole,
+        createdAt: data.user.created_at || new Date().toISOString(),
+        active: true,
+      };
+      console.log('[login] currentUser:', currentUser);
+      set({ currentUser });
       return true;
     } catch (e) {
       console.error('[login] erro:', e);

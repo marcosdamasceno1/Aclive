@@ -35,7 +35,8 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
       comments: [],
     };
     set(state => ({ demands: [...state.demands, newDemand] }));
-    supabase.from('demands').insert(toDb({ ...newDemand }) as Record<string, unknown>);
+    supabase.from('demands').insert(toDb({ ...newDemand }) as Record<string, unknown>)
+      .then(({ error }) => { if (error) console.error('[demands.insert]', error); });
     return newDemand;
   },
 
@@ -43,7 +44,8 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     set(state => ({
       demands: state.demands.map(d => d.id === id ? { ...d, ...updates } : d),
     }));
-    supabase.from('demands').update(toDb(updates as Record<string, unknown>)).eq('id', id);
+    supabase.from('demands').update(toDb(updates as Record<string, unknown>)).eq('id', id)
+      .then(({ error }) => { if (error) console.error('[demands.update]', error); });
   },
 
   moveDemand: (id, newStatus) => {
@@ -60,12 +62,14 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     set(state => ({
       demands: state.demands.map(d => d.id === id ? { ...d, ...updates } : d),
     }));
-    supabase.from('demands').update(toDb(updates as Record<string, unknown>)).eq('id', id);
+    supabase.from('demands').update(toDb(updates as Record<string, unknown>)).eq('id', id)
+      .then(({ error }) => { if (error) console.error('[demands.move]', error); });
   },
 
   deleteDemand: (id) => {
     set(state => ({ demands: state.demands.filter(d => d.id !== id) }));
-    supabase.from('demands').delete().eq('id', id);
+    supabase.from('demands').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[demands.delete]', error); });
   },
 
   addComment: (demandId, commentData) => {
@@ -84,7 +88,8 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
         d.id === demandId ? { ...d, comments: updatedComments } : d
       ),
     }));
-    supabase.from('demands').update({ comments: updatedComments }).eq('id', demandId);
+    supabase.from('demands').update({ comments: updatedComments }).eq('id', demandId)
+      .then(({ error }) => { if (error) console.error('[demands.comment]', error); });
   },
 
   getDemand: (id) => get().demands.find(d => d.id === id),

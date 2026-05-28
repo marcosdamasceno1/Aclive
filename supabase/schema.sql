@@ -16,9 +16,10 @@ create table if not exists public.professionals (
   email text not null default '',
   phone text default '',
   profession text not null,
+  pix_key text default '',
   default_values jsonb default '{}',
-  active boolean default true,
-  notes text default '',
+  status text default 'active',
+  user_id text,
   created_at timestamptz default now()
 );
 
@@ -29,6 +30,7 @@ create table if not exists public.clients (
   contact_name text default '',
   email text default '',
   phone text default '',
+  plan text default '',
   status text default 'active',
   notes text default '',
   created_at timestamptz default now()
@@ -62,11 +64,13 @@ create table if not exists public.financial_movements (
   client_id text,
   client_name text,
   value decimal(10,2) not null,
-  type text not null check (type in ('credit', 'debit')),
+  type text not null check (type in ('credit', 'debit', 'income', 'expense')),
   status text default 'pending',
   completed_at timestamptz,
   paid_at timestamptz,
   paid_by text,
+  notes text,
+  category text,
   created_at timestamptz default now()
 );
 
@@ -83,10 +87,29 @@ create table if not exists public.audit_logs (
   created_at timestamptz default now()
 );
 
--- Disable RLS for now (internal tool)
+-- leads
+create table if not exists public.leads (
+  id text primary key default gen_random_uuid()::text,
+  name text not null,
+  phone text,
+  website text,
+  address text,
+  city text,
+  rating numeric,
+  review_count integer,
+  category text,
+  status text not null default 'new' check (status in ('new', 'contacted', 'proposal', 'client', 'lost')),
+  notes text,
+  source text not null default 'manual' check (source in ('apify', 'manual')),
+  converted_client_id text,
+  created_at timestamptz not null default now()
+);
+
+-- Disable RLS (internal tool)
 alter table public.profiles disable row level security;
 alter table public.professionals disable row level security;
 alter table public.clients disable row level security;
 alter table public.demands disable row level security;
 alter table public.financial_movements disable row level security;
 alter table public.audit_logs disable row level security;
+alter table public.leads disable row level security;

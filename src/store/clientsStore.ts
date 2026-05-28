@@ -27,18 +27,21 @@ export const useClientsStore = create<ClientsState>()((set, get) => ({
   addClient: (data) => {
     const newClient: Client = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     set(state => ({ clients: [...state.clients, newClient] }));
-    supabase.from('clients').insert(toDb({ ...newClient }) as Record<string, unknown>);
+    supabase.from('clients').insert(toDb({ ...newClient }) as Record<string, unknown>)
+      .then(({ error }) => { if (error) console.error('[clients.insert]', error); });
     return newClient;
   },
 
   updateClient: (id, updates) => {
     set(state => ({ clients: state.clients.map(c => c.id === id ? { ...c, ...updates } : c) }));
-    supabase.from('clients').update(toDb(updates as Record<string, unknown>)).eq('id', id);
+    supabase.from('clients').update(toDb(updates as Record<string, unknown>)).eq('id', id)
+      .then(({ error }) => { if (error) console.error('[clients.update]', error); });
   },
 
   deleteClient: (id) => {
     set(state => ({ clients: state.clients.filter(c => c.id !== id) }));
-    supabase.from('clients').delete().eq('id', id);
+    supabase.from('clients').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[clients.delete]', error); });
   },
 
   getClient: (id) => get().clients.find(c => c.id === id),

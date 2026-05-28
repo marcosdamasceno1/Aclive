@@ -27,18 +27,21 @@ export const useProfessionalsStore = create<ProfessionalsState>()((set, get) => 
   addProfessional: (data) => {
     const newPro: Professional = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     set(state => ({ professionals: [...state.professionals, newPro] }));
-    supabase.from('professionals').insert(toDb({ ...newPro }) as Record<string, unknown>);
+    supabase.from('professionals').insert(toDb({ ...newPro }) as Record<string, unknown>)
+      .then(({ error }) => { if (error) console.error('[professionals.insert]', error); });
     return newPro;
   },
 
   updateProfessional: (id, updates) => {
     set(state => ({ professionals: state.professionals.map(p => p.id === id ? { ...p, ...updates } : p) }));
-    supabase.from('professionals').update(toDb(updates as Record<string, unknown>)).eq('id', id);
+    supabase.from('professionals').update(toDb(updates as Record<string, unknown>)).eq('id', id)
+      .then(({ error }) => { if (error) console.error('[professionals.update]', error); });
   },
 
   deleteProfessional: (id) => {
     set(state => ({ professionals: state.professionals.filter(p => p.id !== id) }));
-    supabase.from('professionals').delete().eq('id', id);
+    supabase.from('professionals').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[professionals.delete]', error); });
   },
 
   getProfessional: (id) => get().professionals.find(p => p.id === id),

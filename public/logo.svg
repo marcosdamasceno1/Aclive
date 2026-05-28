@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 255">
+  <defs>
+    <marker id="arr" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
+      <polygon points="0 0, 12 4, 0 8" fill="#1B2C4E"/>
+    </marker>
+  </defs>
+  <!-- Left bar (shortest) -->
+  <rect x="0" y="108" width="87" height="72" fill="#1B2C4E"/>
+  <!-- Middle bar -->
+  <rect x="95" y="60" width="87" height="120" fill="#1B2C4E"/>
+  <!-- Right bar (tallest) -->
+  <rect x="190" y="18" width="87" height="162" fill="#1B2C4E"/>
+  <!-- Diagonal trend line with arrow -->
+  <line x1="5" y1="152" x2="268" y2="10" stroke="#1B2C4E" stroke-width="11" stroke-linecap="round" marker-end="url(#arr)"/>
+  <!-- ACLIVE text -->
+  <text x="0" y="250"
+    font-family="'Arial Black','Franklin Gothic Heavy',Impact,sans-serif"
+    font-weight="900"
+    font-size="80"
+    fill="#1B2C4E"
+    textLength="300"
+    lengthAdjust="spacingAndGlyphs">ACLIVE</text>
+</svg>

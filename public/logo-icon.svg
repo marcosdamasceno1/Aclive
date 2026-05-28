@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 90">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#1B2C4E"/>
+    </marker>
+  </defs>
+  <!-- Left bar -->
+  <rect x="0" y="40" width="28" height="50" fill="#1B2C4E"/>
+  <!-- Middle bar -->
+  <rect x="32" y="22" width="28" height="68" fill="#1B2C4E"/>
+  <!-- Right bar -->
+  <rect x="64" y="6" width="28" height="84" fill="#1B2C4E"/>
+  <!-- Diagonal line with arrow -->
+  <line x1="2" y1="60" x2="88" y2="4" stroke="#1B2C4E" stroke-width="6" stroke-linecap="round" marker-end="url(#arr)"/>
+</svg>

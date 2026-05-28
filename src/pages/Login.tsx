@@ -36,11 +36,8 @@ export const Login = () => {
     <div className="min-h-screen flex">
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-[#0f172a] flex-col justify-between p-12">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-black">A</span>
-          </div>
-          <span className="text-white font-bold text-lg">Aclive</span>
+        <div className="flex items-center">
+          <img src="/logo.svg" alt="Aclive" className="h-10 w-auto brightness-0 invert" />
         </div>
         <div>
           <h1 className="text-white text-5xl font-extrabold leading-tight tracking-tight mb-4">
@@ -64,11 +61,8 @@ export const Login = () => {
       <div className="flex-1 flex items-center justify-center bg-[#0d1117] px-8">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-10">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xs font-black">A</span>
-            </div>
-            <span className="text-white font-bold text-lg">Aclive</span>
+          <div className="lg:hidden flex items-center mb-10">
+            <img src="/logo.svg" alt="Aclive" className="h-8 w-auto brightness-0 invert" />
           </div>
 
           <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">Entrar</h2>

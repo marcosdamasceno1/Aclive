@@ -99,12 +99,14 @@ export const Leads = () => {
     setResults([]);
     setSelected(new Set());
 
+    const authHeader = { Authorization: `Bearer ${apifyToken}` };
+
     try {
       const runRes = await fetch(
-        `https://api.apify.com/v2/acts/${APIFY_ACTOR}/runs?token=${apifyToken}`,
+        `https://api.apify.com/v2/acts/${APIFY_ACTOR}/runs`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeader },
           body: JSON.stringify({
             searchStringsArray: [`${segment} em ${city}`],
             maxCrawledPlacesPerSearch: 25,
@@ -114,7 +116,10 @@ export const Leads = () => {
           }),
         }
       );
-      if (!runRes.ok) throw new Error(`Erro ao iniciar: ${runRes.status}`);
+      if (!runRes.ok) {
+        const body = await runRes.json().catch(() => ({}));
+        throw new Error(body?.error?.message || `Erro ao iniciar: ${runRes.status}`);
+      }
       const runData = await runRes.json();
       const runId: string = runData.data.id;
       const datasetId: string = runData.data.defaultDatasetId;
@@ -128,14 +133,16 @@ export const Leads = () => {
         setApifyMsg(`Coletando dados… (${attempts * 3}s)`);
 
         const statusRes = await fetch(
-          `https://api.apify.com/v2/actor-runs/${runId}?token=${apifyToken}`
+          `https://api.apify.com/v2/actor-runs/${runId}`,
+          { headers: authHeader }
         );
         const statusData = await statusRes.json();
         const runStatus: string = statusData.data.status;
 
         if (runStatus === 'SUCCEEDED') {
           const itemsRes = await fetch(
-            `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}&limit=50&fields=title,phone,website,address,city,totalScore,reviewsCount,categoryName`
+            `https://api.apify.com/v2/datasets/${datasetId}/items?limit=50&fields=title,phone,website,address,city,totalScore,reviewsCount,categoryName`,
+            { headers: authHeader }
           );
           const items: ApifyItem[] = await itemsRes.json();
           setResults(items.filter(i => i.title));

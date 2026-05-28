@@ -116,6 +116,25 @@ export interface FinancialMovement {
   category?: string;
 }
 
+export type LeadStatus = 'new' | 'contacted' | 'proposal' | 'client' | 'lost';
+
+export interface Lead {
+  id: string;
+  name: string;
+  phone?: string;
+  website?: string;
+  address?: string;
+  city?: string;
+  rating?: number;
+  reviewCount?: number;
+  category?: string;
+  status: LeadStatus;
+  notes?: string;
+  source: 'apify' | 'manual';
+  createdAt: string;
+  convertedClientId?: string;
+}
+
 export interface AuditLog {
   id: string;
   entityType: 'demand' | 'financial' | 'professional' | 'client';

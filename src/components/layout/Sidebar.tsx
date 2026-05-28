@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, ClipboardList,
-  Kanban, DollarSign, BarChart3, Settings, LogOut,
+  Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { hasPageAccess } from '../../utils/permissions';
@@ -44,6 +44,7 @@ export const Sidebar = () => {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', pageKey: 'dashboard' },
     { to: '/demands', icon: ClipboardList, label: 'Demandas', pageKey: 'demands' },
     { to: '/kanban', icon: Kanban, label: 'Esteira de Produção', pageKey: 'kanban' },
+    { to: '/leads', icon: Target, label: 'Leads', pageKey: 'leads' },
   ].filter(i => access(i.pageKey));
 
   const adminItems: NavItemDef[] = [

@@ -35,7 +35,10 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
       comments: [],
     };
     set(state => ({ demands: [...state.demands, newDemand] }));
-    supabase.from('demands').insert(toDb({ ...newDemand }) as Record<string, unknown>)
+    const dbRow = toDb({ ...newDemand }) as Record<string, unknown>;
+    if (dbRow.deadline === '') dbRow.deadline = null;
+    if (dbRow.completed_at === '') dbRow.completed_at = null;
+    supabase.from('demands').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[demands.insert]', error); });
     return newDemand;
   },
@@ -44,7 +47,10 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     set(state => ({
       demands: state.demands.map(d => d.id === id ? { ...d, ...updates } : d),
     }));
-    supabase.from('demands').update(toDb(updates as Record<string, unknown>)).eq('id', id)
+    const dbRow = toDb(updates as Record<string, unknown>) as Record<string, unknown>;
+    if (dbRow.deadline === '') dbRow.deadline = null;
+    if (dbRow.completed_at === '') dbRow.completed_at = null;
+    supabase.from('demands').update(dbRow).eq('id', id)
       .then(({ error }) => { if (error) console.error('[demands.update]', error); });
   },
 

@@ -5,9 +5,7 @@ import {
   useDroppable,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import {
-  SortableContext, useSortable, verticalListSortingStrategy
-} from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDemandsStore } from '../store/demandsStore';
 import { useClientsStore } from '../store/clientsStore';
@@ -15,22 +13,24 @@ import { useProfessionalsStore } from '../store/professionalsStore';
 import { useFinancialStore } from '../store/financialStore';
 import { useAuthStore } from '../store/authStore';
 import type { Demand, KanbanStatus } from '../types';
-import {
-  formatCurrency, getPriorityColor, getPriorityLabel, isOverdue
-} from '../utils/formatters';
-import { AlertTriangle, Calendar, DollarSign } from 'lucide-react';
+import { formatCurrency, getPriorityColor, isOverdue } from '../utils/formatters';
+import { AlertTriangle, Calendar, DollarSign, ChevronDown } from 'lucide-react';
 import { canMoveDemands } from '../utils/permissions';
 
-const COLUMNS: { id: KanbanStatus; label: string; headerColor: string; bgColor: string; textColor: string }[] = [
-  { id: 'new', label: 'Nova Demanda', headerColor: 'bg-[#161b22]0', bgColor: 'bg-[#161b22]', textColor: 'text-slate-200' },
-  { id: 'briefing', label: 'Em Briefing', headerColor: 'bg-blue-500/[0.1]0', bgColor: 'bg-blue-500/[0.1]', textColor: 'text-blue-400' },
-  { id: 'production', label: 'Em Produção', headerColor: 'bg-indigo-500', bgColor: 'bg-indigo-50', textColor: 'text-indigo-700' },
-  { id: 'review', label: 'Em Revisão', headerColor: 'bg-purple-500/[0.1]0', bgColor: 'bg-purple-500/[0.1]', textColor: 'text-purple-400' },
-  { id: 'adjustments', label: 'Ajustes', headerColor: 'bg-orange-500', bgColor: 'bg-orange-50', textColor: 'text-orange-400' },
-  { id: 'approved', label: 'Aprovado', headerColor: 'bg-green-500/[0.1]0', bgColor: 'bg-green-500/[0.1]', textColor: 'text-green-400' },
-  { id: 'completed', label: 'Concluído', headerColor: 'bg-emerald-600', bgColor: 'bg-emerald-500/[0.1]', textColor: 'text-emerald-400' },
-  { id: 'paid', label: 'Pago', headerColor: 'bg-gray-500', bgColor: 'bg-gray-50', textColor: 'text-slate-400' },
+// ─── Column config ─────────────────────────────────────────────────────────────
+
+const COLUMNS: { id: KanbanStatus; label: string; icon: string; accent: string }[] = [
+  { id: 'new',         label: 'Nova',       icon: '🚀', accent: 'text-slate-300' },
+  { id: 'briefing',    label: 'Briefing',   icon: '📋', accent: 'text-blue-400' },
+  { id: 'production',  label: 'Produção',   icon: '⚡', accent: 'text-indigo-400' },
+  { id: 'review',      label: 'Revisão',    icon: '🔍', accent: 'text-purple-400' },
+  { id: 'adjustments', label: 'Ajustes',    icon: '🔧', accent: 'text-orange-400' },
+  { id: 'approved',    label: 'Aprovado',   icon: '✅', accent: 'text-green-400' },
+  { id: 'completed',   label: 'Concluído',  icon: '🎯', accent: 'text-emerald-400' },
+  { id: 'paid',        label: 'Pago',       icon: '💰', accent: 'text-slate-500' },
 ];
+
+// ─── Draggable card ────────────────────────────────────────────────────────────
 
 interface CardProps {
   demand: Demand;
@@ -39,101 +39,106 @@ interface CardProps {
 }
 
 const DraggableCard = ({ demand, clientName, professionalName }: CardProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: demand.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: demand.id });
   const overdue = isOverdue(demand.deadline, demand.status);
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.3 : 1,
+  };
+
+  const priorityDot: Record<string, string> = {
+    urgent: 'bg-red-500',
+    high: 'bg-orange-400',
+    medium: 'bg-yellow-400',
+    low: 'bg-slate-500',
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-[#21262d] rounded-xl p-3 border cursor-grab active:cursor-grabbing hover:shadow-black/40 transition-all select-none ${
-        overdue ? 'border-red-500/[0.3]' : 'border-white/[0.08]'
-      }`}
       {...attributes}
       {...listeners}
+      className={`group bg-[#161b22] border rounded-xl p-3 cursor-grab active:cursor-grabbing select-none transition-all hover:border-white/20 ${
+        overdue ? 'border-red-500/30' : 'border-white/[0.06]'
+      }`}
     >
-      <div className="flex items-start justify-between mb-2 gap-1">
-        <p className="text-xs font-semibold text-slate-100 leading-tight flex-1">{demand.title}</p>
-        <span className={`text-xs px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${getPriorityColor(demand.priority)}`}>
-          {getPriorityLabel(demand.priority).charAt(0)}
-        </span>
+      {/* Priority dot + title */}
+      <div className="flex items-start gap-2 mb-2.5">
+        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${priorityDot[demand.priority] || 'bg-slate-500'}`} />
+        <p className="text-xs font-semibold text-slate-100 leading-tight flex-1 min-w-0">{demand.title}</p>
       </div>
 
-      <p className="text-xs text-slate-400 mb-2 truncate">{clientName}</p>
+      {/* Client */}
+      <p className="text-xs text-slate-500 mb-2.5 truncate pl-3.5">{clientName}</p>
 
-      <div className="flex items-center gap-1.5 mb-2">
-        <div className="w-4 h-4 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-          {professionalName.charAt(0)}
+      {/* Footer */}
+      <div className="flex items-center justify-between pl-3.5">
+        <div className="flex items-center gap-1.5">
+          <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
+            {professionalName.charAt(0)}
+          </div>
+          <span className="text-[11px] text-slate-600 truncate max-w-16">{professionalName.split(' ')[0]}</span>
         </div>
-        <span className="text-xs text-slate-500 truncate">{professionalName}</span>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className={`flex items-center gap-1 text-xs ${overdue ? 'text-red-500 font-semibold' : 'text-slate-400'}`}>
-          {overdue && <AlertTriangle className="w-3 h-3" />}
-          <Calendar className="w-3 h-3" />
-          {demand.deadline ? new Date(demand.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—'}
+        <div className="flex items-center gap-2">
+          {overdue && <AlertTriangle className="w-3 h-3 text-red-500" />}
+          <div className={`flex items-center gap-0.5 text-[11px] ${overdue ? 'text-red-400' : 'text-slate-600'}`}>
+            <Calendar className="w-3 h-3" />
+            {demand.deadline
+              ? new Date(demand.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+              : '—'}
+          </div>
         </div>
-        <span className="text-xs font-bold text-slate-200">{formatCurrency(demand.value)}</span>
       </div>
     </div>
   );
 };
 
-const StaticCard = ({ demand, clientName }: CardProps) => {
-  const overdue = isOverdue(demand.deadline, demand.status);
-  return (
-    <div className={`bg-[#21262d] rounded-xl p-3 shadow-md border-2 rotate-1 ${overdue ? 'border-red-300' : 'border-blue-500/[0.4]'}`}>
-      <p className="text-xs font-semibold text-slate-100 truncate">{demand.title}</p>
-      <p className="text-xs text-slate-500 mt-1">{clientName}</p>
-      <p className="text-xs font-bold text-slate-200 mt-1">{formatCurrency(demand.value)}</p>
-    </div>
-  );
-};
+const OverlayCard = ({ demand, clientName }: { demand: Demand; clientName: string }) => (
+  <div className="bg-[#161b22] border border-blue-500/40 rounded-xl p-3 shadow-2xl rotate-2 w-56">
+    <p className="text-xs font-semibold text-slate-100 truncate">{demand.title}</p>
+    <p className="text-xs text-slate-500 mt-1 truncate">{clientName}</p>
+    <p className="text-xs font-bold text-slate-300 mt-1.5">{formatCurrency(demand.value)}</p>
+  </div>
+);
 
-interface Client {
-  id: string;
-  companyName: string;
-}
-
-interface Professional {
-  id: string;
-  name: string;
-}
+// ─── Column ────────────────────────────────────────────────────────────────────
 
 interface ColumnProps {
-  id: KanbanStatus;
-  label: string;
-  headerColor: string;
-  bgColor: string;
-  textColor?: string;
+  col: typeof COLUMNS[number];
   demands: Demand[];
-  clients: Client[];
-  professionals: Professional[];
+  clients: { id: string; companyName: string }[];
+  professionals: { id: string; name: string }[];
+  isLast: boolean;
 }
 
-const KanbanColumn = ({ id, label, headerColor, bgColor, demands, clients, professionals }: ColumnProps) => {
-  const { setNodeRef, isOver } = useDroppable({ id });
+const KanbanColumn = ({ col, demands, clients, professionals, isLast }: ColumnProps) => {
+  const { setNodeRef, isOver } = useDroppable({ id: col.id });
 
   return (
-    <div
-      className={`flex-shrink-0 w-64 rounded-2xl flex flex-col transition-all ${bgColor} ${isOver ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
-      style={{ minHeight: 120 }}
-    >
-      <div className={`${headerColor} rounded-t-2xl px-3 py-2.5 flex items-center justify-between`}>
-        <h3 className="text-xs font-bold text-white">{label}</h3>
-        <span className="bg-[#21262d]/20 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+    <div className={`flex flex-col flex-shrink-0 w-56 ${!isLast ? 'border-r border-white/[0.05]' : ''}`}>
+      {/* Header */}
+      <div className={`flex items-center gap-2 px-3 py-3 transition-colors ${isOver ? 'bg-blue-500/5' : ''}`}>
+        <span className="text-sm leading-none">{col.icon}</span>
+        <span className={`text-xs font-bold uppercase tracking-widest ${col.accent}`}>
+          {col.label}
+        </span>
+        <span className="ml-auto text-xs font-bold text-slate-600 bg-white/[0.04] px-1.5 py-0.5 rounded-full min-w-5 text-center">
           {demands.length}
         </span>
       </div>
 
-      <div ref={setNodeRef} className="flex-1 p-2 space-y-2 overflow-y-auto" style={{ minHeight: 80, maxHeight: '65vh' }}>
+      {/* Drop zone */}
+      <div
+        ref={setNodeRef}
+        className={`flex-1 px-2 pb-3 space-y-2 overflow-y-auto transition-colors ${
+          isOver ? 'bg-blue-500/[0.03]' : ''
+        }`}
+        style={{ maxHeight: 'calc(100vh - 200px)' }}
+      >
         <SortableContext items={demands.map(d => d.id)} strategy={verticalListSortingStrategy}>
           {demands.map(demand => {
             const client = clients.find(c => c.id === demand.clientId);
@@ -149,14 +154,18 @@ const KanbanColumn = ({ id, label, headerColor, bgColor, demands, clients, profe
           })}
         </SortableContext>
         {demands.length === 0 && (
-          <div className="h-12 border-2 border-dashed border-white/[0.08] rounded-xl flex items-center justify-center">
-            <p className="text-xs text-slate-500">Soltar aqui</p>
+          <div className={`h-16 rounded-xl border border-dashed flex items-center justify-center transition-colors ${
+            isOver ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/[0.04]'
+          }`}>
+            <p className="text-xs text-slate-700">solte aqui</p>
           </div>
         )}
       </div>
     </div>
   );
 };
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export const Kanban = () => {
   const { currentUser } = useAuthStore();
@@ -166,6 +175,7 @@ export const Kanban = () => {
   const { registerMovement } = useFinancialStore();
 
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [clientFilter, setClientFilter] = useState<'all' | string>('all');
   const [confirmMove, setConfirmMove] = useState<{
     demandId: string;
     newStatus: KanbanStatus;
@@ -180,50 +190,45 @@ export const Kanban = () => {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  // Filter by role + client
   const filteredDemands = useMemo(() => {
+    let list = demands;
     if (currentUser?.role === 'professional' && currentUser.professionalId) {
-      return demands.filter(d => d.professionalId === currentUser.professionalId);
+      list = list.filter(d => d.professionalId === currentUser.professionalId);
     }
-    return demands;
-  }, [demands, currentUser]);
+    if (clientFilter !== 'all') {
+      list = list.filter(d => d.clientId === clientFilter);
+    }
+    return list;
+  }, [demands, currentUser, clientFilter]);
 
   const demandsByColumn = useMemo(() => {
     const byCol = {} as Record<KanbanStatus, Demand[]>;
     COLUMNS.forEach(col => { byCol[col.id] = []; });
-    filteredDemands.forEach(d => {
-      if (byCol[d.status]) byCol[d.status].push(d);
-    });
+    filteredDemands.forEach(d => { if (byCol[d.status]) byCol[d.status].push(d); });
     return byCol;
   }, [filteredDemands]);
 
   const activeDemand = activeId ? demands.find(d => d.id === activeId) : null;
   const activeClient = activeDemand ? clients.find(c => c.id === activeDemand.clientId) : null;
-  const activeProfessional = activeDemand ? professionals.find(p => p.id === activeDemand.professionalId) : null;
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = ({ active }: DragStartEvent) => {
     if (!canMove) return;
-    setActiveId(event.active.id as string);
+    setActiveId(active.id as string);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveId(null);
-    if (!canMove) return;
-
-    const { active, over } = event;
-    if (!over) return;
+    if (!canMove || !over) return;
 
     const draggedDemand = demands.find(d => d.id === active.id);
     if (!draggedDemand) return;
 
-    // Determine target column
     let targetStatus: KanbanStatus | null = null;
-
-    // Check if dropped on a column header (droppable zone)
     const columnIds = COLUMNS.map(c => c.id);
     if (columnIds.includes(over.id as KanbanStatus)) {
       targetStatus = over.id as KanbanStatus;
     } else {
-      // Dropped on a card — find which column that card is in
       for (const col of COLUMNS) {
         if (demandsByColumn[col.id].some(d => d.id === over.id)) {
           targetStatus = col.id;
@@ -274,104 +279,173 @@ export const Kanban = () => {
     setPendingMove(null);
   };
 
-  const handleCancelMove = () => {
-    setConfirmMove(null);
-    setPendingMove(null);
-  };
+  // Only show clients that have demands visible to this user
+  const visibleClientIds = useMemo(() => {
+    const ids = new Set<string>();
+    filteredDemands.forEach(d => { if (d.clientId) ids.add(d.clientId); });
+    // also add all if not professional
+    if (currentUser?.role !== 'professional') {
+      demands.forEach(d => { if (d.clientId) ids.add(d.clientId); });
+    }
+    return ids;
+  }, [filteredDemands, demands, currentUser]);
 
-  const totals = useMemo(() => ({
-    open: filteredDemands.filter(d => !['completed', 'paid'].includes(d.status)).length,
-    completed: filteredDemands.filter(d => d.status === 'completed').length,
-    paid: filteredDemands.filter(d => d.status === 'paid').length,
-  }), [filteredDemands]);
+  const visibleClients = useMemo(
+    () => clients.filter(c => visibleClientIds.has(c.id)),
+    [clients, visibleClientIds]
+  );
+
+  const selectedClientName = clientFilter === 'all'
+    ? 'Todos os clientes'
+    : clients.find(c => c.id === clientFilter)?.companyName || 'Cliente';
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full -mx-6 -mt-6">
+      {/* Top bar */}
+      <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-white/[0.05] bg-[#0d1117] flex-shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Esteira de Produção</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            {totals.open} em aberto · {totals.completed} concluída(s) · {totals.paid} paga(s)
+          <h1 className="text-base font-bold text-slate-100 leading-none">Esteira de Produção</h1>
+          <p className="text-xs text-slate-600 mt-0.5">
+            {filteredDemands.filter(d => !['completed', 'paid'].includes(d.status)).length} em aberto
+            · {filteredDemands.filter(d => d.status === 'completed').length} concluída(s)
           </p>
         </div>
-        {!canMove && (
-          <div className="text-xs text-slate-400 bg-[#0d1117] px-3 py-2 rounded-lg">
-            Somente visualização
+
+        <div className="flex-1" />
+
+        {/* Client filter — dropdown style */}
+        <div className="relative group">
+          <button className="flex items-center gap-2 bg-[#21262d] border border-white/[0.08] text-slate-300 px-3 py-2 rounded-lg text-xs font-semibold hover:border-white/20 transition-colors">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+            {selectedClientName}
+            <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+          </button>
+          <div className="absolute right-0 top-full mt-1.5 bg-[#21262d] border border-white/[0.08] rounded-xl shadow-2xl z-20 min-w-48 overflow-hidden opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto group-hover:opacity-100 group-hover:pointer-events-auto transition-all">
+            <div className="py-1.5">
+              <button
+                onClick={() => setClientFilter('all')}
+                className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors ${
+                  clientFilter === 'all' ? 'text-blue-400 bg-blue-500/10' : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+                }`}
+              >
+                Todos os clientes
+              </button>
+              {visibleClients.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setClientFilter(c.id)}
+                  className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors ${
+                    clientFilter === c.id ? 'text-blue-400 bg-blue-500/10' : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+                  }`}
+                >
+                  {c.companyName}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+
+        {!canMove && (
+          <span className="text-xs text-slate-600 border border-white/[0.05] px-3 py-1.5 rounded-lg">
+            Somente visualização
+          </span>
         )}
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div
-          className="flex gap-3 overflow-x-auto pb-4"
-          style={{ minHeight: '72vh' }}
+      {/* Client pills (quick tabs) */}
+      <div className="flex items-center gap-1.5 px-6 py-2.5 overflow-x-auto flex-shrink-0 bg-[#0d1117] border-b border-white/[0.04]">
+        <button
+          onClick={() => setClientFilter('all')}
+          className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+            clientFilter === 'all'
+              ? 'bg-white/10 text-white'
+              : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+          }`}
         >
-          {COLUMNS.map(col => (
-            <KanbanColumn
-              key={col.id}
-              {...col}
-              demands={demandsByColumn[col.id] || []}
-              clients={clients}
-              professionals={professionals}
-            />
-          ))}
-        </div>
+          Todos
+        </button>
+        {visibleClients.map(c => (
+          <button
+            key={c.id}
+            onClick={() => setClientFilter(c.id)}
+            className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              clientFilter === c.id
+                ? 'bg-white/10 text-white'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+            }`}
+          >
+            {c.companyName}
+          </button>
+        ))}
+      </div>
 
-        <DragOverlay dropAnimation={{ duration: 150, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
-          {activeDemand && activeClient && activeProfessional ? (
-            <div className="w-64">
-              <StaticCard
-                demand={activeDemand}
-                clientName={activeClient.companyName}
-                professionalName={activeProfessional.name}
+      {/* Board */}
+      <div className="flex-1 overflow-x-auto bg-[#0d1117]">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex h-full" style={{ minWidth: `${COLUMNS.length * 224 + 48}px` }}>
+            <div className="w-6 flex-shrink-0" />
+            {COLUMNS.map((col, i) => (
+              <KanbanColumn
+                key={col.id}
+                col={col}
+                demands={demandsByColumn[col.id] || []}
+                clients={clients}
+                professionals={professionals}
+                isLast={i === COLUMNS.length - 1}
               />
-            </div>
-          ) : activeDemand ? (
-            <div className="w-64 bg-[#21262d] rounded-xl p-3 shadow-xl border-2 border-blue-500/[0.4]">
-              <p className="text-xs font-semibold text-slate-100">{activeDemand.title}</p>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+            ))}
+            <div className="w-6 flex-shrink-0" />
+          </div>
+
+          <DragOverlay dropAnimation={{ duration: 150, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+            {activeDemand ? (
+              <OverlayCard
+                demand={activeDemand}
+                clientName={activeClient?.companyName || '—'}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
 
       {/* Confirm completion dialog */}
       {confirmMove && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#21262d] border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-emerald-500/[0.12] rounded-2xl flex items-center justify-center flex-shrink-0">
-                <DollarSign className="w-6 h-6 text-emerald-600" />
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <DollarSign className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-100">Registrar conclusão</h3>
-                <p className="text-xs text-slate-400">Esta ação gera uma movimentação financeira</p>
+                <h3 className="text-base font-bold text-slate-100">Registrar conclusão</h3>
+                <p className="text-xs text-slate-500">Gera movimentação financeira automática</p>
               </div>
             </div>
-            <div className="bg-emerald-500/[0.1] rounded-xl p-4 mb-5 border border-emerald-500/[0.2]">
+            <div className="bg-emerald-500/[0.07] rounded-xl p-4 mb-5 border border-emerald-500/20">
               <p className="text-sm text-slate-200 leading-relaxed">
-                Mover para <strong>Concluído</strong> vai registrar automaticamente{' '}
-                <span className="text-emerald-400 font-bold text-base">{formatCurrency(confirmMove.value)}</span>{' '}
+                Mover para <strong>Concluído</strong> vai registrar{' '}
+                <span className="text-emerald-400 font-bold">{formatCurrency(confirmMove.value)}</span>{' '}
                 no saldo de <strong>{confirmMove.professionalName}</strong>.
               </p>
               <p className="text-xs text-slate-500 mt-2">Esta ação só pode ser feita uma vez por tarefa.</p>
             </div>
             <div className="flex gap-3">
               <button
-                onClick={handleCancelMove}
-                className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-xl text-sm font-medium hover:bg-white/[0.04] transition-colors"
+                onClick={() => { setConfirmMove(null); setPendingMove(null); }}
+                className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-xl text-sm font-medium hover:bg-white/[0.04]"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirmMove}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold"
               >
-                Confirmar e registrar
+                Confirmar
               </button>
             </div>
           </div>

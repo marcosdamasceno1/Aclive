@@ -39,7 +39,15 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     if (dbRow.deadline === '') dbRow.deadline = null;
     if (dbRow.completed_at === '') dbRow.completed_at = null;
     supabase.from('demands').insert(dbRow)
-      .then(({ error }) => { if (error) console.error('[demands.insert]', error); });
+      .then(({ error }) => {
+        if (error) { console.error('[demands.insert]', error); return; }
+        // Notify professional via WhatsApp
+        supabase.functions.invoke('send-whatsapp-notification', {
+          body: { type: 'INSERT', table: 'demands', record: dbRow },
+        }).then(({ error: fnErr }) => {
+          if (fnErr) console.error('[whatsapp]', fnErr);
+        });
+      });
     return newDemand;
   },
 

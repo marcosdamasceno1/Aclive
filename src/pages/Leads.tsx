@@ -52,6 +52,7 @@ export const Leads = () => {
   const [showToken, setShowToken]     = useState(!localStorage.getItem(LS_KEY));
   const [segment, setSegment]         = useState('');
   const [city, setCity]               = useState('');
+  const [maxResults, setMaxResults]   = useState(25);
   const [apifyStatus, setApifyStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
   const [apifyMsg, setApifyMsg]       = useState('');
   const [results, setResults]         = useState<ApifyItem[]>([]);
@@ -109,7 +110,7 @@ export const Leads = () => {
           headers: { 'Content-Type': 'application/json', ...authHeader },
           body: JSON.stringify({
             searchStringsArray: [`${segment} em ${city}`],
-            maxCrawledPlacesPerSearch: 25,
+            maxCrawledPlacesPerSearch: maxResults,
             language: 'pt-BR',
             maxImages: 0,
             scrapeDirectories: false,
@@ -141,7 +142,7 @@ export const Leads = () => {
 
         if (runStatus === 'SUCCEEDED') {
           const itemsRes = await fetch(
-            `https://api.apify.com/v2/datasets/${datasetId}/items?limit=50&fields=title,phone,website,address,city,totalScore,reviewsCount,categoryName`,
+            `https://api.apify.com/v2/datasets/${datasetId}/items?limit=${maxResults}&fields=title,phone,website,address,city,totalScore,reviewsCount,categoryName`,
             { headers: authHeader }
           );
           const items: ApifyItem[] = await itemsRes.json();
@@ -467,7 +468,7 @@ export const Leads = () => {
 
               {/* Search fields */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-slate-200 mb-1.5">Segmento / Tipo de empresa</label>
                   <input
                     type="text"
@@ -484,6 +485,20 @@ export const Leads = () => {
                     value={city}
                     onChange={e => setCity(e.target.value)}
                     placeholder="ex: São Paulo, SP"
+                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                    Quantidade de empresas
+                    <span className="text-slate-500 font-normal ml-1">(máx. 100)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={maxResults}
+                    onChange={e => setMaxResults(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
                     className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

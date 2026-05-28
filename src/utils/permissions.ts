@@ -37,7 +37,7 @@ export const canManageClients = (role: UserRole): boolean =>
   role === 'admin' || role === 'manager';
 
 export const canCreateDemands = (role: UserRole): boolean =>
-  role === 'admin' || role === 'manager';
+  role === 'admin' || role === 'manager' || role === 'professional';
 
 export const canViewAllDemands = (role: UserRole): boolean =>
   role === 'admin' || role === 'manager' || role === 'financial';

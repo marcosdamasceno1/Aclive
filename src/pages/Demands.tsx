@@ -59,10 +59,19 @@ export const Demands = () => {
   const canCreate = currentUser ? canCreateDemands(currentUser.role) : false;
   const canViewAll = currentUser ? canViewAllDemands(currentUser.role) : false;
 
+  const canEditDemand = (demand: Demand) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'admin' || currentUser.role === 'manager') return true;
+    if (currentUser.role === 'professional') return demand.createdBy === currentUser.id;
+    return false;
+  };
+
   const filtered = useMemo(() => {
     let list = demands;
-    if (!canViewAll && currentUser?.professionalId) {
-      list = list.filter(d => d.professionalId === currentUser.professionalId);
+    if (!canViewAll && currentUser?.role === 'professional') {
+      list = list.filter(d =>
+        d.professionalId === currentUser.professionalId || d.createdBy === currentUser.id
+      );
     }
     if (statusFilter !== 'all') list = list.filter(d => d.status === statusFilter);
     if (priorityFilter !== 'all') list = list.filter(d => d.priority === priorityFilter);
@@ -282,7 +291,7 @@ export const Demands = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          {canCreate && (
+                          {canEditDemand(demand) && (
                             <>
                               <button
                                 onClick={() => openEdit(demand)}

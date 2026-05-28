@@ -135,6 +135,21 @@ export interface Lead {
   convertedClientId?: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  date: string;           // 'YYYY-MM-DD'
+  endDate?: string;       // 'YYYY-MM-DD'
+  color: string;          // 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'pink'
+  createdBy: string;
+  createdByName: string;
+  assignedTo: string;     // 'all' | user_id
+  assignedToName: string;
+  priority: Priority;
+  createdAt: string;
+}
+
 export interface AuditLog {
   id: string;
   entityType: 'demand' | 'financial' | 'professional' | 'client';

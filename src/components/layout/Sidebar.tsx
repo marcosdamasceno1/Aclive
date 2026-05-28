@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users,
   Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, CalendarDays,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { hasPageAccess } from '../../utils/permissions';
@@ -47,6 +47,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const generalItems: NavItemDef[] = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard',           pageKey: 'dashboard' },
     { to: '/kanban',    icon: Kanban,          label: 'Esteira de Produção',  pageKey: 'kanban' },
+    { to: '/calendar',  icon: CalendarDays,    label: 'Calendário',           pageKey: 'calendar' },
     { to: '/leads',     icon: Target,          label: 'Leads',                pageKey: 'leads' },
   ].filter(i => access(i.pageKey));
 

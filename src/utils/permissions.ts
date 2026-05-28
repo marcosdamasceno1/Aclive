@@ -10,15 +10,16 @@ export const PAGE_PERMISSIONS = [
   { key: 'financial', label: 'Financeiro' },
   { key: 'reports', label: 'Relatórios' },
   { key: 'settings', label: 'Configurações' },
+  { key: 'calendar', label: 'Calendário' },
 ] as const;
 
 export type PageKey = (typeof PAGE_PERMISSIONS)[number]['key'];
 
 const ROLE_DEFAULTS: Record<UserRole, PageKey[]> = {
-  admin: ['dashboard', 'clients', 'professionals', 'demands', 'kanban', 'leads', 'financial', 'reports', 'settings'],
-  manager: ['dashboard', 'clients', 'demands', 'kanban', 'leads'],
-  professional: ['dashboard', 'demands', 'kanban'],
-  financial: ['dashboard', 'financial', 'reports'],
+  admin: ['dashboard', 'clients', 'professionals', 'demands', 'kanban', 'leads', 'financial', 'reports', 'settings', 'calendar'],
+  manager: ['dashboard', 'clients', 'demands', 'kanban', 'leads', 'calendar'],
+  professional: ['dashboard', 'demands', 'kanban', 'calendar'],
+  financial: ['dashboard', 'financial', 'reports', 'calendar'],
 };
 
 export const hasPageAccess = (user: User | null, pageKey: PageKey): boolean => {
@@ -48,3 +49,6 @@ export const canViewFinancial = (role: UserRole): boolean =>
 
 export const canMoveDemands = (role: UserRole): boolean =>
   role === 'admin' || role === 'manager' || role === 'professional';
+
+export const canManageCalendar = (role: UserRole): boolean =>
+  role === 'admin' || role === 'manager';

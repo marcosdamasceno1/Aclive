@@ -7,6 +7,7 @@ import { useClientsStore } from './store/clientsStore';
 import { useDemandsStore } from './store/demandsStore';
 import { useFinancialStore } from './store/financialStore';
 import { useLeadsStore } from './store/leadsStore';
+import { useCalendarStore } from './store/calendarStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -18,6 +19,7 @@ import { Financial } from './pages/Financial';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { Leads } from './pages/Leads';
+import { Calendar } from './pages/Calendar';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = useAuthStore();
@@ -32,6 +34,7 @@ function App() {
   const { init: initDemands } = useDemandsStore();
   const { init: initFinancial } = useFinancialStore();
   const { init: initLeads } = useLeadsStore();
+  const { init: initCalendar } = useCalendarStore();
 
   useEffect(() => {
     // Timeout fallback: never stay stuck loading more than 6s
@@ -43,7 +46,7 @@ function App() {
 
     const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
-        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads()]);
+        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar()]);
         useAuthStore.getState().loadUsers();
       }
     });
@@ -77,6 +80,7 @@ function App() {
           <Route path="kanban" element={<Kanban />} />
           <Route path="financial" element={<Financial />} />
           <Route path="leads" element={<Leads />} />
+          <Route path="calendar" element={<Calendar />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
         </Route>

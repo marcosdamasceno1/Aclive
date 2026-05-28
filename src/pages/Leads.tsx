@@ -110,7 +110,7 @@ export const Leads = () => {
           body: JSON.stringify({
             searchStringsArray: [`${segment} em ${city}`],
             maxCrawledPlacesPerSearch: 25,
-            language: 'pt',
+            language: 'pt-BR',
             maxImages: 0,
             scrapeDirectories: false,
           }),

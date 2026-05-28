@@ -114,30 +114,6 @@ export const Login = () => {
             </button>
           </form>
 
-          {/* Demo access */}
-          <div className="mt-8 pt-6 border-t border-white/[0.05]">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Acesso de demonstração</p>
-            <div className="space-y-1.5">
-              {[
-                { email: 'admin@agencia.com', pass: 'admin123', role: 'Administrador' },
-                { email: 'gestor@agencia.com', pass: 'gestor123', role: 'Gestor' },
-                { email: 'financeiro@agencia.com', pass: 'fin123', role: 'Financeiro' },
-              ].map(({ email: e, pass, role }) => (
-                <button
-                  key={e}
-                  type="button"
-                  onClick={() => { setEmail(e); setPassword(pass); }}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.04] border border-transparent hover:border-white/[0.08] transition-all group text-left"
-                >
-                  <div>
-                    <p className="text-xs font-medium text-slate-300">{role}</p>
-                    <p className="text-xs text-slate-500">{e}</p>
-                  </div>
-                  <span className="text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium">usar →</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

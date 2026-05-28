@@ -73,7 +73,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="clients" element={<Clients />} />
           <Route path="professionals" element={<Professionals />} />
-          <Route path="demands" element={<Demands />} />
+          <Route path="demands" element={<Navigate to="/kanban" replace />} />
           <Route path="kanban" element={<Kanban />} />
           <Route path="financial" element={<Financial />} />
           <Route path="leads" element={<Leads />} />

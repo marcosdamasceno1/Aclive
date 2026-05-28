@@ -4,6 +4,20 @@ import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { FinancialMovement, AuditLog } from '../types';
 
+const CATEGORY_KEY = 'financial_custom_categories';
+
+const loadCustomCategories = (): { income: string[]; expense: string[] } => {
+  try {
+    const raw = localStorage.getItem(CATEGORY_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { income: [], expense: [] };
+};
+
+const saveCustomCategories = (cats: { income: string[]; expense: string[] }) => {
+  localStorage.setItem(CATEGORY_KEY, JSON.stringify(cats));
+};
+
 interface ManualEntryInput {
   type: 'income' | 'expense';
   category: string;
@@ -11,12 +25,16 @@ interface ManualEntryInput {
   value: number;
   date: string;
   createdBy: string;
+  notes?: string;
+  clientId?: string;
+  clientName?: string;
 }
 
 interface FinancialState {
   movements: FinancialMovement[];
   auditLog: AuditLog[];
   loading: boolean;
+  customCategories: { income: string[]; expense: string[] };
   init: () => Promise<void>;
   registerMovement: (m: Omit<FinancialMovement, 'id'>) => void;
   markAsPaid: (movementId: string, paidBy: string, paidByName: string) => void;
@@ -26,12 +44,14 @@ interface FinancialState {
   getProfessionalBalance: (professionalId: string) => { pending: number; paid: number; total: number };
   getMovementsByProfessional: (professionalId: string) => FinancialMovement[];
   addAuditLog: (log: Omit<AuditLog, 'id' | 'createdAt'>) => void;
+  addCustomCategory: (type: 'income' | 'expense', name: string) => void;
 }
 
 export const useFinancialStore = create<FinancialState>()((set, get) => ({
   movements: [],
   auditLog: [],
   loading: false,
+  customCategories: loadCustomCategories(),
 
   init: async () => {
     set({ loading: true });
@@ -47,13 +67,16 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
   },
 
   registerMovement: (data) => {
-    // Deduplication: check local state first
     const existing = get().movements.find(m => m.demandId === data.demandId && m.type === 'credit');
     if (existing) return;
 
     const newMovement: FinancialMovement = { ...data, id: uuidv4() };
     set(state => ({ movements: [...state.movements, newMovement] }));
-    supabase.from('financial_movements').insert(toDb({ ...newMovement }) as Record<string, unknown>);
+    const dbRow = toDb({ ...newMovement }) as Record<string, unknown>;
+    if (dbRow.completed_at === '') dbRow.completed_at = null;
+    if (dbRow.paid_at === '') dbRow.paid_at = null;
+    supabase.from('financial_movements').insert(dbRow)
+      .then(({ error }) => { if (error) console.error('[financial.registerMovement]', error); });
   },
 
   markAsPaid: (movementId, paidBy, paidByName) => {
@@ -65,7 +88,8 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     set(s => ({
       movements: s.movements.map(m => m.id === movementId ? { ...m, ...updates } : m),
     }));
-    supabase.from('financial_movements').update(toDb(updates as Record<string, unknown>)).eq('id', movementId);
+    supabase.from('financial_movements').update(toDb(updates as Record<string, unknown>)).eq('id', movementId)
+      .then(({ error }) => { if (error) console.error('[financial.markAsPaid]', error); });
 
     get().addAuditLog({
       entityType: 'financial',
@@ -84,11 +108,11 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     if (!movement) return;
 
     const oldValue = movement.value;
-    const updates = { value: newValue };
     set(s => ({
-      movements: s.movements.map(m => m.id === movementId ? { ...m, ...updates } : m),
+      movements: s.movements.map(m => m.id === movementId ? { ...m, value: newValue } : m),
     }));
-    supabase.from('financial_movements').update(updates).eq('id', movementId);
+    supabase.from('financial_movements').update({ value: newValue }).eq('id', movementId)
+      .then(({ error }) => { if (error) console.error('[financial.updateValue]', error); });
 
     get().addAuditLog({
       entityType: 'financial',
@@ -107,34 +131,39 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       professionalId: '',
       demandId: '',
       demandTitle: data.description,
-      clientId: '',
-      clientName: data.category,
+      clientId: data.clientId || '',
+      clientName: data.clientName || '',
       value: data.value,
       type: data.type,
       status: 'paid',
       completedAt: data.date,
       paidAt: data.date,
       paidBy: data.createdBy,
+      notes: data.notes || '',
       category: data.category,
     };
     set(state => ({ movements: [...state.movements, newEntry] }));
     supabase.from('financial_movements').insert({
       id: newEntry.id,
       demand_title: data.description,
-      client_name: data.category,
-      category: data.category,
+      client_id: data.clientId || null,
+      client_name: data.clientName || null,
       value: data.value,
       type: data.type,
       status: 'paid',
-      completed_at: data.date,
-      paid_at: data.date,
+      completed_at: data.date || null,
+      paid_at: data.date || null,
       paid_by: data.createdBy,
-    } as Record<string, unknown>);
+      notes: data.notes || null,
+      category: data.category,
+    } as Record<string, unknown>)
+      .then(({ error }) => { if (error) console.error('[financial.addManualEntry]', error); });
   },
 
   deleteMovement: (id) => {
     set(state => ({ movements: state.movements.filter(m => m.id !== id) }));
-    supabase.from('financial_movements').delete().eq('id', id);
+    supabase.from('financial_movements').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[financial.delete]', error); });
   },
 
   getProfessionalBalance: (professionalId) => {
@@ -157,6 +186,17 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       createdAt: new Date().toISOString(),
     };
     set(state => ({ auditLog: [...state.auditLog, newLog] }));
-    supabase.from('audit_logs').insert(toDb({ ...newLog }) as Record<string, unknown>);
+    supabase.from('audit_logs').insert(toDb({ ...newLog }) as Record<string, unknown>)
+      .then(({ error }) => { if (error) console.error('[financial.auditLog]', error); });
+  },
+
+  addCustomCategory: (type, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const current = get().customCategories;
+    if (current[type].includes(trimmed)) return;
+    const updated = { ...current, [type]: [...current[type], trimmed] };
+    saveCustomCategories(updated);
+    set({ customCategories: updated });
   },
 }));

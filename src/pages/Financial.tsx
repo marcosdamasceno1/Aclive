@@ -26,8 +26,8 @@ const MONTHS = (() => {
   return list;
 })();
 
-const INCOME_CATEGORIES = ['Pagamento de Cliente', 'Contrato', 'Projeto Pontual', 'Outros'];
-const EXPENSE_CATEGORIES = ['Ferramentas / Software', 'Infraestrutura', 'Marketing', 'Pessoal', 'Impostos', 'Outros'];
+const DEFAULT_INCOME_CATEGORIES = ['Pagamento de Cliente', 'Contrato', 'Projeto Pontual', 'Outros'];
+const DEFAULT_EXPENSE_CATEGORIES = ['Ferramentas / Software', 'Infraestrutura', 'Marketing', 'Pessoal', 'Impostos', 'Outros'];
 
 // ─── Professional View (simple) ──────────────────────────────────────────────
 
@@ -206,11 +206,12 @@ const emptyEntry = {
   value: '',
   date: new Date().toISOString().split('T')[0],
   notes: '',
+  clientId: '',
 };
 
 const AdminView = () => {
   const { currentUser } = useAuthStore();
-  const { movements, markAsPaid, updateMovementValue, deleteMovement, addManualEntry, auditLog } = useFinancialStore();
+  const { movements, markAsPaid, updateMovementValue, deleteMovement, addManualEntry, auditLog, customCategories, addCustomCategory } = useFinancialStore();
   const { professionals } = useProfessionalsStore();
   const { clients } = useClientsStore();
 
@@ -224,6 +225,8 @@ const AdminView = () => {
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [entryForm, setEntryForm] = useState(emptyEntry);
   const [submitting, setSubmitting] = useState(false);
+  const [showNewCatInput, setShowNewCatInput] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
 
   // Demand movements (credits from professionals)
   const demandMovements = useMemo(() => {
@@ -292,6 +295,7 @@ const AdminView = () => {
     const val = parseFloat(entryForm.value);
     if (isNaN(val) || val <= 0) return;
     setSubmitting(true);
+    const selectedClient = entryForm.clientId ? clients.find(c => c.id === entryForm.clientId) : undefined;
     addManualEntry({
       type: entryForm.type,
       category: entryForm.category || 'Outros',
@@ -299,10 +303,25 @@ const AdminView = () => {
       value: val,
       date: entryForm.date,
       createdBy: currentUser.name,
+      notes: entryForm.notes || undefined,
+      clientId: entryForm.clientId || undefined,
+      clientName: selectedClient?.companyName || undefined,
     });
     setEntryForm(emptyEntry);
     setShowEntryModal(false);
     setSubmitting(false);
+  };
+
+  const availableCategories = entryForm.type === 'income'
+    ? [...DEFAULT_INCOME_CATEGORIES, ...customCategories.income]
+    : [...DEFAULT_EXPENSE_CATEGORIES, ...customCategories.expense];
+
+  const handleAddCustomCategory = () => {
+    if (!newCatName.trim()) return;
+    addCustomCategory(entryForm.type, newCatName.trim());
+    setEntryForm(f => ({ ...f, category: newCatName.trim() }));
+    setNewCatName('');
+    setShowNewCatInput(false);
   };
 
   const recentAudit = [...auditLog]
@@ -601,7 +620,7 @@ const AdminView = () => {
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-400">Registre entradas (receitas) e saídas (despesas) manualmente.</p>
             <button
-              onClick={() => { setEntryForm(emptyEntry); setShowEntryModal(true); }}
+              onClick={() => { setEntryForm(emptyEntry); setShowNewCatInput(false); setNewCatName(''); setShowEntryModal(true); }}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -638,6 +657,7 @@ const AdminView = () => {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Tipo</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Descrição</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Categoria</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Data</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>
@@ -646,7 +666,7 @@ const AdminView = () => {
               <tbody className="divide-y divide-white/[0.05]">
                 {manualEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-slate-500 text-sm">
+                    <td colSpan={7} className="px-4 py-12 text-center text-slate-500 text-sm">
                       Nenhum lançamento registrado. Clique em "Novo Lançamento" para começar.
                     </td>
                   </tr>
@@ -665,8 +685,10 @@ const AdminView = () => {
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-sm font-medium text-slate-100">{m.demandTitle}</p>
+                      {m.notes && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">{m.notes}</p>}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-400">{m.clientName}</td>
+                    <td className="px-4 py-3 text-sm text-slate-400">{m.category || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-400">{m.clientName || '—'}</td>
                     <td className="px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
                     <td className="px-4 py-3 text-right">
                       <span className={`text-sm font-bold ${m.type === 'income' ? 'text-blue-400' : 'text-red-400'}`}>
@@ -756,17 +778,54 @@ const AdminView = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Categoria *</label>
-                <select
-                  value={entryForm.category}
-                  onChange={e => setEntryForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Selecione...</option>
-                  {(entryForm.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-slate-300">Categoria *</label>
+                  <button
+                    type="button"
+                    onClick={() => { setShowNewCatInput(v => !v); setNewCatName(''); }}
+                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Nova categoria
+                  </button>
+                </div>
+                {showNewCatInput ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCatName}
+                      onChange={e => setNewCatName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomCategory(); } if (e.key === 'Escape') setShowNewCatInput(false); }}
+                      autoFocus
+                      className="flex-1 border border-blue-500/[0.4] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nome da nova categoria..."
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomCategory}
+                      className="px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
+                    >
+                      Criar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewCatInput(false)}
+                      className="px-3 py-2.5 border border-white/[0.08] text-slate-400 rounded-lg text-sm hover:bg-white/[0.04]"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={entryForm.category}
+                    onChange={e => setEntryForm(f => ({ ...f, category: e.target.value }))}
+                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Selecione...</option>
+                    {availableCategories.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -778,6 +837,20 @@ const AdminView = () => {
                   className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Descreva o lançamento..."
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Cliente <span className="text-slate-500 font-normal">(opcional)</span></label>
+                <select
+                  value={entryForm.clientId}
+                  onChange={e => setEntryForm(f => ({ ...f, clientId: e.target.value }))}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Nenhum</option>
+                  {clients.filter(c => c.status === 'active').map(c => (
+                    <option key={c.id} value={c.id}>{c.companyName}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -803,9 +876,20 @@ const AdminView = () => {
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Observações <span className="text-slate-500 font-normal">(opcional)</span></label>
+                <textarea
+                  value={entryForm.notes}
+                  onChange={e => setEntryForm(f => ({ ...f, notes: e.target.value }))}
+                  rows={2}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="Anotações adicionais..."
+                />
+              </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05]">
-              <button onClick={() => setShowEntryModal(false)} className="flex-1 border border-white/[0.08] text-slate-400 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+              <button onClick={() => { setShowEntryModal(false); setShowNewCatInput(false); }} className="flex-1 border border-white/[0.08] text-slate-400 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
                 Cancelar
               </button>
               <button

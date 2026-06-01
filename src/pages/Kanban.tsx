@@ -270,9 +270,16 @@ export const Kanban = () => {
 
   const visibleClientIds = useMemo(() => {
     const ids = new Set<string>();
-    (canViewAll ? demands : filteredDemands).forEach(d => { if (d.clientId) ids.add(d.clientId); });
+    // Build from unfiltered source so pills don't disappear when a client is selected
+    let source = demands;
+    if (!canViewAll && currentUser?.role === 'professional') {
+      source = demands.filter(d =>
+        d.professionalId === currentUser.professionalId || d.createdBy === currentUser.id
+      );
+    }
+    source.forEach(d => { if (d.clientId) ids.add(d.clientId); });
     return ids;
-  }, [filteredDemands, demands, canViewAll]);
+  }, [demands, currentUser, canViewAll]);
 
   const visibleClients = useMemo(
     () => clients.filter(c => visibleClientIds.has(c.id)),

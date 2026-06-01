@@ -4,7 +4,7 @@ import { useProfessionalsStore } from '../store/professionalsStore';
 import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
 import type { UserRole, ProfessionType } from '../types';
-import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase } from 'lucide-react';
+import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -46,6 +46,11 @@ export const Settings = () => {
   const [activeTab, setActiveTab] = useState<'users' | 'system'>('users');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  const [editUserId, setEditUserId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', role: 'professional' as UserRole, permissions: [] as string[], newPassword: '' });
+  const [editError, setEditError] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const isAdmin = currentUser?.role === 'admin';
 
@@ -102,6 +107,41 @@ export const Settings = () => {
       setFormError(err instanceof Error ? err.message : 'Erro ao criar usuário.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openEditUser = (user: (typeof users)[number]) => {
+    setEditUserId(user.id);
+    setEditForm({ name: user.name, role: user.role, permissions: user.permissions ?? [], newPassword: '' });
+    setEditError('');
+  };
+
+  const handleEditRoleChange = (role: UserRole) => {
+    setEditForm(f => ({ ...f, role, permissions: [] }));
+  };
+
+  const toggleEditPermission = (key: string) => {
+    setEditForm(f => ({
+      ...f,
+      permissions: f.permissions.includes(key) ? f.permissions.filter(k => k !== key) : [...f.permissions, key],
+    }));
+  };
+
+  const handleEditUser = async () => {
+    if (!editUserId || !editForm.name.trim()) return;
+    setEditSubmitting(true);
+    setEditError('');
+    try {
+      await updateUser(
+        editUserId,
+        { name: editForm.name, role: editForm.role, permissions: editForm.role === 'admin' ? undefined : editForm.permissions },
+        editForm.newPassword.trim() || undefined,
+      );
+      setEditUserId(null);
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : 'Erro ao salvar alterações.');
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -217,16 +257,26 @@ export const Settings = () => {
                     </td>
                     {isAdmin && (
                       <td className="px-4 py-3 text-center">
-                        {user.id !== currentUser?.id ? (
+                        <div className="flex items-center justify-center gap-1">
                           <button
-                            onClick={() => setDeleteUserId(user.id)}
-                            className="p-1.5 text-red-400 hover:text-red-400 hover:bg-red-600/[0.12] rounded-lg transition-colors"
+                            onClick={() => openEditUser(user)}
+                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-600/[0.12] rounded-lg transition-colors"
+                            title="Editar usuário"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Pencil className="w-4 h-4" />
                           </button>
-                        ) : (
-                          <span className="text-xs text-slate-500">—</span>
-                        )}
+                          {user.id !== currentUser?.id ? (
+                            <button
+                              onClick={() => setDeleteUserId(user.id)}
+                              className="p-1.5 text-red-400 hover:text-red-400 hover:bg-red-600/[0.12] rounded-lg transition-colors"
+                              title="Excluir usuário"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-500 px-1.5">—</span>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -488,6 +538,110 @@ export const Settings = () => {
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-lg text-sm font-semibold"
               >
                 {submitting ? 'Criando...' : 'Criar usuário'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editUserId && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] sticky top-0 bg-[#21262d] z-10">
+              <h2 className="text-lg font-bold text-slate-100">Editar usuário</h2>
+              <button onClick={() => setEditUserId(null)} className="text-slate-400 hover:text-slate-500 p-1 rounded-lg hover:bg-white/[0.06]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">Nome completo *</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">Função</label>
+                <select
+                  value={editForm.role}
+                  onChange={e => handleEditRoleChange(e.target.value as UserRole)}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {Object.entries(ROLE_LABELS).map(([role, label]) => (
+                    <option key={role} value={role}>{label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-200 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-slate-400" />
+                    Acessos permitidos
+                  </div>
+                </label>
+                {editForm.role === 'admin' ? (
+                  <div className="bg-purple-500/[0.1] border border-purple-500/[0.3] rounded-lg px-3 py-2.5 text-sm text-purple-400 flex items-center gap-2">
+                    <Shield className="w-4 h-4 flex-shrink-0" />
+                    Administradores têm acesso completo a todos os módulos.
+                  </div>
+                ) : (
+                  <div className="border border-white/[0.08] rounded-lg p-3 grid grid-cols-2 gap-2">
+                    {PAGE_PERMISSIONS.filter(p => p.key !== 'settings').map(p => (
+                      <label key={p.key} className="flex items-center gap-2.5 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={editForm.permissions.includes(p.key)}
+                          onChange={() => toggleEditPermission(p.key)}
+                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span className="text-sm text-slate-200 group-hover:text-white">{p.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-white/[0.05] pt-4">
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="w-4 h-4 text-slate-400" />
+                    Nova senha
+                    <span className="text-xs text-slate-500 font-normal">(deixe em branco para não alterar)</span>
+                  </div>
+                </label>
+                <input
+                  type="password"
+                  value={editForm.newPassword}
+                  onChange={e => setEditForm(f => ({ ...f, newPassword: e.target.value }))}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+            </div>
+
+            {editError && (
+              <div className="px-6 pb-2">
+                <p className="text-sm text-red-600 bg-red-500/[0.1] border border-red-500/[0.3] rounded-lg px-3 py-2">{editError}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05] sticky bottom-0 bg-[#21262d]">
+              <button onClick={() => setEditUserId(null)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+                Cancelar
+              </button>
+              <button
+                onClick={handleEditUser}
+                disabled={editSubmitting || !editForm.name.trim()}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-2.5 rounded-lg text-sm font-semibold"
+              >
+                {editSubmitting ? 'Salvando...' : 'Salvar alterações'}
               </button>
             </div>
           </div>

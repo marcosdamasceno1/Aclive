@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 445" overflow="visible">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 440">
   <defs>
-    <marker id="arr" markerWidth="72" markerHeight="50" refX="70" refY="25" orient="auto" markerUnits="userSpaceOnUse">
-      <polygon points="0 0, 72 25, 0 50" fill="#1B2C4E"/>
+    <marker id="arrowhead" markerWidth="55" markerHeight="38" refX="53" refY="19" orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0 0, 55 19, 0 38" fill="#1B2C4E"/>
     </marker>
   </defs>
-  <!-- Left bar (shortest ~36%) -->
-  <rect x="0" y="166" width="110" height="94" fill="#1B2C4E"/>
-  <!-- Middle bar (~66%) -->
-  <rect x="122" y="88" width="135" height="172" fill="#1B2C4E"/>
-  <!-- Right bar (tallest ~94%) -->
-  <rect x="270" y="16" width="230" height="244" fill="#1B2C4E"/>
+  <!-- Left bar (34% height) -->
+  <rect x="0" y="159" width="105" height="81" fill="#1B2C4E"/>
+  <!-- Middle bar (60% height) -->
+  <rect x="118" y="96" width="130" height="144" fill="#1B2C4E"/>
+  <!-- Right bar (94% height) -->
+  <rect x="262" y="15" width="238" height="225" fill="#1B2C4E"/>
   <!-- Diagonal trend arrow -->
-  <line x1="2" y1="168" x2="460" y2="14" stroke="#1B2C4E" stroke-width="15" stroke-linecap="round" marker-end="url(#arr)"/>
-  <!-- ACLIVE text -->
-  <text x="0" y="438"
-    font-family="'Arial Black','Franklin Gothic Heavy',Impact,sans-serif"
+  <line x1="2" y1="162" x2="448" y2="14" stroke="#1B2C4E" stroke-width="15" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+  <!-- ACLIVE -->
+  <text x="0" y="430"
+    font-family="Impact,'Arial Narrow',sans-serif"
     font-weight="900"
-    font-size="220"
+    font-size="235"
     fill="#1B2C4E"
     textLength="500"
     lengthAdjust="spacingAndGlyphs">ACLIVE</text>

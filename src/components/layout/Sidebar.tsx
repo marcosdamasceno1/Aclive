@@ -95,9 +95,9 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       {/* Logo */}
       <div className={`flex items-center border-b border-white/5 transition-all ${collapsed ? 'justify-center px-2 py-5' : 'px-4 py-5'}`}>
         {collapsed ? (
-          <img src="/logo-icon.svg" alt="Aclive" className="w-8 h-8" />
+          <img src="/logo-icon.svg" alt="Growth Expert" className="w-8 h-8" />
         ) : (
-          <img src="/logo.svg" alt="Aclive" className="h-7 w-auto" />
+          <img src="/logo.svg" alt="Growth Expert" className="h-7 w-auto" />
         )}
       </div>
 

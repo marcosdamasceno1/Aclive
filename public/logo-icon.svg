@@ -1,15 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 245">
-  <defs>
-    <marker id="arrowhead" markerWidth="55" markerHeight="38" refX="53" refY="19" orient="auto" markerUnits="userSpaceOnUse">
-      <polygon points="0 0, 55 19, 0 38" fill="#1B2C4E"/>
-    </marker>
-  </defs>
-  <!-- Left bar -->
-  <rect x="0" y="164" width="105" height="81" fill="#1B2C4E"/>
-  <!-- Middle bar -->
-  <rect x="118" y="101" width="130" height="144" fill="#1B2C4E"/>
-  <!-- Right bar -->
-  <rect x="262" y="20" width="238" height="225" fill="#1B2C4E"/>
-  <!-- Diagonal trend arrow -->
-  <line x1="2" y1="167" x2="448" y2="19" stroke="#1B2C4E" stroke-width="15" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <text x="50" y="78"
+    text-anchor="middle"
+    font-family="Impact,'Arial Narrow',sans-serif"
+    font-weight="900"
+    font-size="90"
+    fill="white">A</text>
 </svg>

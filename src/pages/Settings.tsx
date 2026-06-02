@@ -3,8 +3,9 @@ import { useAuthStore } from '../store/authStore';
 import { useProfessionalsStore } from '../store/professionalsStore';
 import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
+import { getZApiConfig, saveZApiConfig } from '../utils/whatsapp';
 import type { UserRole, ProfessionType } from '../types';
-import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil } from 'lucide-react';
+import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -40,10 +41,24 @@ const emptyUserForm = {
 export const Settings = () => {
   const { users, currentUser, addUser, updateUser, deleteUser } = useAuthStore();
   const { addProfessional } = useProfessionalsStore();
+  // Z-API config state
+  const existingZApi = getZApiConfig();
+  const [zapiInstance,     setZapiInstance]     = useState(existingZApi?.instance     || '');
+  const [zapiToken,        setZapiToken]        = useState(existingZApi?.token        || '');
+  const [zapiClientToken,  setZapiClientToken]  = useState(existingZApi?.clientToken  || '');
+  const [zapiShowToken,    setZapiShowToken]    = useState(false);
+  const [zapiSaved,        setZapiSaved]        = useState(false);
+
+  const handleSaveZApi = () => {
+    saveZApiConfig({ instance: zapiInstance.trim(), token: zapiToken.trim(), clientToken: zapiClientToken.trim() });
+    setZapiSaved(true);
+    setTimeout(() => setZapiSaved(false), 2500);
+  };
+
   const [showUserModal, setShowUserModal] = useState(false);
   const [userForm, setUserForm] = useState(emptyUserForm);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'system'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'system' | 'integrations'>('users');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -185,6 +200,17 @@ export const Settings = () => {
           <div className="flex items-center gap-2">
             <Info className="w-4 h-4" />
             Sistema
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('integrations')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'integrations' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4" />
+            Integrações
           </div>
         </button>
       </div>
@@ -377,6 +403,85 @@ export const Settings = () => {
                   Pagamentos duplicados são bloqueados automaticamente pelo sistema.
                 </li>
               </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'integrations' && (
+        <div className="space-y-4">
+          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Zap className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-100">Z-API — WhatsApp</h3>
+                <p className="text-xs text-slate-500">Notificações automáticas para profissionais ao criar demandas</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Instance ID</label>
+                <input
+                  type="text"
+                  value={zapiInstance}
+                  onChange={e => setZapiInstance(e.target.value)}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ex: 3C56F5B73..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Token</label>
+                <div className="relative">
+                  <input
+                    type={zapiShowToken ? 'text' : 'password'}
+                    value={zapiToken}
+                    onChange={e => setZapiToken(e.target.value)}
+                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Token da instância"
+                  />
+                  <button
+                    onClick={() => setZapiShowToken(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    {zapiShowToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Client Token</label>
+                <input
+                  type="password"
+                  value={zapiClientToken}
+                  onChange={e => setZapiClientToken(e.target.value)}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Client-Token da conta Z-API"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveZApi}
+                disabled={!zapiInstance.trim() || !zapiToken.trim()}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              >
+                {zapiSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                {zapiSaved ? 'Salvo!' : 'Salvar configuração'}
+              </button>
+              {getZApiConfig() && (
+                <span className="text-xs text-green-400 flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5" /> Z-API configurada
+                </span>
+              )}
+            </div>
+
+            <div className="border-t border-white/[0.05] pt-4 text-xs text-slate-500 space-y-1">
+              <p>• Encontre o <strong className="text-slate-400">Instance ID</strong> e <strong className="text-slate-400">Token</strong> no painel da instância em app.z-api.io</p>
+              <p>• O <strong className="text-slate-400">Client Token</strong> está em Conta → Security no painel Z-API</p>
+              <p>• O telefone do profissional deve estar preenchido no cadastro (com DDD)</p>
             </div>
           </div>
         </div>

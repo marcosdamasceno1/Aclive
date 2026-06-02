@@ -21,8 +21,9 @@ import {
 import { canMoveDemands, canCreateDemands, canViewAllDemands } from '../utils/permissions';
 import {
   AlertTriangle, Calendar, DollarSign, ChevronDown,
-  Plus, X, Edit2, Trash2, MessageSquare, Send,
+  Plus, X, Edit2, Trash2, MessageSquare, Send, MessageCircle, CheckCircle,
 } from 'lucide-react';
+import { sendWhatsAppNotification, getZApiConfig } from '../utils/whatsapp';
 
 // ─── Column config ─────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ const emptyForm = {
   priority: 'medium' as Priority,
   value: 0,
   status: 'new' as KanbanStatus,
+  notifyWhatsapp: false,
 };
 
 // ─── Draggable Card ────────────────────────────────────────────────────────────
@@ -221,6 +223,9 @@ export const Kanban = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [commentText, setCommentText] = useState('');
+  const [whatsappStatus, setWhatsappStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
+  const [whatsappMsg, setWhatsappMsg] = useState('');
+  const zapiConfigured = !!getZApiConfig();
 
   const canCreate = currentUser ? canCreateDemands(currentUser.role) : false;
   const canViewAll = currentUser ? canViewAllDemands(currentUser.role) : false;
@@ -373,12 +378,38 @@ export const Kanban = () => {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim() || !form.professionalId || !form.clientId) return;
     if (editingId) {
       updateDemand(editingId, form);
     } else {
-      addDemand({ ...form, createdBy: currentUser?.id || '' });
+      const newDemand = addDemand({ ...form, createdBy: currentUser?.id || '' });
+
+      if (form.notifyWhatsapp) {
+        const prof   = professionals.find(p => p.id === form.professionalId);
+        const client = clients.find(c => c.id === form.clientId);
+        if (prof?.phone) {
+          setWhatsappStatus('sending');
+          const err = await sendWhatsAppNotification({
+            phone:            prof.phone,
+            professionalName: prof.name,
+            demandTitle:      newDemand.title,
+            clientName:       client?.companyName || '—',
+            deadline:         form.deadline,
+            priority:         form.priority,
+            taskType:         form.taskType,
+            value:            form.value,
+          });
+          if (err) {
+            setWhatsappStatus('error');
+            setWhatsappMsg(err);
+          } else {
+            setWhatsappStatus('ok');
+            setWhatsappMsg('WhatsApp enviado!');
+          }
+          setTimeout(() => setWhatsappStatus('idle'), 4000);
+        }
+      }
     }
     setShowModal(false);
   };
@@ -530,6 +561,20 @@ export const Kanban = () => {
         </DndContext>
       </div>
 
+      {/* ── WhatsApp status toast ── */}
+      {whatsappStatus !== 'idle' && (
+        <div className={`fixed bottom-6 right-6 z-[70] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-semibold transition-all ${
+          whatsappStatus === 'sending' ? 'bg-[#21262d] border-white/10 text-slate-300' :
+          whatsappStatus === 'ok'     ? 'bg-green-500/15 border-green-500/30 text-green-300' :
+                                        'bg-red-500/15 border-red-500/30 text-red-300'
+        }`}>
+          {whatsappStatus === 'sending' && <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+          {whatsappStatus === 'ok'      && <CheckCircle className="w-4 h-4" />}
+          {whatsappStatus === 'error'   && <AlertTriangle className="w-4 h-4" />}
+          {whatsappStatus === 'sending' ? 'Enviando WhatsApp…' : whatsappMsg}
+        </div>
+      )}
+
       {/* ── Add / Edit Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -647,6 +692,40 @@ export const Kanban = () => {
                   placeholder="Descreva os detalhes da tarefa..."
                 />
               </div>
+
+              {/* WhatsApp notification — only for new demands */}
+              {!editingId && (
+                <div className={`flex items-start gap-3 rounded-xl px-4 py-3 border transition-colors cursor-pointer ${
+                  form.notifyWhatsapp
+                    ? 'bg-green-500/10 border-green-500/30'
+                    : 'bg-white/[0.03] border-white/[0.08] hover:border-white/20'
+                }`}
+                  onClick={() => setForm(f => ({ ...f, notifyWhatsapp: !f.notifyWhatsapp }))}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.notifyWhatsapp}
+                    onChange={e => setForm(f => ({ ...f, notifyWhatsapp: e.target.checked }))}
+                    onClick={e => e.stopPropagation()}
+                    className="w-4 h-4 mt-0.5 rounded border-slate-300 text-green-600 focus:ring-green-500 cursor-pointer flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-slate-100">Notificar profissional via WhatsApp</span>
+                    </div>
+                    {!zapiConfigured ? (
+                      <p className="text-xs text-amber-400 mt-0.5">Z-API não configurada — configure em Configurações → Integrações</p>
+                    ) : (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {form.professionalId
+                          ? `Mensagem enviada para ${professionals.find(p => p.id === form.professionalId)?.name || '...'}`
+                          : 'Selecione um profissional para enviar a notificação'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="sticky bottom-0 bg-[#21262d] flex gap-3 px-6 py-4 border-t border-white/[0.05]">
               <button onClick={() => setShowModal(false)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">

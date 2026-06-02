@@ -373,6 +373,7 @@ export const Kanban = () => {
       clientId: d.clientId, title: d.title, description: d.description,
       taskType: d.taskType, professionalId: d.professionalId, deadline: d.deadline,
       priority: d.priority, value: d.value, status: d.status,
+      notifyWhatsapp: false,
     });
     setEditingId(d.id);
     setShowModal(true);
@@ -380,12 +381,14 @@ export const Kanban = () => {
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.professionalId || !form.clientId) return;
+    // Exclude UI-only field from the demand data sent to Supabase
+    const { notifyWhatsapp, ...demandFields } = form;
     if (editingId) {
-      updateDemand(editingId, form);
+      updateDemand(editingId, demandFields);
     } else {
-      const newDemand = addDemand({ ...form, createdBy: currentUser?.id || '' });
+      const newDemand = addDemand({ ...demandFields, createdBy: currentUser?.id || '' });
 
-      if (form.notifyWhatsapp) {
+      if (notifyWhatsapp) {
         const prof   = professionals.find(p => p.id === form.professionalId);
         const client = clients.find(c => c.id === form.clientId);
         if (prof?.phone) {

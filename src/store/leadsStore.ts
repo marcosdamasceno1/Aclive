@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
@@ -27,94 +28,80 @@ const toDbLead = (lead: Record<string, unknown>): Record<string, unknown> => {
   return row;
 };
 
-export const useLeadsStore = create<LeadsState>()((set, get) => ({
-  leads: [],
-  loading: false,
-  dbError: null,
-
-  init: async () => {
-    set({ loading: true, dbError: null });
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('[leads.init]', error);
-      // Do NOT wipe in-memory leads on error — preserve what's already there
-      set({ loading: false, dbError: error.message });
-      return;
-    }
-
-    set({
-      leads: data.map(r => fromDb<Lead>(r as Record<string, unknown>)),
+export const useLeadsStore = create<LeadsState>()(
+  persist(
+    (set, get) => ({
+      leads: [],
       loading: false,
       dbError: null,
-    });
-  },
 
-  addLead: async (data) => {
-    const newLead: Lead = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
-    set(state => ({ leads: [newLead, ...state.leads] }));
+      init: async () => {
+        set({ loading: true, dbError: null });
+        const { data, error } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-    const { error } = await supabase
-      .from('leads')
-      .insert(toDbLead({ ...newLead } as Record<string, unknown>));
+        if (error) {
+          console.error('[leads.init]', error);
+          // Keep whatever is in localStorage — do NOT wipe state on error
+          set({ loading: false, dbError: error.message });
+          return;
+        }
 
-    if (error) {
-      console.error('[leads.insert]', error);
-      // Roll back optimistic update and expose error
-      set(state => ({
-        leads: state.leads.filter(l => l.id !== newLead.id),
-        dbError: error.message,
-      }));
+        // Supabase is the source of truth when available
+        set({ leads: data.map(r => fromDb<Lead>(r as Record<string, unknown>)), loading: false, dbError: null });
+      },
+
+      addLead: async (data) => {
+        const newLead: Lead = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
+        // Optimistic: immediately visible AND saved to localStorage by persist middleware
+        set(state => ({ leads: [newLead, ...state.leads] }));
+
+        const { error } = await supabase
+          .from('leads')
+          .insert(toDbLead({ ...newLead } as Record<string, unknown>));
+
+        if (error) {
+          console.error('[leads.insert]', error);
+          // Roll back only if Supabase rejected — localStorage still had it briefly but we keep consistent
+          set(state => ({ leads: state.leads.filter(l => l.id !== newLead.id), dbError: error.message }));
+        }
+      },
+
+      updateLead: (id, updates) => {
+        set(state => ({ leads: state.leads.map(l => l.id === id ? { ...l, ...updates } : l) }));
+        supabase.from('leads').update(toDbLead(updates as Record<string, unknown>)).eq('id', id)
+          .then(({ error }) => { if (error) console.error('[leads.update]', error); });
+      },
+
+      updateStatus: (id, status) => { get().updateLead(id, { status }); },
+
+      deleteLead: (id) => {
+        set(state => ({ leads: state.leads.filter(l => l.id !== id) }));
+        supabase.from('leads').delete().eq('id', id)
+          .then(({ error }) => { if (error) console.error('[leads.delete]', error); });
+      },
+
+      importLeads: async (leadsData) => {
+        const now = new Date().toISOString();
+        const newLeads = leadsData.map(l => ({ ...l, id: uuidv4(), createdAt: now }));
+        set(state => ({ leads: [...newLeads, ...state.leads] }));
+
+        const { error } = await supabase
+          .from('leads')
+          .insert(newLeads.map(l => toDbLead({ ...l } as Record<string, unknown>)));
+
+        if (error) {
+          console.error('[leads.importLeads]', error);
+          const ids = new Set(newLeads.map(l => l.id));
+          set(state => ({ leads: state.leads.filter(l => !ids.has(l.id)), dbError: error.message }));
+        }
+      },
+    }),
+    {
+      name: 'ge_leads',          // localStorage key
+      partialize: (state) => ({ leads: state.leads }), // only persist leads, not loading/error flags
     }
-  },
-
-  updateLead: (id, updates) => {
-    set(state => ({
-      leads: state.leads.map(l => l.id === id ? { ...l, ...updates } : l),
-    }));
-    supabase
-      .from('leads')
-      .update(toDbLead(updates as Record<string, unknown>))
-      .eq('id', id)
-      .then(({ error }) => {
-        if (error) console.error('[leads.update]', error);
-      });
-  },
-
-  updateStatus: (id, status) => {
-    get().updateLead(id, { status });
-  },
-
-  deleteLead: (id) => {
-    set(state => ({ leads: state.leads.filter(l => l.id !== id) }));
-    supabase
-      .from('leads')
-      .delete()
-      .eq('id', id)
-      .then(({ error }) => {
-        if (error) console.error('[leads.delete]', error);
-      });
-  },
-
-  importLeads: async (leadsData) => {
-    const now = new Date().toISOString();
-    const newLeads = leadsData.map(l => ({ ...l, id: uuidv4(), createdAt: now }));
-    set(state => ({ leads: [...newLeads, ...state.leads] }));
-
-    const { error } = await supabase
-      .from('leads')
-      .insert(newLeads.map(l => toDbLead({ ...l } as Record<string, unknown>)));
-
-    if (error) {
-      console.error('[leads.importLeads]', error);
-      const ids = new Set(newLeads.map(l => l.id));
-      set(state => ({
-        leads: state.leads.filter(l => !ids.has(l.id)),
-        dbError: error.message,
-      }));
-    }
-  },
-}));
+  )
+);

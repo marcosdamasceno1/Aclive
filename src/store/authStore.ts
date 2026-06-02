@@ -27,6 +27,8 @@ const metaToUser = (u: { id: string; email?: string; user_metadata?: Record<stri
     professionalId: meta.professionalId as string | undefined,
     active: true,
     createdAt: u.created_at || new Date().toISOString(),
+    companyId: (meta.company_id as string) || undefined,
+    isSuperAdmin: meta.super_admin === true,
   };
 };
 
@@ -52,7 +54,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
   loadUsers: async () => {
     const { data, error } = await supabase.auth.admin.listUsers();
     if (!error && data?.users) {
-      set({ users: data.users.map(u => metaToUser(u)) });
+      const me = useAuthStore.getState().currentUser;
+      const all = data.users.map(u => metaToUser(u));
+      if (me?.isSuperAdmin) {
+        set({ users: all });
+      } else {
+        set({ users: all.filter(u => u.companyId === me?.companyId) });
+      }
     }
   },
 
@@ -85,6 +93,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   addUser: async (userData, password) => {
+    const me = useAuthStore.getState().currentUser;
     const { data: authData, error } = await supabase.auth.admin.createUser({
       email: userData.email,
       password,
@@ -92,6 +101,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
       user_metadata: {
         name: userData.name,
         role: userData.role,
+        ...(userData.companyId ? { company_id: userData.companyId } : me?.companyId ? { company_id: me.companyId } : {}),
         ...(userData.role !== 'admin' && { permissions: userData.permissions || [] }),
       },
     });
@@ -105,6 +115,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
       active: userData.active ?? true,
       permissions: userData.role !== 'admin' ? (userData.permissions || []) : undefined,
       createdAt: authData.user.created_at || new Date().toISOString(),
+      companyId: userData.companyId || me?.companyId,
     };
     set(state => ({ users: [...state.users, newUser] }));
     return newUser;

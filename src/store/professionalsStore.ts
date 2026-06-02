@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Professional } from '../types';
+import { useAuthStore } from './authStore';
+
+const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
 
 interface ProfessionalsState {
   professionals: Professional[];
@@ -20,14 +23,19 @@ export const useProfessionalsStore = create<ProfessionalsState>()((set, get) => 
 
   init: async () => {
     set({ loading: true });
-    const { data } = await supabase.from('professionals').select('*').order('created_at');
+    const cid = getCompanyId();
+    const q = supabase.from('professionals').select('*').order('created_at');
+    const { data } = await (cid ? q.eq('company_id', cid) : q);
     set({ professionals: (data || []).map(r => fromDb<Professional>(r as Record<string, unknown>)), loading: false });
   },
 
   addProfessional: (data) => {
     const newPro: Professional = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     set(state => ({ professionals: [...state.professionals, newPro] }));
-    supabase.from('professionals').insert(toDb({ ...newPro }) as Record<string, unknown>)
+    const dbRow = toDb({ ...newPro }) as Record<string, unknown>;
+    const cid = getCompanyId();
+    if (cid) dbRow.company_id = cid;
+    supabase.from('professionals').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[professionals.insert]', error); });
     return newPro;
   },

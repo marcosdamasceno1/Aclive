@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { FinancialMovement, AuditLog } from '../types';
+import { useAuthStore } from './authStore';
+
+const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
 
 const CATEGORY_KEY = 'financial_custom_categories';
 
@@ -55,9 +58,12 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
 
   init: async () => {
     set({ loading: true });
+    const cid = getCompanyId();
+    const movementsQuery = supabase.from('financial_movements').select('*').order('created_at');
+    const auditQuery = supabase.from('audit_logs').select('*').order('created_at');
     const [movementsResult, auditResult] = await Promise.all([
-      supabase.from('financial_movements').select('*').order('created_at'),
-      supabase.from('audit_logs').select('*').order('created_at'),
+      cid ? movementsQuery.eq('company_id', cid) : movementsQuery,
+      auditQuery,
     ]);
     set({
       movements: (movementsResult.data || []).map(r => fromDb<FinancialMovement>(r as Record<string, unknown>)),
@@ -75,6 +81,8 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     const dbRow = toDb({ ...newMovement }) as Record<string, unknown>;
     if (dbRow.completed_at === '') dbRow.completed_at = null;
     if (dbRow.paid_at === '') dbRow.paid_at = null;
+    const cid = getCompanyId();
+    if (cid) dbRow.company_id = cid;
     supabase.from('financial_movements').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[financial.registerMovement]', error); });
   },

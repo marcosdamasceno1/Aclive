@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Demand, KanbanStatus, Comment } from '../types';
+import { useAuthStore } from './authStore';
+
+const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
 
 interface DemandsState {
   demands: Demand[];
@@ -22,7 +25,9 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
 
   init: async () => {
     set({ loading: true });
-    const { data } = await supabase.from('demands').select('*').order('created_at');
+    const cid = getCompanyId();
+    const q = supabase.from('demands').select('*').order('created_at');
+    const { data } = await (cid ? q.eq('company_id', cid) : q);
     set({ demands: (data || []).map(r => fromDb<Demand>(r as Record<string, unknown>)), loading: false });
   },
 
@@ -38,6 +43,8 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     const dbRow = toDb({ ...newDemand }) as Record<string, unknown>;
     if (dbRow.deadline === '') dbRow.deadline = null;
     if (dbRow.completed_at === '') dbRow.completed_at = null;
+    const cid = getCompanyId();
+    if (cid) dbRow.company_id = cid;
     supabase.from('demands').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[demands.insert]', error); });
     return newDemand;

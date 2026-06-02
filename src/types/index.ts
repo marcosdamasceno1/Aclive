@@ -46,6 +46,8 @@ export interface User {
   active?: boolean;
   permissions?: string[];
   createdAt: string;
+  companyId?: string;
+  isSuperAdmin?: boolean;
 }
 
 export interface Professional {
@@ -159,5 +161,14 @@ export interface AuditLog {
   newValue?: string;
   userId: string;
   userName: string;
+  createdAt: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  email?: string;
+  plan: string;
+  active: boolean;
   createdAt: string;
 }

@@ -64,12 +64,14 @@ function App() {
       if (useAuthStore.getState().currentUser) initAllStores();
     }).finally(() => clearTimeout(timeout));
 
-    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
+        // Sync currentUser from the session BEFORE loading stores so getCompanyId() returns
+        // the correct company for the user who just logged in (not null from previous state).
+        if (session?.user) useAuthStore.getState().syncSession(session.user);
         await initAllStores();
       }
       if (event === 'SIGNED_OUT') {
-        // Clear derived store state on logout so next login gets fresh data
         useLeadsStore.setState({ dbError: null });
       }
     });

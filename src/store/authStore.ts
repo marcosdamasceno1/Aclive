@@ -14,6 +14,7 @@ interface AuthState {
   deleteUser: (id: string) => Promise<void>;
   initAuth: () => Promise<void>;
   loadUsers: () => Promise<void>;
+  syncSession: (rawUser: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }) => void;
 }
 
 const metaToUser = (u: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }): User => {
@@ -141,6 +142,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
   deleteUser: async (id) => {
     await supabase.auth.admin.deleteUser(id);
     set(state => ({ users: state.users.filter(u => u.id !== id) }));
+  },
+
+  syncSession: (rawUser) => {
+    set({ currentUser: metaToUser(rawUser) });
   },
 }));
 

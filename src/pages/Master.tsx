@@ -37,7 +37,7 @@ alter table professionals add column if not exists company_id uuid references co
 alter table clients add column if not exists company_id uuid references companies(id);
 alter table demands add column if not exists company_id uuid references companies(id);
 alter table leads add column if not exists company_id uuid references companies(id);
-alter table financial_transactions add column if not exists company_id uuid references companies(id);
+alter table financial_movements add column if not exists company_id uuid references companies(id);
 alter table calendar_events add column if not exists company_id uuid references companies(id);`;
 
 const SQL_SUPER_ADMIN = `-- Replace with your actual user email
@@ -50,7 +50,7 @@ update professionals set company_id = 'COMPANY_ID' where company_id is null;
 update clients set company_id = 'COMPANY_ID' where company_id is null;
 update demands set company_id = 'COMPANY_ID' where company_id is null;
 update leads set company_id = 'COMPANY_ID' where company_id is null;
-update financial_transactions set company_id = 'COMPANY_ID' where company_id is null;
+update financial_movements set company_id = 'COMPANY_ID' where company_id is null;
 update calendar_events set company_id = 'COMPANY_ID' where company_id is null;`;
 
 /* ─────────────── SQL block component ─────────────── */

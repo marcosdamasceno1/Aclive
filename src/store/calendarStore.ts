@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { CalendarEvent, Priority } from '../types';
+import { useAuthStore } from './authStore';
+
+const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
 
 interface CalendarState {
   events: CalendarEvent[];
@@ -20,10 +23,9 @@ export const useCalendarStore = create<CalendarState>()((set, get) => ({
 
   init: async () => {
     set({ loading: true });
-    const { data, error } = await supabase
-      .from('calendar_events')
-      .select('*')
-      .order('date');
+    const cid = getCompanyId();
+    const q = supabase.from('calendar_events').select('*').order('date');
+    const { data, error } = await (cid ? q.eq('company_id', cid) : q);
     if (error) console.error('[calendar.init]', error);
     set({
       events: (data || []).map(r => fromDb<CalendarEvent>(r as Record<string, unknown>)),
@@ -40,6 +42,8 @@ export const useCalendarStore = create<CalendarState>()((set, get) => ({
     set(state => ({ events: [...state.events, newEvent] }));
     const dbRow = toDb({ ...newEvent } as unknown as Record<string, unknown>);
     if (!dbRow.end_date) dbRow.end_date = null;
+    const cid = getCompanyId();
+    if (cid) dbRow.company_id = cid;
     supabase.from('calendar_events').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[calendar.insert]', error); });
     return newEvent;

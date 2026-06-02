@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Lead, LeadStatus } from '../types';
+import { useAuthStore } from './authStore';
+
+const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
 
 interface LeadsState {
   leads: Lead[];
@@ -34,10 +37,9 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
 
   init: async () => {
     set({ loading: true, dbError: null });
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const cid = getCompanyId();
+    const q = supabase.from('leads').select('*').order('created_at', { ascending: false });
+    const { data, error } = await (cid ? q.eq('company_id', cid) : q);
 
     if (error) {
       console.error('[leads.init]', error);
@@ -46,7 +48,7 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     }
 
     set({
-      leads: data.map(r => fromDb<Lead>(r as Record<string, unknown>)),
+      leads: (data || []).map(r => fromDb<Lead>(r as Record<string, unknown>)),
       loading: false,
       dbError: null,
     });
@@ -55,9 +57,12 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
   addLead: (data) => {
     const newLead: Lead = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     set(state => ({ leads: [newLead, ...state.leads] }));
+    const dbRow = toDbLead({ ...newLead } as Record<string, unknown>);
+    const cid = getCompanyId();
+    if (cid) dbRow.company_id = cid;
     supabase
       .from('leads')
-      .insert(toDbLead({ ...newLead } as Record<string, unknown>))
+      .insert(dbRow)
       .then(({ error }) => {
         if (error) {
           console.error('[leads.insert]', error);
@@ -94,9 +99,14 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     const now = new Date().toISOString();
     const newLeads = leadsData.map(l => ({ ...l, id: uuidv4(), createdAt: now }));
     set(state => ({ leads: [...newLeads, ...state.leads] }));
+    const cid = getCompanyId();
     supabase
       .from('leads')
-      .insert(newLeads.map(l => toDbLead({ ...l } as Record<string, unknown>)))
+      .insert(newLeads.map(l => {
+        const row = toDbLead({ ...l } as Record<string, unknown>);
+        if (cid) row.company_id = cid;
+        return row;
+      }))
       .then(({ error }) => {
         if (error) {
           console.error('[leads.import]', error);

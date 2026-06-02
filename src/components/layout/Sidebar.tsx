@@ -111,6 +111,30 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
 
       {/* Nav */}
       <nav className={`flex-1 overflow-y-auto py-4 px-3 ${collapsed ? 'lg:px-1' : ''}`}>
+        {currentUser?.isSuperAdmin && (
+          <div className="mb-6">
+            <p className={`text-xs font-semibold text-violet-400 uppercase tracking-widest px-3 mb-2 ${collapsed ? 'lg:hidden' : ''}`}>Master</p>
+            <div className="space-y-0.5">
+              <NavLink
+                to="/master"
+                title={collapsed ? 'Painel Master' : undefined}
+                onClick={onMobileClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-100 border-l-2 ${
+                    collapsed ? 'lg:justify-center lg:px-2' : ''
+                  } ${
+                    isActive
+                      ? 'bg-violet-600/10 text-violet-400 border-violet-500'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border-transparent'
+                  }`
+                }
+              >
+                <Building2 className="w-4 h-4 flex-shrink-0" />
+                <span className={collapsed ? 'lg:hidden' : ''}>Painel Master</span>
+              </NavLink>
+            </div>
+          </div>
+        )}
         {generalItems.length > 0 && <NavGroup label="Geral" items={generalItems} />}
         {adminItems.length > 0 && <NavGroup label="Administração" items={adminItems} />}
       </nav>

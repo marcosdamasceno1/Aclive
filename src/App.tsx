@@ -8,6 +8,7 @@ import { useDemandsStore } from './store/demandsStore';
 import { useFinancialStore } from './store/financialStore';
 import { useLeadsStore } from './store/leadsStore';
 import { useCalendarStore } from './store/calendarStore';
+import { useCompaniesStore } from './store/companiesStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -20,10 +21,17 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { Leads } from './pages/Leads';
 import { Calendar } from './pages/Calendar';
+import { Master } from './pages/Master';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = useAuthStore();
   if (!currentUser) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
+const MasterRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser } = useAuthStore();
+  if (!currentUser?.isSuperAdmin) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
 
@@ -35,6 +43,7 @@ function App() {
   const { init: initFinancial } = useFinancialStore();
   const { init: initLeads } = useLeadsStore();
   const { init: initCalendar } = useCalendarStore();
+  const { init: initCompanies } = useCompaniesStore();
 
   useEffect(() => {
     // Timeout fallback: never stay stuck loading more than 6s
@@ -43,10 +52,10 @@ function App() {
     }, 6000);
 
     const initAllStores = async () => {
-      await Promise.all([
-        initProfessionals(), initClients(), initDemands(),
-        initFinancial(), initLeads(), initCalendar(),
-      ]);
+      const me = useAuthStore.getState().currentUser;
+      const storeInits = [initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar()];
+      if (me?.isSuperAdmin) storeInits.push(initCompanies());
+      await Promise.all(storeInits);
       useAuthStore.getState().loadUsers();
     };
 
@@ -97,6 +106,7 @@ function App() {
           <Route path="calendar" element={<Calendar />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="master" element={<MasterRoute><Master /></MasterRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

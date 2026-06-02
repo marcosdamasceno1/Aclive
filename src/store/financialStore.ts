@@ -151,6 +151,7 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       category: data.category,
     };
     set(state => ({ movements: [...state.movements, newEntry] }));
+    const cid = getCompanyId();
     supabase.from('financial_movements').insert({
       id: newEntry.id,
       demand_title: data.description,
@@ -164,6 +165,7 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       paid_by: data.createdBy,
       notes: data.notes || null,
       category: data.category,
+      ...(cid ? { company_id: cid } : {}),
     } as Record<string, unknown>)
       .then(({ error }) => { if (error) console.error('[financial.addManualEntry]', error); });
   },

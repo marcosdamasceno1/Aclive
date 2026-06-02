@@ -15,13 +15,26 @@ interface LeadsState {
   importLeads: (leads: Omit<Lead, 'id' | 'createdAt'>[]) => void;
 }
 
+const toDbLead = (lead: Record<string, unknown>): Record<string, unknown> => {
+  const row = toDb(lead);
+  // These fields must be null, not empty string, in Postgres
+  for (const col of ['phone', 'website', 'address', 'city', 'notes', 'category', 'converted_client_id']) {
+    if (row[col] === '' || row[col] === undefined) row[col] = null;
+  }
+  for (const col of ['rating', 'review_count']) {
+    if (row[col] === undefined) row[col] = null;
+  }
+  return row;
+};
+
 export const useLeadsStore = create<LeadsState>()((set, get) => ({
   leads: [],
   loading: false,
 
   init: async () => {
     set({ loading: true });
-    const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+    if (error) console.error('[leads.init]', error);
     set({
       leads: (data || []).map(r => fromDb<Lead>(r as Record<string, unknown>)),
       loading: false,
@@ -31,14 +44,16 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
   addLead: (data) => {
     const newLead: Lead = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     set(state => ({ leads: [newLead, ...state.leads] }));
-    supabase.from('leads').insert(toDb({ ...newLead }) as Record<string, unknown>);
+    supabase.from('leads').insert(toDbLead({ ...newLead } as Record<string, unknown>))
+      .then(({ error }) => { if (error) console.error('[leads.insert]', error); });
   },
 
   updateLead: (id, updates) => {
     set(state => ({
       leads: state.leads.map(l => l.id === id ? { ...l, ...updates } : l),
     }));
-    supabase.from('leads').update(toDb(updates as Record<string, unknown>)).eq('id', id);
+    supabase.from('leads').update(toDbLead(updates as Record<string, unknown>)).eq('id', id)
+      .then(({ error }) => { if (error) console.error('[leads.update]', error); });
   },
 
   updateStatus: (id, status) => {
@@ -47,13 +62,15 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
 
   deleteLead: (id) => {
     set(state => ({ leads: state.leads.filter(l => l.id !== id) }));
-    supabase.from('leads').delete().eq('id', id);
+    supabase.from('leads').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[leads.delete]', error); });
   },
 
   importLeads: (leadsData) => {
     const now = new Date().toISOString();
     const newLeads = leadsData.map(l => ({ ...l, id: uuidv4(), createdAt: now }));
     set(state => ({ leads: [...newLeads, ...state.leads] }));
-    supabase.from('leads').insert(newLeads.map(l => toDb({ ...l }) as Record<string, unknown>));
+    supabase.from('leads').insert(newLeads.map(l => toDbLead({ ...l } as Record<string, unknown>)))
+      .then(({ error }) => { if (error) console.error('[leads.importLeads]', error); });
   },
 }));

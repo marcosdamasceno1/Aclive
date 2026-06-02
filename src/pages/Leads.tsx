@@ -278,6 +278,7 @@ export const Leads = () => {
   const [segment, setSegment]         = useState('');
   const [city, setCity]               = useState('');
   const [maxResults, setMaxResults]   = useState(25);
+  const [filterNoWebsite, setFilterNoWebsite] = useState(false);
   const [apifyStatus, setApifyStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
   const [apifyMsg, setApifyMsg]       = useState('');
   const [results, setResults]         = useState<ApifyItem[]>([]);
@@ -313,6 +314,14 @@ export const Leads = () => {
   [filteredBySearch]);
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null;
+
+  // Results with original index preserved so selection works even when filtered
+  const displayedResults = useMemo(() => {
+    const indexed = results.map((item, i) => ({ item, idx: i }));
+    return filterNoWebsite ? indexed.filter(({ item }) => !item.website) : indexed;
+  }, [results, filterNoWebsite]);
+
+  const noWebsiteCount = useMemo(() => results.filter(i => !i.website).length, [results]);
 
   // ─── DnD handlers ──────────────────────────────────────────────────────────
 
@@ -400,7 +409,14 @@ export const Leads = () => {
     setSelected(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
 
   const toggleAll = () =>
-    setSelected(prev => prev.size === results.length ? new Set() : new Set(results.map((_, i) => i)));
+    setSelected(prev => {
+      const visibleIdxs = displayedResults.map(({ idx }) => idx);
+      const allVisible = visibleIdxs.every(i => prev.has(i));
+      const n = new Set(prev);
+      if (allVisible) visibleIdxs.forEach(i => n.delete(i));
+      else visibleIdxs.forEach(i => n.add(i));
+      return n;
+    });
 
   const handleImport = () => {
     importLeads(
@@ -618,6 +634,25 @@ export const Leads = () => {
                 </div>
               </div>
 
+              {/* Advanced filter */}
+              <label className="flex items-center gap-3 cursor-pointer select-none p-3 rounded-xl border border-white/[0.06] bg-[#161b22] hover:border-white/[0.12] transition-colors">
+                <div className="relative flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={filterNoWebsite}
+                    onChange={e => setFilterNoWebsite(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-9 h-5 rounded-full transition-colors ${filterNoWebsite ? 'bg-emerald-600' : 'bg-slate-700'}`}>
+                    <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform ${filterNoWebsite ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-200">Apenas empresas <span className="text-emerald-400">sem site</span></p>
+                  <p className="text-xs text-slate-500 mt-0.5">Filtra os resultados para mostrar só quem não tem site — leads ideais para agência</p>
+                </div>
+              </label>
+
               <button onClick={runApify} disabled={!apifyToken || !segment || !city || apifyStatus === 'running'}
                 className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors">
                 {apifyStatus === 'running'
@@ -632,33 +667,80 @@ export const Leads = () => {
 
               {apifyStatus === 'done' && results.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-semibold text-slate-200">{apifyMsg}</p>
                     <button onClick={toggleAll} className="text-xs text-blue-400 hover:underline flex items-center gap-1">
-                      {selected.size === results.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-                      {selected.size === results.length ? 'Desmarcar todos' : 'Selecionar todos'}
+                      {displayedResults.every(({ idx }) => selected.has(idx)) && displayedResults.length > 0
+                        ? <><CheckSquare className="w-3.5 h-3.5" />Desmarcar todos</>
+                        : <><Square className="w-3.5 h-3.5" />Selecionar todos</>
+                      }
                     </button>
                   </div>
+
+                  {/* Filter chips */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <button
+                      onClick={() => setFilterNoWebsite(false)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                        !filterNoWebsite
+                          ? 'border-blue-500/50 bg-blue-500/10 text-blue-400'
+                          : 'border-white/[0.08] text-slate-500 hover:border-white/20'
+                      }`}
+                    >
+                      Todos ({results.length})
+                    </button>
+                    <button
+                      onClick={() => setFilterNoWebsite(true)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                        filterNoWebsite
+                          ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                          : 'border-white/[0.08] text-slate-500 hover:border-white/20'
+                      }`}
+                    >
+                      Sem site ({noWebsiteCount})
+                    </button>
+                    {filterNoWebsite && noWebsiteCount === 0 && (
+                      <span className="text-xs text-slate-500 italic">Todos os resultados têm site cadastrado</span>
+                    )}
+                  </div>
+
                   <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                    {results.map((item, i) => (
-                      <div key={i} onClick={() => toggleSelect(i)}
+                    {displayedResults.map(({ item, idx }) => (
+                      <div key={idx} onClick={() => toggleSelect(idx)}
                         className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                          selected.has(i) ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-white/[0.06] hover:border-white/20 bg-[#161b22]'
+                          selected.has(idx) ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-white/[0.06] hover:border-white/20 bg-[#161b22]'
                         }`}>
                         <div className="mt-0.5 flex-shrink-0">
-                          {selected.has(i) ? <CheckSquare className="w-4 h-4 text-emerald-400" /> : <Square className="w-4 h-4 text-slate-500" />}
+                          {selected.has(idx) ? <CheckSquare className="w-4 h-4 text-emerald-400" /> : <Square className="w-4 h-4 text-slate-500" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-100">{item.title}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-slate-100">{item.title}</p>
+                            {!item.website
+                              ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-semibold">Sem site</span>
+                              : <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-white/[0.06]">Tem site</span>
+                            }
+                          </div>
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                             {item.categoryName && <span className="text-xs text-slate-500">{item.categoryName}</span>}
                             {item.city && <span className="text-xs text-slate-500 flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.city}</span>}
                             {item.phone && <span className="text-xs text-slate-500 flex items-center gap-0.5"><Phone className="w-3 h-3" />{item.phone}</span>}
                             {item.totalScore != null && <span className="text-xs text-yellow-400 flex items-center gap-0.5"><Star className="w-3 h-3 fill-yellow-400" />{item.totalScore.toFixed(1)}</span>}
+                            {item.website && (
+                              <span className="text-xs text-blue-400/60 flex items-center gap-0.5 truncate max-w-[140px]">
+                                <Globe className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{item.website.replace(/^https?:\/\//, '')}</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
                     ))}
+                    {displayedResults.length === 0 && (
+                      <div className="text-center py-8 text-slate-500 text-sm">
+                        Nenhum resultado sem site encontrado. Tente uma busca diferente.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

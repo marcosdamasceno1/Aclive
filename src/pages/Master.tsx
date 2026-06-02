@@ -279,7 +279,7 @@ const [sqlOpen, setSqlOpen] = [false, (_: boolean) => {}]; // placeholder — ma
 
 /* ─────────────── main page ─────────────── */
 export const Master = () => {
-  const { companies, loading, updateCompany, deleteCompany } = useCompaniesStore();
+  const { companies, loading, setupNeeded, updateCompany, deleteCompany } = useCompaniesStore();
   const { users } = useAuthStore();
 
   const [showNewCompany, setShowNewCompany] = useState(false);
@@ -315,8 +315,30 @@ export const Master = () => {
         </div>
       </div>
 
+      {/* Setup required banner */}
+      {setupNeeded && (
+        <div className="bg-[#161b22] border border-red-500/40 rounded-xl p-6 mb-8">
+          <div className="flex items-start gap-3 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Building2 className="w-4 h-4 text-red-400" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-red-400 mb-1">Configuração necessária</h2>
+              <p className="text-xs text-slate-400">
+                A tabela <code className="text-emerald-400 font-mono">companies</code> não existe ainda no Supabase.
+                Execute o SQL abaixo no <strong className="text-slate-300">SQL Editor</strong> do Supabase para ativar o multi-tenancy.
+              </p>
+            </div>
+          </div>
+          <SqlBlock title="1. Criar tabela companies e adicionar company_id em todas as tabelas:" code={SQL_SETUP} />
+          <SqlBlock title="2. Ativar Super Admin (substitua pelo seu e-mail):" code={SQL_SUPER_ADMIN} />
+          <SqlBlock title="3. Migrar dados existentes (após criar sua agência aqui):" code={SQL_MIGRATE} />
+          <p className="text-xs text-slate-500 mt-2">Após rodar o SQL, faça logout e login novamente para recarregar.</p>
+        </div>
+      )}
+
       {/* SQL Info Panel */}
-      {showSql && (
+      {showSql && !setupNeeded && (
         <div className="bg-[#161b22] border border-amber-500/30 rounded-xl p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-amber-400">Configuração Multi-tenancy — SQL</h2>

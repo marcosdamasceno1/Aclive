@@ -7,6 +7,7 @@ import type { Company } from '../types';
 interface CompaniesState {
   companies: Company[];
   loading: boolean;
+  setupNeeded: boolean;
   init: () => Promise<void>;
   addCompany: (c: Omit<Company, 'id' | 'createdAt'>) => Promise<Company>;
   updateCompany: (id: string, updates: Partial<Company>) => void;
@@ -16,11 +17,17 @@ interface CompaniesState {
 export const useCompaniesStore = create<CompaniesState>()((set) => ({
   companies: [],
   loading: false,
+  setupNeeded: false,
 
   init: async () => {
     set({ loading: true });
-    const { data } = await supabase.from('companies').select('*').order('created_at', { ascending: false });
-    set({ companies: (data || []).map(r => fromDb<Company>(r as Record<string, unknown>)), loading: false });
+    const { data, error } = await supabase.from('companies').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.warn('[companies.init]', error.message);
+      set({ loading: false, setupNeeded: true });
+      return;
+    }
+    set({ companies: (data || []).map(r => fromDb<Company>(r as Record<string, unknown>)), loading: false, setupNeeded: false });
   },
 
   addCompany: async (data) => {

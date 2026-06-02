@@ -37,6 +37,7 @@ export const useLeadsStore = create<LeadsState>()(
 
       init: async () => {
         set({ loading: true, dbError: null });
+
         const { data, error } = await supabase
           .from('leads')
           .select('*')
@@ -44,34 +45,63 @@ export const useLeadsStore = create<LeadsState>()(
 
         if (error) {
           console.error('[leads.init]', error);
-          // Keep whatever is in localStorage — do NOT wipe state on error
+          // Keep localStorage data intact — do not overwrite on error
           set({ loading: false, dbError: error.message });
           return;
         }
 
-        // Supabase is the source of truth when available
-        set({ leads: data.map(r => fromDb<Lead>(r as Record<string, unknown>)), loading: false, dbError: null });
+        const fromSupabase = data.map(r => fromDb<Lead>(r as Record<string, unknown>));
+        const supabaseIds  = new Set(fromSupabase.map(l => l.id));
+
+        // Leads that exist in localStorage but never made it to Supabase
+        const orphaned = get().leads.filter(l => !supabaseIds.has(l.id));
+
+        // Merge: Supabase is authoritative + recover any orphaned local leads
+        set({
+          leads: [...fromSupabase, ...orphaned],
+          loading: false,
+          dbError: null,
+        });
+
+        // Re-sync orphaned leads to Supabase (fire and forget)
+        if (orphaned.length > 0) {
+          console.warn(`[leads.init] ${orphaned.length} lead(s) orphaned — re-syncing to Supabase`);
+          supabase
+            .from('leads')
+            .upsert(orphaned.map(l => toDbLead({ ...l } as Record<string, unknown>)))
+            .then(({ error: syncErr }) => {
+              if (syncErr) {
+                console.error('[leads.sync]', syncErr);
+                set({ dbError: syncErr.message });
+              } else {
+                console.log('[leads.sync] orphaned leads re-synced');
+              }
+            });
+        }
       },
 
       addLead: async (data) => {
         const newLead: Lead = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
-        // Optimistic: immediately visible AND saved to localStorage by persist middleware
+        // Optimistic update — persist middleware saves to localStorage immediately
         set(state => ({ leads: [newLead, ...state.leads] }));
 
         const { error } = await supabase
           .from('leads')
-          .insert(toDbLead({ ...newLead } as Record<string, unknown>));
+          .upsert(toDbLead({ ...newLead } as Record<string, unknown>));
 
         if (error) {
           console.error('[leads.insert]', error);
-          // Roll back only if Supabase rejected — localStorage still had it briefly but we keep consistent
-          set(state => ({ leads: state.leads.filter(l => l.id !== newLead.id), dbError: error.message }));
+          // Keep in localStorage even if Supabase fails — init() will re-sync later
+          set({ dbError: error.message });
         }
       },
 
       updateLead: (id, updates) => {
         set(state => ({ leads: state.leads.map(l => l.id === id ? { ...l, ...updates } : l) }));
-        supabase.from('leads').update(toDbLead(updates as Record<string, unknown>)).eq('id', id)
+        supabase
+          .from('leads')
+          .update(toDbLead(updates as Record<string, unknown>))
+          .eq('id', id)
           .then(({ error }) => { if (error) console.error('[leads.update]', error); });
       },
 
@@ -79,7 +109,10 @@ export const useLeadsStore = create<LeadsState>()(
 
       deleteLead: (id) => {
         set(state => ({ leads: state.leads.filter(l => l.id !== id) }));
-        supabase.from('leads').delete().eq('id', id)
+        supabase
+          .from('leads')
+          .delete()
+          .eq('id', id)
           .then(({ error }) => { if (error) console.error('[leads.delete]', error); });
       },
 
@@ -90,18 +123,17 @@ export const useLeadsStore = create<LeadsState>()(
 
         const { error } = await supabase
           .from('leads')
-          .insert(newLeads.map(l => toDbLead({ ...l } as Record<string, unknown>)));
+          .upsert(newLeads.map(l => toDbLead({ ...l } as Record<string, unknown>)));
 
         if (error) {
           console.error('[leads.importLeads]', error);
-          const ids = new Set(newLeads.map(l => l.id));
-          set(state => ({ leads: state.leads.filter(l => !ids.has(l.id)), dbError: error.message }));
+          set({ dbError: error.message });
         }
       },
     }),
     {
-      name: 'ge_leads',          // localStorage key
-      partialize: (state) => ({ leads: state.leads }), // only persist leads, not loading/error flags
+      name: 'ge_leads',
+      partialize: (state) => ({ leads: state.leads }),
     }
   )
 );

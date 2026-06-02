@@ -42,12 +42,26 @@ function App() {
       useAuthStore.setState({ initialized: true, loading: false });
     }, 6000);
 
-    initAuth().finally(() => clearTimeout(timeout));
+    const initAllStores = async () => {
+      await Promise.all([
+        initProfessionals(), initClients(), initDemands(),
+        initFinancial(), initLeads(), initCalendar(),
+      ]);
+      useAuthStore.getState().loadUsers();
+    };
+
+    initAuth().then(() => {
+      // If initAuth found an existing session, load all stores immediately
+      if (useAuthStore.getState().currentUser) initAllStores();
+    }).finally(() => clearTimeout(timeout));
 
     const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
-        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar()]);
-        useAuthStore.getState().loadUsers();
+        await initAllStores();
+      }
+      if (event === 'SIGNED_OUT') {
+        // Clear derived store state on logout so next login gets fresh data
+        useLeadsStore.setState({ dbError: null });
       }
     });
     return () => {

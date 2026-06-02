@@ -13,7 +13,7 @@ import type { Lead, LeadStatus } from '../types';
 import {
   Plus, Search, Trash2, X, ExternalLink, Phone, MapPin,
   Star, Globe, Target, Loader2, CheckSquare, Square, Key,
-  Building2, ArrowRight,
+  Building2, ArrowRight, AlertTriangle,
 } from 'lucide-react';
 
 // ─── Pipeline config ───────────────────────────────────────────────────────────
@@ -260,7 +260,7 @@ const LeadColumn = ({
 const emptyForm = { name: '', phone: '', website: '', city: '', category: '', notes: '' };
 
 export const Leads = () => {
-  const { leads, addLead, updateLead, updateStatus, deleteLead, importLeads } = useLeadsStore();
+  const { leads, addLead, updateLead, updateStatus, deleteLead, importLeads, dbError } = useLeadsStore();
   const { addClient } = useClientsStore();
 
   const [search, setSearch] = useState('');
@@ -422,9 +422,9 @@ export const Leads = () => {
 
   // ─── Manual add ──────────────────────────────────────────────────────────────
 
-  const handleAddManual = () => {
+  const handleAddManual = async () => {
     if (!form.name.trim()) return;
-    addLead({
+    await addLead({
       name: form.name.trim(),
       phone: form.phone || undefined,
       website: form.website || undefined,
@@ -491,6 +491,22 @@ export const Leads = () => {
           </button>
         </div>
       </div>
+
+      {/* DB error banner */}
+      {dbError && (
+        <div className="flex-shrink-0 flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">Leads não estão sendo salvos no banco de dados.</p>
+            <p className="text-xs text-red-400/80 mt-0.5">
+              Execute o SQL abaixo no Supabase para criar a tabela:{' '}
+              <code className="font-mono">
+                create table leads (id uuid primary key, name text not null, phone text, website text, address text, city text, rating numeric, review_count integer, category text, status text not null default 'new', notes text, source text not null default 'manual', created_at timestamptz not null default now(), converted_client_id text);
+              </code>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="flex-shrink-0 relative">

@@ -4,19 +4,19 @@ const SUPABASE_URL = 'https://nkxyecdxgaxpnezfjkap.supabase.co';
 const ANON_KEY = import.meta.env.VITE_SUPABASE_KEY as string;
 const SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY as string;
 
-// Auth admin only — createUser, deleteUser, listUsers (needs service_role)
+// Admin operations only — createUser, deleteUser, listUsers, updateUserById (service_role)
 export const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  auth: { persistSession: false, autoRefreshToken: false, storageKey: 'sb-admin' },
 });
 
-// Login / session management
-export const supabaseAuth = createClient(SUPABASE_URL, SERVICE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
+// User login/session — MUST use anon key for signInWithPassword to work
+export const supabaseAuth = createClient(SUPABASE_URL, ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'sb-auth' },
 });
 
-// All data reads/writes — uses anon key so Supabase RLS enforces company isolation
+// All data reads/writes — anon key + user JWT so RLS enforces company isolation
 export const supabaseData = createClient(SUPABASE_URL, ANON_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  auth: { persistSession: false, autoRefreshToken: false, storageKey: 'sb-data' },
 });
 
 // Called after login to attach the user's JWT to the data client

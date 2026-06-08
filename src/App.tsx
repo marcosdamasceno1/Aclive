@@ -75,7 +75,15 @@ function App() {
         await initAllStores();
       }
       if (event === 'SIGNED_OUT') {
-        useLeadsStore.setState({ dbError: null });
+        // Clear all store data so the next login starts fresh
+        useLeadsStore.setState({ leads: [], dbError: null });
+        useProfessionalsStore.setState({ professionals: [] });
+        useClientsStore.setState({ clients: [] });
+        useDemandsStore.setState({ demands: [] });
+        useFinancialStore.setState({ movements: [] });
+        useCalendarStore.setState({ events: [] });
+        useSocialStore.setState({ accounts: [], posts: [] });
+        useAuthStore.setState({ currentUser: null, users: [] });
       }
     });
     return () => {

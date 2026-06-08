@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://nkxyecdxgaxpnezfjkap.supabase.co';
 const ANON_KEY = import.meta.env.VITE_SUPABASE_KEY as string;
-const SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY as string;
 
 // User login/session — anon key required for signInWithPassword
 export const supabaseAuth = createClient(SUPABASE_URL, ANON_KEY, {
@@ -24,23 +23,21 @@ export const clearDataSession = async () => {
   await supabaseData.auth.signOut();
 };
 
-// Direct admin REST helpers — bypass supabase-js browser block on service_role key.
-// The service_role key is already embedded in the client bundle via VITE_SUPABASE_SERVICE_KEY,
-// so using fetch here adds no extra exposure vs using the supabase-js admin client.
-const adminHeaders = {
-  Authorization: `Bearer ${SERVICE_KEY}`,
-  apikey: SERVICE_KEY,
-  'Content-Type': 'application/json',
-};
-
+// Admin operations via Edge Function (server-side, uses service_role safely)
 type RawUser = { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string };
+
+const edgeFn = async (action: string, body: Record<string, unknown> = {}) => {
+  const { data, error } = await supabaseAuth.functions.invoke('admin-users', {
+    body: { action, ...body },
+  });
+  return { data, error };
+};
 
 export const adminApi = {
   listUsers: async (): Promise<{ data: { users: RawUser[] } | null; error: { message: string } | null }> => {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, { headers: adminHeaders });
-    const json = await res.json();
-    if (!res.ok) return { data: null, error: { message: json.msg || json.message || 'Erro ao listar usuários' } };
-    return { data: { users: json.users ?? [] }, error: null };
+    const { data, error } = await edgeFn('list');
+    if (error) return { data: null, error: { message: error.message } };
+    return { data: { users: data?.users ?? [] }, error: data?.error ?? null };
   },
 
   createUser: async (params: {
@@ -49,41 +46,24 @@ export const adminApi = {
     email_confirm: boolean;
     user_metadata: Record<string, unknown>;
   }): Promise<{ data: { user: RawUser } | null; error: { message: string } | null }> => {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
-      method: 'POST',
-      headers: adminHeaders,
-      body: JSON.stringify(params),
-    });
-    const json = await res.json();
-    if (!res.ok) return { data: null, error: { message: json.msg || json.message || 'Erro ao criar usuário' } };
-    return { data: { user: json }, error: null };
+    const { data, error } = await edgeFn('create', params as unknown as Record<string, unknown>);
+    if (error) return { data: null, error: { message: error.message } };
+    if (!data?.user) return { data: null, error: data?.error ?? { message: 'Falha ao criar usuário' } };
+    return { data: { user: data.user }, error: null };
   },
 
   updateUserById: async (
     id: string,
     params: { password?: string; user_metadata?: Record<string, unknown> },
   ): Promise<{ error: { message: string } | null }> => {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
-      method: 'PUT',
-      headers: adminHeaders,
-      body: JSON.stringify(params),
-    });
-    if (!res.ok) {
-      const json = await res.json();
-      return { error: { message: json.msg || json.message || 'Erro ao atualizar usuário' } };
-    }
-    return { error: null };
+    const { data, error } = await edgeFn('update', { id, ...params });
+    if (error) return { error: { message: error.message } };
+    return { error: data?.error ?? null };
   },
 
   deleteUser: async (id: string): Promise<{ error: { message: string } | null }> => {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
-      method: 'DELETE',
-      headers: adminHeaders,
-    });
-    if (!res.ok) {
-      const json = await res.json();
-      return { error: { message: json.msg || json.message || 'Erro ao deletar usuário' } };
-    }
-    return { error: null };
+    const { data, error } = await edgeFn('delete', { id });
+    if (error) return { error: { message: error.message } };
+    return { error: data?.error ?? null };
   },
 };

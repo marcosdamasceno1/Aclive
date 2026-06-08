@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase, supabaseAuth, setDataSession } from '../lib/supabase';
+import { supabaseAuth, setDataSession, adminApi } from '../lib/supabase';
 import type { User, UserRole } from '../types';
 
 interface AuthState {
@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   loadUsers: async () => {
-    const { data, error } = await supabase.auth.admin.listUsers();
+    const { data, error } = await adminApi.listUsers();
     if (!error && data?.users) {
       const me = useAuthStore.getState().currentUser;
       const all = data.users.map(u => metaToUser(u));
@@ -102,7 +102,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   addUser: async (userData, password) => {
     const me = useAuthStore.getState().currentUser;
-    const { data: authData, error } = await supabase.auth.admin.createUser({
+    const { data: authData, error } = await adminApi.createUser({
       email: userData.email,
       password,
       email_confirm: true,
@@ -113,7 +113,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
         ...(userData.role !== 'admin' && { permissions: userData.permissions || [] }),
       },
     });
-    if (error || !authData.user) throw new Error(error?.message || 'Failed to create user');
+    if (error || !authData?.user) throw new Error(error?.message || 'Failed to create user');
 
     const newUser: User = {
       id: authData.user.id,
@@ -136,7 +136,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
     if (updates.permissions !== undefined) meta.permissions = updates.permissions;
     if (updates.professionalId !== undefined) meta.professionalId = updates.professionalId;
 
-    await supabase.auth.admin.updateUserById(id, {
+    await adminApi.updateUserById(id, {
       ...(newPassword ? { password: newPassword } : {}),
       ...(Object.keys(meta).length > 0 ? { user_metadata: meta } : {}),
     });
@@ -147,7 +147,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   deleteUser: async (id) => {
-    await supabase.auth.admin.deleteUser(id);
+    await adminApi.deleteUser(id);
     set(state => ({ users: state.users.filter(u => u.id !== id) }));
   },
 

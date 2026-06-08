@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { supabaseAuth } from './lib/supabase';
+import { supabaseAuth, setDataSession, clearDataSession } from './lib/supabase';
 import { useAuthStore } from './store/authStore';
 import { useProfessionalsStore } from './store/professionalsStore';
 import { useClientsStore } from './store/clientsStore';
@@ -72,9 +72,11 @@ function App() {
         // Sync currentUser from the session BEFORE loading stores so getCompanyId() returns
         // the correct company for the user who just logged in (not null from previous state).
         if (session?.user) useAuthStore.getState().syncSession(session.user);
+        if (session) await setDataSession(session.access_token, session.refresh_token);
         await initAllStores();
       }
       if (event === 'SIGNED_OUT') {
+        await clearDataSession();
         // Clear all store data so the next login starts fresh
         useLeadsStore.setState({ leads: [], dbError: null });
         useProfessionalsStore.setState({ professionals: [] });

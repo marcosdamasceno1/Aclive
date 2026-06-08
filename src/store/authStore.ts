@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase, supabaseAuth } from '../lib/supabase';
+import { supabase, supabaseAuth, setDataSession } from '../lib/supabase';
 import type { User, UserRole } from '../types';
 
 interface AuthState {
@@ -45,6 +45,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
       if (session?.user) {
         set({ currentUser: metaToUser(session.user) });
       }
+      if (session) {
+        await setDataSession(session.access_token, session.refresh_token);
+      }
     } catch (e) {
       console.error('initAuth error:', e);
     } finally {
@@ -77,6 +80,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
       ]);
       console.log('[login] auth result:', { userId: data?.user?.id, error: error?.message });
       if (error || !data.user) return false;
+
+      if (data.session) {
+        await setDataSession(data.session.access_token, data.session.refresh_token);
+      }
 
       const currentUser = metaToUser(data.user);
       console.log('[login] currentUser:', currentUser);

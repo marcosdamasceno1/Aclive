@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users,
   Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
@@ -42,7 +42,6 @@ interface NavItemDef {
 
 export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) => {
   const { currentUser, logout } = useAuthStore();
-  const navigate = useNavigate();
 
   const access = (key: string) => currentUser ? hasPageAccess(currentUser, key as PageKey) : false;
 
@@ -159,7 +158,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
             {currentUser?.name.charAt(0).toUpperCase()}
           </div>
           <button
-            onClick={() => { logout(); navigate('/login'); }}
+            onClick={() => logout()}
             title="Sair"
             className="flex items-center justify-center w-7 h-7 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors"
           >
@@ -180,7 +179,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
             </div>
           </div>
           <button
-            onClick={() => { logout(); navigate('/login'); }}
+            onClick={() => logout()}
             className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg text-xs font-medium transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />

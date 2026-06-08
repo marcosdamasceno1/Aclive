@@ -172,3 +172,31 @@ export interface Company {
   active: boolean;
   createdAt: string;
 }
+
+export interface SocialAccount {
+  id: string;
+  companyId?: string;
+  username: string;
+  platform: 'instagram';
+  avatarColor: string; // tailwind color name like 'pink', 'purple', 'blue'
+  active: boolean;
+  createdAt: string;
+}
+
+export type PostStatus = 'scheduled' | 'published' | 'cancelled';
+
+export interface ScheduledPost {
+  id: string;
+  companyId?: string;
+  accountId: string;
+  caption: string;
+  hashtags: string;
+  imageUrl?: string;
+  scheduledAt: string; // ISO datetime string
+  status: PostStatus;
+  notifyWhatsapp: boolean;
+  notifyPhone?: string;
+  notifiedAt?: string;
+  createdBy: string;
+  createdAt: string;
+}

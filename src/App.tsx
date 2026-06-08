@@ -56,9 +56,13 @@ function App() {
 
     const initAllStores = async () => {
       const me = useAuthStore.getState().currentUser;
-      const storeInits = [initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar(), initSocial()];
-      if (me?.isSuperAdmin) storeInits.push(initCompanies());
-      await Promise.all(storeInits);
+      // Super admin only needs the companies store — they have no company_id so
+      // data stores would fail RLS and show error banners unnecessarily.
+      if (me?.isSuperAdmin) {
+        await initCompanies();
+      } else {
+        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar(), initSocial()]);
+      }
       useAuthStore.getState().loadUsers();
     };
 

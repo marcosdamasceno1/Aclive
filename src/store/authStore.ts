@@ -60,8 +60,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
     if (!error && data?.users) {
       const me = useAuthStore.getState().currentUser;
       const all = data.users.map(u => metaToUser(u));
+      // Super admin sees no users in Settings (agency users only visible in Master panel)
       if (me?.isSuperAdmin) {
-        set({ users: all });
+        set({ users: [] });
       } else {
         set({ users: all.filter(u => u.companyId === me?.companyId) });
       }

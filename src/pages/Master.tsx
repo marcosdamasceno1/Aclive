@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Building2, Users, Plus, X, Loader2, CheckCircle,
   Trash2, Power, UserPlus, Mail,
 } from 'lucide-react';
 import { useCompaniesStore } from '../store/companiesStore';
 import { useAuthStore } from '../store/authStore';
-import type { Company, UserRole } from '../types';
+import { adminApi } from '../lib/supabase';
+import type { Company, User, UserRole } from '../types';
 
 /* ─────────────── helpers ─────────────── */
 const planLabel: Record<string, string> = {
@@ -280,14 +281,32 @@ const [sqlOpen, setSqlOpen] = [false, (_: boolean) => {}]; // placeholder — ma
 /* ─────────────── main page ─────────────── */
 export const Master = () => {
   const { companies, loading, setupNeeded, updateCompany, deleteCompany } = useCompaniesStore();
-  const { users } = useAuthStore();
+  const { addUser } = useAuthStore();
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    adminApi.listUsers().then(({ data }) => {
+      if (data?.users) {
+        setAllUsers(data.users.map(u => ({
+          id: u.id,
+          name: (u.user_metadata?.name as string) || u.email?.split('@')[0] || 'Usuário',
+          email: u.email || '',
+          role: ((u.user_metadata?.role as string) || 'admin') as User['role'],
+          active: true,
+          createdAt: u.created_at || new Date().toISOString(),
+          companyId: (u.user_metadata?.company_id as string) || undefined,
+          isSuperAdmin: u.user_metadata?.super_admin === true,
+        })));
+      }
+    });
+  }, []);
 
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [createUserFor, setCreateUserFor] = useState<Company | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
   const [showSql, setShowSql] = useState(false);
 
-  const usersFor = (companyId: string) => users.filter(u => u.companyId === companyId);
+  const usersFor = (companyId: string) => allUsers.filter(u => u.companyId === companyId);
   const activeCount = companies.filter(c => c.active).length;
 
   return (
@@ -357,7 +376,7 @@ export const Master = () => {
         {[
           { label: 'Total Agências', value: companies.length, icon: Building2, color: 'text-blue-400' },
           { label: 'Agências Ativas', value: activeCount, icon: CheckCircle, color: 'text-emerald-400' },
-          { label: 'Total Usuários', value: users.filter(u => !u.isSuperAdmin).length, icon: Users, color: 'text-violet-400' },
+          { label: 'Total Usuários', value: allUsers.filter(u => !u.isSuperAdmin).length, icon: Users, color: 'text-violet-400' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-[#161b22] border border-white/[0.08] rounded-xl p-5 flex items-center gap-4">
             <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${color}`}>

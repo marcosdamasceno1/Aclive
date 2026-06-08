@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Instagram, Plus, X, Trash2, Pencil, Bell, CheckCircle,
+  Camera, Plus, X, Trash2, Pencil, Bell, CheckCircle,
   ChevronLeft, ChevronRight, CalendarDays, Clock, Loader2,
 } from 'lucide-react';
 import { useSocialStore } from '../store/socialStore';
@@ -143,7 +143,7 @@ const ManageAccountsModal = ({ onClose }: ManageAccountsModalProps) => {
             return (
               <div key={acc.id} className="flex items-center gap-3 p-3 bg-[#21262d] rounded-lg border border-white/[0.05]">
                 <div className={`w-8 h-8 rounded-full ${c.bg} flex items-center justify-center flex-shrink-0`}>
-                  <Instagram className={`w-4 h-4 ${c.text}`} />
+                  <Camera className={`w-4 h-4 ${c.text}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">@{acc.username}</p>
@@ -176,7 +176,7 @@ const ManageAccountsModal = ({ onClose }: ManageAccountsModalProps) => {
       {/* Add new */}
       <div className="border-t border-white/[0.08] pt-5">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Nova Conta</p>
-        <Field label="Username (Instagram)">
+        <Field label="Username (Camera)">
           <div className="flex">
             <span className="inline-flex items-center px-3 bg-[#21262d] border border-r-0 border-white/[0.08] rounded-l-lg text-slate-400 text-sm">@</span>
             <input
@@ -391,7 +391,7 @@ const PostCard = ({ post, account, onEdit, onDelete, onMarkPublished }: PostCard
       <div className="flex-1 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <Instagram className={`w-4 h-4 flex-shrink-0 ${c.text}`} />
+            <Camera className={`w-4 h-4 flex-shrink-0 ${c.text}`} />
             <span className={`text-sm font-medium ${c.text} truncate`}>@{account?.username ?? 'conta'}</span>
             <div className="flex items-center gap-1 text-xs text-slate-500">
               <Clock className="w-3 h-3" />
@@ -399,7 +399,7 @@ const PostCard = ({ post, account, onEdit, onDelete, onMarkPublished }: PostCard
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {post.notifyWhatsapp && <Bell className="w-3.5 h-3.5 text-emerald-400" title="Notificação WhatsApp ativa" />}
+            {post.notifyWhatsapp && <Bell className="w-3.5 h-3.5 text-emerald-400" />}
             <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.cls}`}>{status.label}</span>
           </div>
         </div>
@@ -568,7 +568,7 @@ export const Social = () => {
             onClick={() => setShowAccounts(true)}
             className="flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white bg-[#21262d] hover:bg-white/5 border border-white/[0.08] rounded-lg transition-colors"
           >
-            <Instagram className="w-4 h-4" />
+            <Camera className="w-4 h-4" />
             Gerenciar Contas
           </button>
           <button
@@ -637,7 +637,7 @@ export const Social = () => {
                       isSelected ? c.pill : 'bg-transparent text-slate-400 border-white/[0.08] hover:text-slate-200 hover:bg-white/5'
                     }`}
                   >
-                    <Instagram className="w-3 h-3" />
+                    <Camera className="w-3 h-3" />
                     @{acc.username}
                   </button>
                 );

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { supabaseData as supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Company } from '../types';
 

@@ -57,13 +57,12 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
   customCategories: loadCustomCategories(),
 
   init: async () => {
-    set({ loading: true });
     const cid = getCompanyId();
-    const movementsQuery = supabase.from('financial_movements').select('*').order('created_at');
-    const auditQuery = supabase.from('audit_logs').select('*').order('created_at');
+    if (!cid) { set({ movements: [], auditLog: [], loading: false }); return; }
+    set({ loading: true });
     const [movementsResult, auditResult] = await Promise.all([
-      cid ? movementsQuery.eq('company_id', cid) : movementsQuery,
-      auditQuery,
+      supabase.from('financial_movements').select('*').order('created_at').eq('company_id', cid),
+      supabase.from('audit_logs').select('*').order('created_at').eq('company_id', cid),
     ]);
     set({
       movements: (movementsResult.data || []).map(r => fromDb<FinancialMovement>(r as Record<string, unknown>)),
@@ -73,16 +72,17 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
   },
 
   registerMovement: (data) => {
+    const cid = getCompanyId();
     const existing = get().movements.find(m => m.demandId === data.demandId && m.type === 'credit');
     if (existing) return;
+    if (!cid) return;
 
     const newMovement: FinancialMovement = { ...data, id: uuidv4() };
     set(state => ({ movements: [...state.movements, newMovement] }));
     const dbRow = toDb({ ...newMovement }) as Record<string, unknown>;
     if (dbRow.completed_at === '') dbRow.completed_at = null;
     if (dbRow.paid_at === '') dbRow.paid_at = null;
-    const cid = getCompanyId();
-    if (cid) dbRow.company_id = cid;
+    dbRow.company_id = cid;
     supabase.from('financial_movements').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[financial.registerMovement]', error); });
   },
@@ -134,6 +134,8 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
   },
 
   addManualEntry: (data) => {
+    const cid = getCompanyId();
+    if (!cid) return;
     const newEntry: FinancialMovement = {
       id: uuidv4(),
       professionalId: '',
@@ -151,7 +153,6 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       category: data.category,
     };
     set(state => ({ movements: [...state.movements, newEntry] }));
-    const cid = getCompanyId();
     supabase.from('financial_movements').insert({
       id: newEntry.id,
       demand_title: data.description,
@@ -165,7 +166,7 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       paid_by: data.createdBy,
       notes: data.notes || null,
       category: data.category,
-      ...(cid ? { company_id: cid } : {}),
+      company_id: cid,
     } as Record<string, unknown>)
       .then(({ error }) => { if (error) console.error('[financial.addManualEntry]', error); });
   },
@@ -190,13 +191,16 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
   },
 
   addAuditLog: (logData) => {
+    const cid = getCompanyId();
     const newLog: AuditLog = {
       ...logData,
       id: uuidv4(),
       createdAt: new Date().toISOString(),
     };
     set(state => ({ auditLog: [...state.auditLog, newLog] }));
-    supabase.from('audit_logs').insert(toDb({ ...newLog }) as Record<string, unknown>)
+    const dbRow = toDb({ ...newLog }) as Record<string, unknown>;
+    if (cid) dbRow.company_id = cid;
+    supabase.from('audit_logs').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[financial.auditLog]', error); });
   },
 

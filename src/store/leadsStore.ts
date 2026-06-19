@@ -19,7 +19,6 @@ interface LeadsState {
   importLeads: (leads: Omit<Lead, 'id' | 'createdAt'>[]) => void;
 }
 
-/* Converts optional fields to null so Postgres doesn't reject empty strings */
 const toDbLead = (lead: Record<string, unknown>): Record<string, unknown> => {
   const row = toDb(lead);
   for (const col of ['phone', 'website', 'address', 'city', 'notes', 'category', 'converted_client_id']) {
@@ -36,10 +35,14 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
   dbError: null,
 
   init: async () => {
-    set({ loading: true, dbError: null });
     const cid = getCompanyId();
-    const q = supabase.from('leads').select('*').order('created_at', { ascending: false });
-    const { data, error } = await (cid ? q.eq('company_id', cid) : q);
+    if (!cid) { set({ leads: [], loading: false, dbError: null }); return; }
+    set({ loading: true, dbError: null });
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .eq('company_id', cid);
 
     if (error) {
       console.error('[leads.init]', error);
@@ -55,32 +58,26 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
   },
 
   addLead: (data) => {
+    const cid = getCompanyId();
     const newLead: Lead = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
+    if (!cid) return;
     set(state => ({ leads: [newLead, ...state.leads] }));
     const dbRow = toDbLead({ ...newLead } as Record<string, unknown>);
-    const cid = getCompanyId();
-    if (cid) dbRow.company_id = cid;
-    supabase
-      .from('leads')
-      .insert(dbRow)
-      .then(({ error }) => {
-        if (error) {
-          console.error('[leads.insert]', error);
-          // Roll back optimistic update and surface the error
-          set(state => ({
-            leads: state.leads.filter(l => l.id !== newLead.id),
-            dbError: `Erro ao salvar lead: ${error.message}`,
-          }));
-        }
-      });
+    dbRow.company_id = cid;
+    supabase.from('leads').insert(dbRow).then(({ error }) => {
+      if (error) {
+        console.error('[leads.insert]', error);
+        set(state => ({
+          leads: state.leads.filter(l => l.id !== newLead.id),
+          dbError: `Erro ao salvar lead: ${error.message}`,
+        }));
+      }
+    });
   },
 
   updateLead: (id, updates) => {
     set(state => ({ leads: state.leads.map(l => l.id === id ? { ...l, ...updates } : l) }));
-    supabase
-      .from('leads')
-      .update(toDbLead(updates as Record<string, unknown>))
-      .eq('id', id)
+    supabase.from('leads').update(toDbLead(updates as Record<string, unknown>)).eq('id', id)
       .then(({ error }) => { if (error) console.error('[leads.update]', error); });
   },
 
@@ -88,34 +85,27 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
 
   deleteLead: (id) => {
     set(state => ({ leads: state.leads.filter(l => l.id !== id) }));
-    supabase
-      .from('leads')
-      .delete()
-      .eq('id', id)
+    supabase.from('leads').delete().eq('id', id)
       .then(({ error }) => { if (error) console.error('[leads.delete]', error); });
   },
 
   importLeads: (leadsData) => {
+    const cid = getCompanyId();
+    if (!cid) return;
     const now = new Date().toISOString();
     const newLeads = leadsData.map(l => ({ ...l, id: uuidv4(), createdAt: now }));
     set(state => ({ leads: [...newLeads, ...state.leads] }));
-    const cid = getCompanyId();
-    supabase
-      .from('leads')
-      .insert(newLeads.map(l => {
-        const row = toDbLead({ ...l } as Record<string, unknown>);
-        if (cid) row.company_id = cid;
-        return row;
-      }))
-      .then(({ error }) => {
-        if (error) {
-          console.error('[leads.import]', error);
-          const ids = new Set(newLeads.map(l => l.id));
-          set(state => ({
-            leads: state.leads.filter(l => !ids.has(l.id)),
-            dbError: `Erro ao importar leads: ${error.message}`,
-          }));
-        }
-      });
+    supabase.from('leads').insert(
+      newLeads.map(l => { const row = toDbLead({ ...l } as Record<string, unknown>); row.company_id = cid; return row; })
+    ).then(({ error }) => {
+      if (error) {
+        console.error('[leads.import]', error);
+        const ids = new Set(newLeads.map(l => l.id));
+        set(state => ({
+          leads: state.leads.filter(l => !ids.has(l.id)),
+          dbError: `Erro ao importar leads: ${error.message}`,
+        }));
+      }
+    });
   },
 }));

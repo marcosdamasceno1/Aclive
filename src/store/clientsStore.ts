@@ -22,19 +22,20 @@ export const useClientsStore = create<ClientsState>()((set, get) => ({
   loading: false,
 
   init: async () => {
-    set({ loading: true });
     const cid = getCompanyId();
-    const q = supabase.from('clients').select('*').order('created_at');
-    const { data } = await (cid ? q.eq('company_id', cid) : q);
+    if (!cid) { set({ clients: [], loading: false }); return; }
+    set({ loading: true });
+    const { data } = await supabase.from('clients').select('*').order('created_at').eq('company_id', cid);
     set({ clients: (data || []).map(r => fromDb<Client>(r as Record<string, unknown>)), loading: false });
   },
 
   addClient: (data) => {
+    const cid = getCompanyId();
     const newClient: Client = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
+    if (!cid) return newClient;
     set(state => ({ clients: [...state.clients, newClient] }));
     const dbRow = toDb({ ...newClient }) as Record<string, unknown>;
-    const cid = getCompanyId();
-    if (cid) dbRow.company_id = cid;
+    dbRow.company_id = cid;
     supabase.from('clients').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[clients.insert]', error); });
     return newClient;

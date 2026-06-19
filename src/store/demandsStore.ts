@@ -24,14 +24,15 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
   loading: false,
 
   init: async () => {
-    set({ loading: true });
     const cid = getCompanyId();
-    const q = supabase.from('demands').select('*').order('created_at');
-    const { data } = await (cid ? q.eq('company_id', cid) : q);
+    if (!cid) { set({ demands: [], loading: false }); return; }
+    set({ loading: true });
+    const { data } = await supabase.from('demands').select('*').order('created_at').eq('company_id', cid);
     set({ demands: (data || []).map(r => fromDb<Demand>(r as Record<string, unknown>)), loading: false });
   },
 
   addDemand: (data) => {
+    const cid = getCompanyId();
     const newDemand: Demand = {
       ...data,
       id: uuidv4(),
@@ -39,12 +40,12 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
       financialRegistered: false,
       comments: [],
     };
+    if (!cid) return newDemand;
     set(state => ({ demands: [...state.demands, newDemand] }));
     const dbRow = toDb({ ...newDemand }) as Record<string, unknown>;
     if (dbRow.deadline === '') dbRow.deadline = null;
     if (dbRow.completed_at === '') dbRow.completed_at = null;
-    const cid = getCompanyId();
-    if (cid) dbRow.company_id = cid;
+    dbRow.company_id = cid;
     supabase.from('demands').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[demands.insert]', error); });
     return newDemand;

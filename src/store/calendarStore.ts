@@ -22,10 +22,10 @@ export const useCalendarStore = create<CalendarState>()((set, get) => ({
   loading: false,
 
   init: async () => {
-    set({ loading: true });
     const cid = getCompanyId();
-    const q = supabase.from('calendar_events').select('*').order('date');
-    const { data, error } = await (cid ? q.eq('company_id', cid) : q);
+    if (!cid) { set({ events: [], loading: false }); return; }
+    set({ loading: true });
+    const { data, error } = await supabase.from('calendar_events').select('*').order('date').eq('company_id', cid);
     if (error) console.error('[calendar.init]', error);
     set({
       events: (data || []).map(r => fromDb<CalendarEvent>(r as Record<string, unknown>)),
@@ -34,16 +34,17 @@ export const useCalendarStore = create<CalendarState>()((set, get) => ({
   },
 
   addEvent: (data) => {
+    const cid = getCompanyId();
     const newEvent: CalendarEvent = {
       ...data,
       id: uuidv4(),
       createdAt: new Date().toISOString(),
     };
+    if (!cid) return newEvent;
     set(state => ({ events: [...state.events, newEvent] }));
     const dbRow = toDb({ ...newEvent } as unknown as Record<string, unknown>);
     if (!dbRow.end_date) dbRow.end_date = null;
-    const cid = getCompanyId();
-    if (cid) dbRow.company_id = cid;
+    dbRow.company_id = cid;
     supabase.from('calendar_events').insert(dbRow)
       .then(({ error }) => { if (error) console.error('[calendar.insert]', error); });
     return newEvent;

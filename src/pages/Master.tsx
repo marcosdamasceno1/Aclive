@@ -92,9 +92,10 @@ const inputCls = 'w-full bg-[#21262d] border border-white/[0.08] rounded-lg px-3
 /* ─────────────── new company modal ─────────────── */
 interface NewCompanyModalProps {
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-const NewCompanyModal = ({ onClose }: NewCompanyModalProps) => {
+const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
   const { addCompany } = useCompaniesStore();
   const { addUser } = useAuthStore();
   const [saving, setSaving] = useState(false);
@@ -126,6 +127,7 @@ const NewCompanyModal = ({ onClose }: NewCompanyModalProps) => {
         companyId: company.id,
         active: true,
       }, form.adminPassword);
+      onSuccess();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar agência');
@@ -184,9 +186,10 @@ const NewCompanyModal = ({ onClose }: NewCompanyModalProps) => {
 interface CreateUserModalProps {
   company: Company;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-const CreateUserModal = ({ company, onClose }: CreateUserModalProps) => {
+const CreateUserModal = ({ company, onClose, onSuccess }: CreateUserModalProps) => {
   const { addUser } = useAuthStore();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -205,6 +208,7 @@ const CreateUserModal = ({ company, onClose }: CreateUserModalProps) => {
     setSaving(true);
     try {
       await addUser({ name: form.name.trim(), email: form.email.trim(), role: form.role, companyId: company.id, active: true }, form.password);
+      onSuccess();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar usuário');
@@ -303,17 +307,11 @@ export const Master = () => {
   const [edgeError, setEdgeError] = useState('');
   const [showEdgeDeploy, setShowEdgeDeploy] = useState(false);
 
-  const checkEdge = () => {
-    setEdgeStatus('checking');
-    adminApi.ping().then(({ ok, message }) => {
-      setEdgeStatus(ok ? 'ok' : 'error');
-      if (!ok) setEdgeError(message);
-    });
-  };
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
-  useEffect(() => {
-    checkEdge();
-    adminApi.listUsers().then(({ data }) => {
+  const refreshUsers = () => {
+    setLoadingUsers(true);
+    adminApi.listUsers().then(({ data, error }) => {
       if (data?.users) {
         setAllUsers(data.users.map(u => ({
           id: u.id,
@@ -325,8 +323,23 @@ export const Master = () => {
           companyId: (u.user_metadata?.company_id as string) || undefined,
           isSuperAdmin: u.user_metadata?.super_admin === true,
         })));
+        setEdgeStatus('ok');
       }
+      if (error) {
+        setEdgeStatus('error');
+        setEdgeError(error.message);
+      }
+      setLoadingUsers(false);
     });
+  };
+
+  const checkEdge = () => {
+    setEdgeStatus('checking');
+    refreshUsers();
+  };
+
+  useEffect(() => {
+    refreshUsers();
   }, []);
 
   const [showNewCompany, setShowNewCompany] = useState(false);
@@ -336,6 +349,7 @@ export const Master = () => {
 
   const usersFor = (companyId: string) => allUsers.filter(u => u.companyId === companyId);
   const activeCount = companies.filter(c => c.active).length;
+  const nonSuperUsers = allUsers.filter(u => !u.isSuperAdmin);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -346,6 +360,13 @@ export const Master = () => {
           <p className="text-sm text-slate-400 mt-1">Gerencie as agências clientes</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => { refreshUsers(); }}
+            title="Atualizar lista de usuários"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white bg-[#21262d] hover:bg-white/5 border border-white/[0.08] rounded-lg transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${loadingUsers ? 'animate-spin' : ''}`} />
+          </button>
           <button
             onClick={() => setShowSql(s => !s)}
             className="flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white bg-[#21262d] hover:bg-white/5 border border-white/[0.08] rounded-lg transition-colors"
@@ -467,7 +488,7 @@ export const Master = () => {
         {[
           { label: 'Total Agências', value: companies.length, icon: Building2, color: 'text-blue-400' },
           { label: 'Agências Ativas', value: activeCount, icon: CheckCircle, color: 'text-emerald-400' },
-          { label: 'Total Usuários', value: allUsers.filter(u => !u.isSuperAdmin).length, icon: Users, color: 'text-violet-400' },
+          { label: 'Total Usuários', value: nonSuperUsers.length, icon: Users, color: 'text-violet-400' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-[#161b22] border border-white/[0.08] rounded-xl p-5 flex items-center gap-4">
             <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${color}`}>
@@ -566,8 +587,8 @@ export const Master = () => {
       )}
 
       {/* Modals */}
-      {showNewCompany && <NewCompanyModal onClose={() => setShowNewCompany(false)} />}
-      {createUserFor && <CreateUserModal company={createUserFor} onClose={() => setCreateUserFor(null)} />}
+      {showNewCompany && <NewCompanyModal onClose={() => setShowNewCompany(false)} onSuccess={refreshUsers} />}
+      {createUserFor && <CreateUserModal company={createUserFor} onClose={() => setCreateUserFor(null)} onSuccess={refreshUsers} />}
       {deleteTarget && (
         <DeleteConfirmModal
           company={deleteTarget}
@@ -575,6 +596,7 @@ export const Master = () => {
           onConfirm={async () => {
             await deleteCompany(deleteTarget.id);
             setDeleteTarget(null);
+            refreshUsers();
           }}
         />
       )}

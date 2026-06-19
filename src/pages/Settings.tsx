@@ -87,6 +87,8 @@ export const Settings = () => {
     }));
   };
 
+  const { loadUsers } = useAuthStore();
+
   const handleCreateUser = async () => {
     if (!userForm.name.trim() || !userForm.email.trim() || !userForm.password.trim()) return;
     setSubmitting(true);
@@ -118,6 +120,7 @@ export const Settings = () => {
 
       setUserForm(emptyUserForm);
       setShowUserModal(false);
+      loadUsers();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Erro ao criar usuário.');
     } finally {
@@ -164,8 +167,9 @@ export const Settings = () => {
     if (deleteUserId && deleteUserId !== currentUser?.id) {
       try {
         await deleteUser(deleteUserId);
+        loadUsers();
       } catch {
-        // ignore errors silently
+        // ignore
       }
       setDeleteUserId(null);
     }

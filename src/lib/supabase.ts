@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://nkxyecdxgaxpnezfjkap.supabase.co';
-const ANON_KEY = import.meta.env.VITE_SUPABASE_KEY as string;
+// Public anon key — safe to hardcode in client-side code (Supabase design intent)
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reHllY2R4Z2F4cG5lemZqa2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NzgzMTEsImV4cCI6MjA5NTI1NDMxMX0.norNo8ksplzq99jXD27iOYrbVcZuaCJ2XCpEIO2TIr0';
 
 // Single client for auth + data — session JWT is automatically included in all
 // PostgREST requests, so RLS policies receive the correct auth.jwt() claims.

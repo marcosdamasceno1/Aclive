@@ -97,8 +97,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   logout: async () => {
+    set({ currentUser: null, users: [] });
     await supabaseAuth.auth.signOut();
-    set({ currentUser: null });
   },
 
   addUser: async (userData, password) => {

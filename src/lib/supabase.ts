@@ -40,6 +40,13 @@ const edgeFn = async (action: string, body: Record<string, unknown> = {}): Promi
 };
 
 export const adminApi = {
+  ping: async (): Promise<{ ok: boolean; message: string }> => {
+    const { data, error } = await edgeFn('list');
+    if (error) return { ok: false, message: error.message ?? 'Erro desconhecido' };
+    if (data?.error) return { ok: false, message: typeof data.error === 'string' ? data.error : data.error?.message ?? 'Erro desconhecido' };
+    return { ok: true, message: '' };
+  },
+
   listUsers: async (): Promise<{ data: { users: RawUser[] } | null; error: { message: string } | null }> => {
     const { data, error } = await edgeFn('list');
     if (error) return { data: null, error: { message: error.message } };

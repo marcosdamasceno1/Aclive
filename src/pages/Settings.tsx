@@ -5,7 +5,7 @@ import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
 import { getZApiConfig, saveZApiConfig } from '../utils/whatsapp';
 import type { UserRole, ProfessionType } from '../types';
-import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -39,7 +39,7 @@ const emptyUserForm = {
 };
 
 export const Settings = () => {
-  const { users, currentUser, addUser, updateUser, deleteUser } = useAuthStore();
+  const { users, usersError, currentUser, addUser, updateUser, deleteUser } = useAuthStore();
   const { addProfessional } = useProfessionalsStore();
   // Z-API config state
   const existingZApi = getZApiConfig();
@@ -217,6 +217,20 @@ export const Settings = () => {
 
       {activeTab === 'users' && (
         <div className="space-y-4">
+          {usersError && (
+            <div className="flex items-start gap-3 bg-[#161b22] border border-red-500/30 rounded-xl p-4">
+              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-red-400 mb-0.5">Edge Function não está respondendo</p>
+                <p className="text-xs text-slate-400">
+                  A lista de usuários não pôde ser carregada e novos usuários não podem ser criados.
+                  Publique a função <code className="text-emerald-400 font-mono">admin-users</code> no Supabase.
+                  Acesse o <strong className="text-slate-300">Painel Master</strong> para ver as instruções completas.
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Detalhe: {usersError}</p>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-100">Usuários do sistema</h2>
             {isAdmin ? (

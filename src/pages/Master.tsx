@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Building2, Users, Plus, X, Loader2, CheckCircle,
-  Trash2, Power, UserPlus, Mail,
+  Trash2, Power, UserPlus, Mail, AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { useCompaniesStore } from '../store/companiesStore';
 import { useAuthStore } from '../store/authStore';
@@ -278,13 +278,41 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm }: DeleteConfirmModalP
 /* ─────────────── SQL info panel ─────────────── */
 const [sqlOpen, setSqlOpen] = [false, (_: boolean) => {}]; // placeholder — managed inside component
 
+const EDGE_FN_CODE = `import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+  const res = (d: unknown, s=200) => new Response(JSON.stringify(d), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } })
+  try {
+    const { action, ...body } = await req.json()
+    if (action === 'list')   { const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 }); return res({ users: data?.users ?? [], error }) }
+    if (action === 'create') { const { data, error } = await admin.auth.admin.createUser(body); return res({ user: data?.user ?? null, error }) }
+    if (action === 'update') { const { id, ...p } = body; const { error } = await admin.auth.admin.updateUserById(id, p); return res({ error }) }
+    if (action === 'delete') { const { id } = body; const { error } = await admin.auth.admin.deleteUser(id); return res({ error }) }
+    return res({ error: 'Unknown action' }, 400)
+  } catch (e) { return res({ error: String(e) }, 500) }
+})`;
+
 /* ─────────────── main page ─────────────── */
 export const Master = () => {
   const { companies, loading, setupNeeded, updateCompany, deleteCompany } = useCompaniesStore();
   const { addUser } = useAuthStore();
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [edgeStatus, setEdgeStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+  const [edgeError, setEdgeError] = useState('');
+  const [showEdgeDeploy, setShowEdgeDeploy] = useState(false);
+
+  const checkEdge = () => {
+    setEdgeStatus('checking');
+    adminApi.ping().then(({ ok, message }) => {
+      setEdgeStatus(ok ? 'ok' : 'error');
+      if (!ok) setEdgeError(message);
+    });
+  };
 
   useEffect(() => {
+    checkEdge();
     adminApi.listUsers().then(({ data }) => {
       if (data?.users) {
         setAllUsers(data.users.map(u => ({
@@ -333,6 +361,69 @@ export const Master = () => {
           </button>
         </div>
       </div>
+
+      {/* Edge Function status banner */}
+      {edgeStatus === 'error' && (
+        <div className="bg-[#161b22] border border-red-500/40 rounded-xl p-5 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-red-400 mb-1">
+                Edge Function <code className="font-mono">admin-users</code> não está respondendo
+              </p>
+              <p className="text-xs text-slate-400 mb-2">
+                Sem ela, não é possível criar, listar ou excluir usuários.
+                {edgeError && <span className="ml-1 text-slate-500">Erro: {edgeError}</span>}
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setShowEdgeDeploy(s => !s)}
+                  className="text-xs px-3 py-1.5 bg-red-500/15 hover:bg-red-500/25 text-red-300 rounded-lg transition-colors font-medium"
+                >
+                  {showEdgeDeploy ? 'Ocultar instruções' : 'Ver como publicar'}
+                </button>
+                <button
+                  onClick={checkEdge}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Testar novamente
+                </button>
+              </div>
+              {showEdgeDeploy && (
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs font-semibold text-slate-300">
+                    Opção 1 — Via painel Supabase (mais fácil):
+                  </p>
+                  <ol className="text-xs text-slate-400 space-y-1 list-decimal list-inside">
+                    <li>Acesse <span className="text-slate-300 font-mono">supabase.com</span> → seu projeto → <strong className="text-slate-300">Edge Functions</strong></li>
+                    <li>Clique em <strong className="text-slate-300">New Function</strong> e nomeie como <code className="text-emerald-400 font-mono">admin-users</code></li>
+                    <li>Cole o código abaixo e clique <strong className="text-slate-300">Deploy</strong></li>
+                  </ol>
+                  <div className="relative">
+                    <pre className="bg-[#0d1117] border border-white/[0.06] rounded-lg p-3 text-xs text-emerald-300 overflow-x-auto whitespace-pre-wrap break-all">
+                      {EDGE_FN_CODE}
+                    </pre>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-300 mt-2">
+                    Opção 2 — Via Supabase CLI:
+                  </p>
+                  <pre className="bg-[#0d1117] border border-white/[0.06] rounded-lg p-3 text-xs text-emerald-300">
+{`supabase functions deploy admin-users --project-ref nkxyecdxgaxpnezfjkap`}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {edgeStatus === 'checking' && (
+        <div className="flex items-center gap-2 text-xs text-slate-500 mb-4">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Verificando Edge Function...
+        </div>
+      )}
 
       {/* Setup required banner */}
       {setupNeeded && (

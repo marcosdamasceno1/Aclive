@@ -7,6 +7,7 @@ interface AuthState {
   users: User[];
   loading: boolean;
   initialized: boolean;
+  usersError: string | null;
   login: (email: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
   addUser: (user: Omit<User, 'id' | 'createdAt'>, password: string) => Promise<User>;
@@ -38,6 +39,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   users: [],
   loading: true,
   initialized: false,
+  usersError: null,
 
   initAuth: async () => {
     try {
@@ -57,14 +59,17 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   loadUsers: async () => {
     const { data, error } = await adminApi.listUsers();
-    if (!error && data?.users) {
+    if (error) {
+      set({ usersError: error.message });
+      return;
+    }
+    if (data?.users) {
       const me = useAuthStore.getState().currentUser;
       const all = data.users.map(u => metaToUser(u));
-      // Super admin sees no users in Settings (agency users only visible in Master panel)
       if (me?.isSuperAdmin) {
-        set({ users: [] });
+        set({ users: [], usersError: null });
       } else {
-        set({ users: all.filter(u => u.companyId === me?.companyId) });
+        set({ users: all.filter(u => u.companyId === me?.companyId), usersError: null });
       }
     }
   },

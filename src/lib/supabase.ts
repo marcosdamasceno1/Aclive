@@ -22,11 +22,21 @@ export const clearDataSession = async (): Promise<void> => {};
 // Admin operations via Edge Function (server-side, uses service_role safely)
 type RawUser = { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string };
 
-const edgeFn = async (action: string, body: Record<string, unknown> = {}) => {
-  const { data, error } = await supabaseAuth.functions.invoke('admin-users', {
-    body: { action, ...body },
-  });
-  return { data, error };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EdgeResult = { data: any; error: any };
+
+const edgeFn = async (action: string, body: Record<string, unknown> = {}): Promise<EdgeResult> => {
+  const timer = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Edge Function não respondeu (timeout 20s). Verifique se o projeto Supabase está ativo.')), 20000)
+  );
+  try {
+    return await Promise.race([
+      supabaseAuth.functions.invoke('admin-users', { body: { action, ...body } }),
+      timer,
+    ]) as EdgeResult;
+  } catch (e) {
+    return { data: null, error: { message: String(e) } };
+  }
 };
 
 export const adminApi = {

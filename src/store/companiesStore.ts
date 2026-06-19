@@ -14,6 +14,12 @@ interface CompaniesState {
   deleteCompany: (id: string) => Promise<void>;
 }
 
+const withTimeout = <T>(promise: PromiseLike<T>, ms: number, msg: string): Promise<T> =>
+  Promise.race([
+    Promise.resolve(promise),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(msg)), ms)),
+  ]);
+
 export const useCompaniesStore = create<CompaniesState>()((set) => ({
   companies: [],
   loading: false,
@@ -21,18 +27,31 @@ export const useCompaniesStore = create<CompaniesState>()((set) => ({
 
   init: async () => {
     set({ loading: true });
-    const { data, error } = await supabase.from('companies').select('*').order('created_at', { ascending: false });
-    if (error) {
-      console.warn('[companies.init]', error.message);
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from('companies').select('*').order('created_at', { ascending: false }),
+        10000,
+        'Timeout ao carregar agências — verifique se o Supabase está ativo.'
+      );
+      if (error) {
+        console.warn('[companies.init]', error.message);
+        set({ loading: false, setupNeeded: true });
+        return;
+      }
+      set({ companies: (data || []).map(r => fromDb<Company>(r as Record<string, unknown>)), loading: false, setupNeeded: false });
+    } catch (e) {
+      console.warn('[companies.init timeout]', e);
       set({ loading: false, setupNeeded: true });
-      return;
     }
-    set({ companies: (data || []).map(r => fromDb<Company>(r as Record<string, unknown>)), loading: false, setupNeeded: false });
   },
 
   addCompany: async (data) => {
     const newCompany: Company = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
-    const { error } = await supabase.from('companies').insert(toDb({ ...newCompany }) as Record<string, unknown>);
+    const { error } = await withTimeout(
+      supabase.from('companies').insert(toDb({ ...newCompany }) as Record<string, unknown>),
+      10000,
+      'Timeout ao criar agência.'
+    );
     if (error) throw new Error(error.message);
     set(state => ({ companies: [newCompany, ...state.companies] }));
     return newCompany;

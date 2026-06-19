@@ -7,7 +7,7 @@ interface AuthState {
   users: User[];
   loading: boolean;
   initialized: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
   addUser: (user: Omit<User, 'id' | 'createdAt'>, password: string) => Promise<User>;
   updateUser: (id: string, updates: Partial<Omit<User, 'id' | 'createdAt'>>, newPassword?: string) => Promise<void>;
@@ -80,7 +80,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
         timeout<never>(10000),
       ]);
       console.log('[login] auth result:', { userId: data?.user?.id, error: error?.message });
-      if (error || !data.user) return false;
+      if (error || !data.user) return error?.message || 'Credenciais inválidas';
 
       if (data.session) {
         await setDataSession(data.session.access_token, data.session.refresh_token);
@@ -89,10 +89,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
       const currentUser = metaToUser(data.user);
       console.log('[login] currentUser:', currentUser);
       set({ currentUser });
-      return true;
+      return null;
     } catch (e) {
       console.error('[login] erro:', e);
-      return false;
+      return String(e);
     }
   },
 

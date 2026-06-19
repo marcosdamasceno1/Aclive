@@ -17,12 +17,12 @@ export const Login = () => {
     setLoading(true);
     try {
       console.log('[login] iniciando...');
-      const ok = await login(email, password);
-      console.log('[login] resultado:', ok);
-      if (ok) {
+      const err = await login(email, password);
+      console.log('[login] resultado:', err);
+      if (err === null) {
         navigate('/dashboard');
       } else {
-        setError('E-mail ou senha incorretos.');
+        setError(err);
       }
     } catch (err) {
       console.error('[login] erro:', err);

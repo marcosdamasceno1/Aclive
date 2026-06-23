@@ -146,9 +146,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
       companyId,
     };
 
-    // Persist to user_profiles so loadUsers can find them without Edge Function filtering
+    // Fire-and-forget insert into user_profiles — does not block user creation
     if (companyId) {
-      const { error: profileError } = await supabaseData.from('user_profiles').insert({
+      supabaseData.from('user_profiles').insert({
         id: newUser.id,
         company_id: companyId,
         name: newUser.name,
@@ -156,8 +156,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
         role: newUser.role,
         permissions: newUser.permissions ?? null,
         active: newUser.active,
-      });
-      if (profileError) console.error('[addUser.profile]', profileError);
+      }).then(({ error }) => { if (error) console.error('[addUser.profile]', error); });
     }
 
     set(state => ({ users: [...state.users, newUser] }));

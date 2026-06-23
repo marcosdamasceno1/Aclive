@@ -27,7 +27,7 @@ type EdgeResult = { data: any; error: any };
 
 const edgeFn = async (action: string, body: Record<string, unknown> = {}): Promise<EdgeResult> => {
   const timer = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('Edge Function não respondeu (timeout 20s). Verifique se o projeto Supabase está ativo.')), 20000)
+    setTimeout(() => reject(new Error('Edge Function não respondeu (timeout 10s). Verifique se o projeto Supabase está ativo.')), 10000)
   );
   try {
     return await Promise.race([

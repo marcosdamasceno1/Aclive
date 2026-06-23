@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabaseAuth, setDataSession, adminApi } from '../lib/supabase';
+import { supabaseAuth, supabaseData, setDataSession, adminApi } from '../lib/supabase';
 import type { User, UserRole } from '../types';
 
 interface AuthState {
@@ -57,21 +57,36 @@ export const useAuthStore = create<AuthState>()((set) => ({
     }
   },
 
+  // Queries the user_profiles table directly — no Edge Function needed for listing.
+  // RLS on user_profiles filters by company_id automatically.
   loadUsers: async () => {
-    const { data, error } = await adminApi.listUsers();
+    const me = useAuthStore.getState().currentUser;
+    if (me?.isSuperAdmin) { set({ users: [], usersError: null }); return; }
+    if (!me?.companyId) { set({ users: [], usersError: null }); return; }
+
+    const { data, error } = await supabaseData
+      .from('user_profiles')
+      .select('*')
+      .eq('company_id', me.companyId)
+      .order('created_at');
+
     if (error) {
       set({ usersError: error.message });
       return;
     }
-    if (data?.users) {
-      const me = useAuthStore.getState().currentUser;
-      const all = data.users.map(u => metaToUser(u));
-      if (me?.isSuperAdmin) {
-        set({ users: [], usersError: null });
-      } else {
-        set({ users: all.filter(u => u.companyId === me?.companyId), usersError: null });
-      }
-    }
+
+    const users: User[] = (data || []).map(row => ({
+      id: row.id as string,
+      name: row.name as string,
+      email: row.email as string,
+      role: row.role as UserRole,
+      permissions: Array.isArray(row.permissions) ? (row.permissions as string[]) : undefined,
+      professionalId: row.professional_id as string | undefined,
+      active: (row.active as boolean) ?? true,
+      createdAt: row.created_at as string,
+      companyId: row.company_id as string,
+    }));
+    set({ users, usersError: null });
   },
 
   login: async (email, password) => {
@@ -79,12 +94,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
       new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout ${ms}ms`)), ms));
 
     try {
-      console.log('[login] chamando signInWithPassword...');
       const { data, error } = await Promise.race([
         supabaseAuth.auth.signInWithPassword({ email, password }),
         timeout<never>(10000),
       ]);
-      console.log('[login] auth result:', { userId: data?.user?.id, error: error?.message });
       if (error || !data.user) return error?.message || 'Credenciais inválidas';
 
       if (data.session) {
@@ -92,7 +105,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
       }
 
       const currentUser = metaToUser(data.user);
-      console.log('[login] currentUser:', currentUser);
       set({ currentUser });
       return null;
     } catch (e) {
@@ -108,6 +120,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   addUser: async (userData, password) => {
     const me = useAuthStore.getState().currentUser;
+    const companyId = userData.companyId || me?.companyId;
+
     const { data: authData, error } = await adminApi.createUser({
       email: userData.email,
       password,
@@ -115,7 +129,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
       user_metadata: {
         name: userData.name,
         role: userData.role,
-        ...(userData.companyId ? { company_id: userData.companyId } : me?.companyId ? { company_id: me.companyId } : {}),
+        ...(companyId ? { company_id: companyId } : {}),
         ...(userData.role !== 'admin' && { permissions: userData.permissions || [] }),
       },
     });
@@ -129,8 +143,23 @@ export const useAuthStore = create<AuthState>()((set) => ({
       active: userData.active ?? true,
       permissions: userData.role !== 'admin' ? (userData.permissions || []) : undefined,
       createdAt: authData.user.created_at || new Date().toISOString(),
-      companyId: userData.companyId || me?.companyId,
+      companyId,
     };
+
+    // Persist to user_profiles so loadUsers can find them without Edge Function filtering
+    if (companyId) {
+      const { error: profileError } = await supabaseData.from('user_profiles').insert({
+        id: newUser.id,
+        company_id: companyId,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        permissions: newUser.permissions ?? null,
+        active: newUser.active,
+      });
+      if (profileError) console.error('[addUser.profile]', profileError);
+    }
+
     set(state => ({ users: [...state.users, newUser] }));
     return newUser;
   },
@@ -146,6 +175,18 @@ export const useAuthStore = create<AuthState>()((set) => ({
       ...(newPassword ? { password: newPassword } : {}),
       ...(Object.keys(meta).length > 0 ? { user_metadata: meta } : {}),
     });
+
+    // Keep user_profiles in sync
+    const profileUpdates: Record<string, unknown> = {};
+    if (updates.name !== undefined) profileUpdates.name = updates.name;
+    if (updates.role !== undefined) profileUpdates.role = updates.role;
+    if (updates.permissions !== undefined) profileUpdates.permissions = updates.permissions;
+    if (updates.professionalId !== undefined) profileUpdates.professional_id = updates.professionalId;
+    if (Object.keys(profileUpdates).length > 0) {
+      supabaseData.from('user_profiles').update(profileUpdates).eq('id', id)
+        .then(({ error }) => { if (error) console.error('[updateUser.profile]', error); });
+    }
+
     set(state => ({
       users: state.users.map(u => u.id === id ? { ...u, ...updates } : u),
       currentUser: state.currentUser?.id === id ? { ...state.currentUser, ...updates } : state.currentUser,
@@ -154,6 +195,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   deleteUser: async (id) => {
     await adminApi.deleteUser(id);
+    supabaseData.from('user_profiles').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[deleteUser.profile]', error); });
     set(state => ({ users: state.users.filter(u => u.id !== id) }));
   },
 

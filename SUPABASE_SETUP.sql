@@ -3,6 +3,41 @@
 -- Execute este script inteiro no SQL Editor do Supabase
 -- ============================================================
 
+-- ---- USER PROFILES (listagem de usuários por agência, sem depender da Edge Function) ----
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id              UUID PRIMARY KEY,
+  company_id      UUID NOT NULL,
+  name            TEXT NOT NULL DEFAULT '',
+  email           TEXT NOT NULL DEFAULT '',
+  role            TEXT NOT NULL DEFAULT 'admin',
+  permissions     JSONB DEFAULT '[]',
+  professional_id UUID,
+  active          BOOLEAN DEFAULT true,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "up_select" ON user_profiles;
+DROP POLICY IF EXISTS "up_insert" ON user_profiles;
+DROP POLICY IF EXISTS "up_update" ON user_profiles;
+DROP POLICY IF EXISTS "up_delete" ON user_profiles;
+-- Agency users see only their company; super admin sees all
+CREATE POLICY "up_select" ON user_profiles FOR SELECT USING (
+  company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid)
+  OR (auth.jwt()->'user_metadata'->>'super_admin')::boolean = true
+);
+-- Any authenticated user can insert (application controls which company_id is used)
+CREATE POLICY "up_insert" ON user_profiles FOR INSERT WITH CHECK (true);
+-- Update and delete follow the same company isolation rule
+CREATE POLICY "up_update" ON user_profiles FOR UPDATE USING (
+  company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid)
+  OR (auth.jwt()->'user_metadata'->>'super_admin')::boolean = true
+);
+CREATE POLICY "up_delete" ON user_profiles FOR DELETE USING (
+  company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid)
+  OR (auth.jwt()->'user_metadata'->>'super_admin')::boolean = true
+);
+
+
 -- ---- COMPANIES (tabela do super admin, sem RLS) ----
 CREATE TABLE IF NOT EXISTS companies (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

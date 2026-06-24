@@ -122,7 +122,7 @@ export const Settings = () => {
 
       setUserForm(emptyUserForm);
       setShowUserModal(false);
-      loadUsers();
+      await loadUsers();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Erro ao criar usuário.');
     } finally {
@@ -169,7 +169,7 @@ export const Settings = () => {
     if (deleteUserId && deleteUserId !== currentUser?.id) {
       try {
         await deleteUser(deleteUserId);
-        loadUsers();
+        await loadUsers();
       } catch {
         // ignore
       }

@@ -25,8 +25,11 @@ CREATE POLICY "up_select" ON user_profiles FOR SELECT USING (
   company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid)
   OR (auth.jwt()->'user_metadata'->>'super_admin')::boolean = true
 );
--- Any authenticated user can insert (application controls which company_id is used)
-CREATE POLICY "up_insert" ON user_profiles FOR INSERT WITH CHECK (true);
+-- Agency admins insert only for their own company; super admin can insert for any company
+CREATE POLICY "up_insert" ON user_profiles FOR INSERT WITH CHECK (
+  company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid)
+  OR (auth.jwt()->'user_metadata'->>'super_admin')::boolean = true
+);
 -- Update and delete follow the same company isolation rule
 CREATE POLICY "up_update" ON user_profiles FOR UPDATE USING (
   company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid)

@@ -146,9 +146,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
       companyId,
     };
 
-    // Fire-and-forget insert into user_profiles — does not block user creation
+    // Await the user_profiles insert so that loadUsers() called right after
+    // finds the record in the DB. User creation in Auth already succeeded above —
+    // a profile insert failure is logged but does not roll back the auth user.
     if (companyId) {
-      supabaseData.from('user_profiles').insert({
+      const { error: profileError } = await supabaseData.from('user_profiles').insert({
         id: newUser.id,
         company_id: companyId,
         name: newUser.name,
@@ -156,7 +158,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
         role: newUser.role,
         permissions: newUser.permissions ?? null,
         active: newUser.active,
-      }).then(({ error }) => { if (error) console.error('[addUser.profile]', error); });
+        created_at: newUser.createdAt,
+      });
+      if (profileError) console.error('[addUser.profile]', profileError);
     }
 
     set(state => ({ users: [...state.users, newUser] }));
@@ -175,15 +179,15 @@ export const useAuthStore = create<AuthState>()((set) => ({
       ...(Object.keys(meta).length > 0 ? { user_metadata: meta } : {}),
     });
 
-    // Keep user_profiles in sync
+    // Sync user_profiles — awaited so subsequent loadUsers() sees the updated row.
     const profileUpdates: Record<string, unknown> = {};
     if (updates.name !== undefined) profileUpdates.name = updates.name;
     if (updates.role !== undefined) profileUpdates.role = updates.role;
     if (updates.permissions !== undefined) profileUpdates.permissions = updates.permissions;
     if (updates.professionalId !== undefined) profileUpdates.professional_id = updates.professionalId;
     if (Object.keys(profileUpdates).length > 0) {
-      supabaseData.from('user_profiles').update(profileUpdates).eq('id', id)
-        .then(({ error }) => { if (error) console.error('[updateUser.profile]', error); });
+      const { error: profileError } = await supabaseData.from('user_profiles').update(profileUpdates).eq('id', id);
+      if (profileError) console.error('[updateUser.profile]', profileError);
     }
 
     set(state => ({
@@ -194,8 +198,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   deleteUser: async (id) => {
     await adminApi.deleteUser(id);
-    supabaseData.from('user_profiles').delete().eq('id', id)
-      .then(({ error }) => { if (error) console.error('[deleteUser.profile]', error); });
+    const { error: profileError } = await supabaseData.from('user_profiles').delete().eq('id', id);
+    if (profileError) console.error('[deleteUser.profile]', profileError);
     set(state => ({ users: state.users.filter(u => u.id !== id) }));
   },
 

@@ -52,14 +52,15 @@ export const useCompaniesStore = create<CompaniesState>()((set) => ({
 
   addCompany: async (data) => {
     const newCompany: Company = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
-    const { error } = await withTimeout(
-      supabase.from('companies').insert(toDb({ ...newCompany }) as Record<string, unknown>),
+    const { data: inserted, error } = await withTimeout(
+      supabase.from('companies').insert(toDb({ ...newCompany }) as Record<string, unknown>).select().single(),
       10000,
       'Timeout ao criar agência.'
     );
     if (error) throw new Error(error.message);
-    set(state => ({ companies: [newCompany, ...state.companies] }));
-    return newCompany;
+    const saved = inserted ? fromDb<Company>(inserted as Record<string, unknown>) : newCompany;
+    set(state => ({ companies: [saved, ...state.companies] }));
+    return saved;
   },
 
   updateCompany: (id, updates) => {

@@ -168,6 +168,7 @@ export interface Company {
   id: string;
   name: string;
   email?: string;
+  phone?: string;
   plan: string;
   active: boolean;
   createdAt: string;

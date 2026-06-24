@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Building2, Users, Plus, X, Loader2, CheckCircle,
-  Trash2, Power, UserPlus, Mail, AlertTriangle, RefreshCw,
+  Trash2, Power, UserPlus, Mail, Phone, AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { useCompaniesStore } from '../store/companiesStore';
 import { useAuthStore } from '../store/authStore';
@@ -102,7 +102,7 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
-    name: '', email: '', plan: 'basico',
+    name: '', email: '', phone: '', plan: 'basico',
     adminName: '', adminEmail: '', adminPassword: '',
   });
 
@@ -122,7 +122,7 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
     // Step 1: create the company
     let company: Company;
     try {
-      company = await addCompany({ name: form.name.trim(), email: form.email.trim() || undefined, plan: form.plan, active: true });
+      company = await addCompany({ name: form.name.trim(), email: form.email.trim() || undefined, phone: form.phone.trim() || undefined, plan: form.plan, active: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar agência');
       setSaving(false);
@@ -160,6 +160,9 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
         </Field>
         <Field label="E-mail da agência">
           <input className={inputCls} type="email" value={form.email} onChange={set('email')} placeholder="contato@agencia.com" />
+        </Field>
+        <Field label="Telefone da agência">
+          <input className={inputCls} type="tel" value={form.phone} onChange={set('phone')} placeholder="(11) 9 9999-9999" />
         </Field>
         <Field label="Plano">
           <select className={inputCls} value={form.plan} onChange={set('plan')}>
@@ -545,8 +548,13 @@ export const Master = () => {
       ) : companies.length === 0 ? (
         <div className="text-center py-20">
           <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">Nenhuma agência cadastrada</p>
-          <button onClick={() => setShowNewCompany(true)} className="mt-4 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+          <p className="text-slate-400 text-sm font-medium">Nenhuma agência cadastrada</p>
+          <p className="text-slate-600 text-xs mt-1 mb-4">Crie a primeira agência para começar a gerenciar clientes</p>
+          <button
+            onClick={() => setShowNewCompany(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
             Criar primeira agência
           </button>
         </div>
@@ -569,6 +577,12 @@ export const Master = () => {
                       <div className="flex items-center gap-1.5 mt-1">
                         <Mail className="w-3 h-3 text-slate-500 flex-shrink-0" />
                         <p className="text-xs text-slate-400 truncate">{company.email}</p>
+                      </div>
+                    )}
+                    {company.phone && (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Phone className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                        <p className="text-xs text-slate-400 truncate">{company.phone}</p>
                       </div>
                     )}
                   </div>

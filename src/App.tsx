@@ -80,13 +80,35 @@ function App() {
       if (useAuthStore.getState().currentUser) doInitAllStores();
     }).finally(() => clearTimeout(timeout));
 
+    const clearAllStores = () => {
+      useLeadsStore.setState({ leads: [], dbError: null });
+      useProfessionalsStore.setState({ professionals: [] });
+      useClientsStore.setState({ clients: [] });
+      useDemandsStore.setState({ demands: [] });
+      useFinancialStore.setState({ movements: [] });
+      useCalendarStore.setState({ events: [] });
+      useSocialStore.setState({ accounts: [], posts: [] });
+      useAuthStore.setState({ users: [] });
+    };
+
     const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
-        // Sync currentUser from the session BEFORE loading stores so getCompanyId() returns
-        // the correct company for the user who just logged in (not null from previous state).
+        // Capture previous user BEFORE syncing — detects account switches even when
+        // SIGNED_OUT didn't fire (Supabase v2 fires SIGNED_IN directly on signInWithPassword
+        // without a preceding SIGNED_OUT when the user switches accounts).
+        const prevUserId = useAuthStore.getState().currentUser?.id ?? null;
+        const newUserId = session?.user?.id ?? null;
+        const userChanged = newUserId !== null && prevUserId !== newUserId;
+
         if (session?.user) useAuthStore.getState().syncSession(session.user);
         if (session) await setDataSession(session.access_token, session.refresh_token);
-        await doInitAllStores();
+
+        if (!storesLoaded || userChanged) {
+          // Clear previous user's data immediately when switching accounts
+          if (userChanged) clearAllStores();
+          storesLoaded = true;
+          await initAllStores();
+        }
       }
       if (event === 'TOKEN_REFRESHED') {
         // Only sync the new token — stores are already loaded, no need to reinitialize.
@@ -96,15 +118,8 @@ function App() {
       if (event === 'SIGNED_OUT') {
         storesLoaded = false;
         await clearDataSession();
-        // Clear all store data so the next login starts fresh
-        useLeadsStore.setState({ leads: [], dbError: null });
-        useProfessionalsStore.setState({ professionals: [] });
-        useClientsStore.setState({ clients: [] });
-        useDemandsStore.setState({ demands: [] });
-        useFinancialStore.setState({ movements: [] });
-        useCalendarStore.setState({ events: [] });
-        useSocialStore.setState({ accounts: [], posts: [] });
-        useAuthStore.setState({ currentUser: null, users: [] });
+        clearAllStores();
+        useAuthStore.setState({ currentUser: null });
       }
     });
     return () => {

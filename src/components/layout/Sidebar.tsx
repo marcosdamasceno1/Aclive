@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users,
   Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
-  ChevronLeft, ChevronRight, CalendarDays, X, Camera,
+  ChevronLeft, ChevronRight, CalendarDays, X, Camera, Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { hasPageAccess } from '../../utils/permissions';
@@ -42,6 +43,13 @@ interface NavItemDef {
 
 export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) => {
   const { currentUser, logout } = useAuthStore();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await logout();
+    // Component unmounts after SIGNED_OUT fires — no need to reset flag
+  };
 
   const access = (key: string) => currentUser ? hasPageAccess(currentUser, key as PageKey) : false;
 
@@ -158,11 +166,12 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
             {currentUser?.name.charAt(0).toUpperCase()}
           </div>
           <button
-            onClick={() => logout()}
+            onClick={handleLogout}
+            disabled={loggingOut}
             title="Sair"
-            className="flex items-center justify-center w-7 h-7 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors"
+            className="flex items-center justify-center w-7 h-7 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors disabled:opacity-50"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            {loggingOut ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
           </button>
         </div>
         {/* Expanded view (always on mobile, on desktop only when not collapsed) */}
@@ -179,11 +188,12 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
             </div>
           </div>
           <button
-            onClick={() => logout()}
-            className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg text-xs font-medium transition-colors"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            Sair
+            {loggingOut ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
+            {loggingOut ? 'Saindo...' : 'Sair'}
           </button>
         </div>
       </div>

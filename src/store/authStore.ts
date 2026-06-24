@@ -121,7 +121,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   logout: async () => {
-    set({ currentUser: null, users: [] });
+    // Don't pre-clear currentUser here — the SIGNED_OUT handler in App.tsx
+    // already calls clearAllStores() + sets currentUser: null. Pre-clearing
+    // races with that handler and can wipe stores twice, causing visible
+    // data flashes if the user logs back in quickly.
     await supabaseAuth.auth.signOut();
   },
 

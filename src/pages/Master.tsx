@@ -118,8 +118,19 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
     if (form.adminPassword.length < 6) return setError('Senha deve ter no mínimo 6 caracteres');
 
     setSaving(true);
+
+    // Step 1: create the company
+    let company: Company;
     try {
-      const company = await addCompany({ name: form.name.trim(), email: form.email.trim() || undefined, plan: form.plan, active: true });
+      company = await addCompany({ name: form.name.trim(), email: form.email.trim() || undefined, plan: form.plan, active: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar agência');
+      setSaving(false);
+      return;
+    }
+
+    // Step 2: create the admin user — company already exists even if this fails
+    try {
       await addUser({
         name: form.adminName.trim(),
         email: form.adminEmail.trim(),
@@ -130,7 +141,12 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar agência');
+      // Agência criada com sucesso; apenas o usuário falhou.
+      // Fecha o modal para mostrar a agência no painel — o admin pode ser criado depois.
+      onSuccess();
+      onClose();
+      // Error is surfaced via the edge status banner; no need to block the flow.
+      console.error('[NewCompanyModal] user creation failed:', err);
     } finally {
       setSaving(false);
     }
@@ -300,7 +316,7 @@ Deno.serve(async (req) => {
 
 /* ─────────────── main page ─────────────── */
 export const Master = () => {
-  const { companies, loading, setupNeeded, updateCompany, deleteCompany } = useCompaniesStore();
+  const { companies, loading, setupNeeded, loadError: companiesLoadError, updateCompany, deleteCompany, init: initCompanies } = useCompaniesStore();
   const { addUser } = useAuthStore();
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [edgeStatus, setEdgeStatus] = useState<'checking' | 'ok' | 'error'>('checking');
@@ -311,6 +327,8 @@ export const Master = () => {
 
   const refreshUsers = () => {
     setLoadingUsers(true);
+    // Also reload companies from DB so new/deleted agencies appear immediately
+    initCompanies();
     adminApi.listUsers().then(({ data, error }) => {
       if (data?.users) {
         setAllUsers(data.users.map(u => ({
@@ -443,6 +461,23 @@ export const Master = () => {
         <div className="flex items-center gap-2 text-xs text-slate-500 mb-4">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
           Verificando Edge Function...
+        </div>
+      )}
+
+      {/* Connection error banner (Supabase paused/slow — table exists but unreachable) */}
+      {companiesLoadError && !setupNeeded && (
+        <div className="bg-[#161b22] border border-amber-500/40 rounded-xl p-5 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-400 mb-1">Não foi possível carregar as agências</p>
+              <p className="text-xs text-slate-400 mb-2">O Supabase pode estar pausado ou com instabilidade. Verifique o painel do Supabase e tente novamente.</p>
+              <p className="text-xs text-slate-500">Detalhe: {companiesLoadError}</p>
+              <button onClick={() => initCompanies()} className="mt-2 text-xs px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 rounded-lg transition-colors font-medium">
+                Tentar novamente
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

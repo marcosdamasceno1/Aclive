@@ -25,6 +25,8 @@ const ROLE_DEFAULTS: Record<UserRole, PageKey[]> = {
 
 export const hasPageAccess = (user: User | null, pageKey: PageKey): boolean => {
   if (!user) return false;
+  // Super admin manages agencies only — standard pages have no company_id context
+  if (user.isSuperAdmin) return false;
   if (user.role === 'admin') return true;
   if (user.permissions !== undefined) return user.permissions.includes(pageKey);
   return ROLE_DEFAULTS[user.role]?.includes(pageKey) ?? false;

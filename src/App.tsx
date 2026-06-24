@@ -31,6 +31,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Agency routes: super admin has no company_id and should not see agency pages
+const AgencyRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser } = useAuthStore();
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (currentUser.isSuperAdmin) return <Navigate to="/master" replace />;
+  return <>{children}</>;
+};
+
 const MasterRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = useAuthStore();
   if (!currentUser?.isSuperAdmin) return <Navigate to="/dashboard" replace />;
@@ -142,23 +150,23 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={currentUser ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/login" element={currentUser ? (currentUser.isSuperAdmin ? <Navigate to="/master" replace /> : <Navigate to="/dashboard" replace />) : <Login />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="clients" element={<Clients />} />
-          <Route path="professionals" element={<Professionals />} />
-          <Route path="demands" element={<Navigate to="/kanban" replace />} />
-          <Route path="kanban" element={<Kanban />} />
-          <Route path="financial" element={<Financial />} />
-          <Route path="leads" element={<Leads />} />
-          <Route path="calendar" element={<Calendar />} />
-          <Route path="social" element={<Social />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="master" element={<MasterRoute><Master /></MasterRoute>} />
+          <Route index element={currentUser?.isSuperAdmin ? <Navigate to="/master" replace /> : <Navigate to="/dashboard" replace />} />
+          <Route path="dashboard"    element={<AgencyRoute><Dashboard /></AgencyRoute>} />
+          <Route path="clients"      element={<AgencyRoute><Clients /></AgencyRoute>} />
+          <Route path="professionals" element={<AgencyRoute><Professionals /></AgencyRoute>} />
+          <Route path="demands"      element={<Navigate to="/kanban" replace />} />
+          <Route path="kanban"       element={<AgencyRoute><Kanban /></AgencyRoute>} />
+          <Route path="financial"    element={<AgencyRoute><Financial /></AgencyRoute>} />
+          <Route path="leads"        element={<AgencyRoute><Leads /></AgencyRoute>} />
+          <Route path="calendar"     element={<AgencyRoute><Calendar /></AgencyRoute>} />
+          <Route path="social"       element={<AgencyRoute><Social /></AgencyRoute>} />
+          <Route path="reports"      element={<AgencyRoute><Reports /></AgencyRoute>} />
+          <Route path="settings"     element={<AgencyRoute><Settings /></AgencyRoute>} />
+          <Route path="master"       element={<MasterRoute><Master /></MasterRoute>} />
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={currentUser?.isSuperAdmin ? <Navigate to="/master" replace /> : <Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

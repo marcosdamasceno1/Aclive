@@ -8,6 +8,7 @@ interface CompaniesState {
   companies: Company[];
   loading: boolean;
   setupNeeded: boolean;
+  loadError: string | null;
   init: () => Promise<void>;
   addCompany: (c: Omit<Company, 'id' | 'createdAt'>) => Promise<Company>;
   updateCompany: (id: string, updates: Partial<Company>) => void;
@@ -24,9 +25,10 @@ export const useCompaniesStore = create<CompaniesState>()((set) => ({
   companies: [],
   loading: false,
   setupNeeded: false,
+  loadError: null,
 
   init: async () => {
-    set({ loading: true });
+    set({ loading: true, loadError: null });
     try {
       const { data, error } = await withTimeout(
         supabase.from('companies').select('*').order('created_at', { ascending: false }),
@@ -34,14 +36,17 @@ export const useCompaniesStore = create<CompaniesState>()((set) => ({
         'Timeout ao carregar agências — verifique se o Supabase está ativo.'
       );
       if (error) {
+        // Only show "setup needed" if the table literally doesn't exist
+        const tableNotFound = error.message?.includes('does not exist') || (error as { code?: string }).code === '42P01';
         console.warn('[companies.init]', error.message);
-        set({ loading: false, setupNeeded: true });
+        set({ loading: false, setupNeeded: tableNotFound, loadError: tableNotFound ? null : error.message });
         return;
       }
-      set({ companies: (data || []).map(r => fromDb<Company>(r as Record<string, unknown>)), loading: false, setupNeeded: false });
+      set({ companies: (data || []).map(r => fromDb<Company>(r as Record<string, unknown>)), loading: false, setupNeeded: false, loadError: null });
     } catch (e) {
+      // Timeout or network error — table may exist; don't show SQL setup instructions
       console.warn('[companies.init timeout]', e);
-      set({ loading: false, setupNeeded: true });
+      set({ loading: false, setupNeeded: false, loadError: String(e) });
     }
   },
 

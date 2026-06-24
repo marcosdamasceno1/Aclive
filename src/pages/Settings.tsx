@@ -115,7 +115,9 @@ export const Settings = () => {
           defaultValues: {},
           userId: newUser.id,
         });
-        await updateUser(newUser.id, { professionalId: newPro.id });
+        // Fire-and-forget: don't block modal close on a second Edge Function call.
+        // updateUser syncs professionalId to Auth metadata + user_profiles in the background.
+        updateUser(newUser.id, { professionalId: newPro.id });
       }
 
       setUserForm(emptyUserForm);

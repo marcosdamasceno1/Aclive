@@ -66,9 +66,18 @@ function App() {
       useAuthStore.getState().loadUsers();
     };
 
+    // Guard: only initialize stores once per session to prevent data flickering
+    // if SIGNED_IN fires again (e.g. token refresh edge-cases in some Supabase versions).
+    let storesLoaded = false;
+    const doInitAllStores = async () => {
+      if (storesLoaded) return;
+      storesLoaded = true;
+      await initAllStores();
+    };
+
     initAuth().then(() => {
       // If initAuth found an existing session, load all stores immediately
-      if (useAuthStore.getState().currentUser) initAllStores();
+      if (useAuthStore.getState().currentUser) doInitAllStores();
     }).finally(() => clearTimeout(timeout));
 
     const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
@@ -77,9 +86,15 @@ function App() {
         // the correct company for the user who just logged in (not null from previous state).
         if (session?.user) useAuthStore.getState().syncSession(session.user);
         if (session) await setDataSession(session.access_token, session.refresh_token);
-        await initAllStores();
+        await doInitAllStores();
+      }
+      if (event === 'TOKEN_REFRESHED') {
+        // Only sync the new token — stores are already loaded, no need to reinitialize.
+        if (session?.user) useAuthStore.getState().syncSession(session.user);
+        if (session) await setDataSession(session.access_token, session.refresh_token);
       }
       if (event === 'SIGNED_OUT') {
+        storesLoaded = false;
         await clearDataSession();
         // Clear all store data so the next login starts fresh
         useLeadsStore.setState({ leads: [], dbError: null });

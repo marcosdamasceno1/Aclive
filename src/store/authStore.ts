@@ -45,10 +45,17 @@ export const useAuthStore = create<AuthState>()((set) => ({
     try {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       if (session?.user) {
-        set({ currentUser: metaToUser(session.user) });
-      }
-      if (session) {
-        await setDataSession(session.access_token, session.refresh_token);
+        // Force a token refresh so user_metadata claims (company_id, role) are
+        // always current. getSession() returns the cached JWT which may predate
+        // metadata changes — stale company_id causes RLS to return empty rows
+        // even though data exists, which is why the dashboard looks blank on
+        // reload but works fine in incognito (fresh login = fresh claims).
+        let activeUser = session.user;
+        try {
+          const { data: refreshed } = await supabaseAuth.auth.refreshSession();
+          if (refreshed.session?.user) activeUser = refreshed.session.user;
+        } catch { /* network error — fall back to cached claims */ }
+        set({ currentUser: metaToUser(activeUser) });
       }
     } catch (e) {
       console.error('initAuth error:', e);

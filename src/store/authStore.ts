@@ -50,8 +50,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
           const { data: refreshed, error: refreshErr } = await supabaseAuth.auth.refreshSession();
           if (refreshErr) {
             // Refresh token revoked (server logout, admin action, expired).
-            // Wipe the stale local session so the user lands on /login and is
-            // never silently "logged in" with a dead token after pressing F5.
+            // Wipe ALL Supabase keys — don't trust signOut alone since the
+            // same race condition that causes false-login can occur here too.
+            try {
+              Object.keys(localStorage)
+                .filter(k => k.startsWith('sb-') || k.includes('supabase'))
+                .forEach(k => localStorage.removeItem(k));
+            } catch {}
             await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
             return; // finally block still runs → initialized: true
           }
@@ -125,11 +130,21 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   logout: async () => {
-    // scope:'local' clears the browser session INSTANTLY without a server
-    // roundtrip. This guarantees localStorage is wiped even if the network
-    // is slow, the server is unreachable, or the request times out.
-    // The server-side refresh token expires naturally (Supabase default: 7d).
+    // Manually wipe ALL Supabase auth keys from localStorage BEFORE calling
+    // signOut. This prevents the autoRefreshToken background timer from racing
+    // with signOut and writing a new session AFTER the signOut clears it —
+    // which was the root cause of the session reappearing on F5.
+    const wipeSbStorage = () => {
+      try {
+        const keys = Object.keys(localStorage).filter(
+          k => k.startsWith('sb-') || k.includes('supabase')
+        );
+        keys.forEach(k => localStorage.removeItem(k));
+      } catch { /* storage API unavailable */ }
+    };
+    wipeSbStorage();
     await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
+    wipeSbStorage(); // clear again in case autoRefreshToken won the race
     set({ currentUser: null, users: [] });
   },
 

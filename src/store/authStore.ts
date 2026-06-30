@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabaseAuth, supabaseData, setDataSession, adminApi } from '../lib/supabase';
+import { performLogout, getValidSession, onLoginSuccess } from '../lib/authSession';
 import type { User, UserRole } from '../types';
 
 interface AuthState {
@@ -41,31 +42,12 @@ export const useAuthStore = create<AuthState>()((set) => ({
   initialized: false,
   usersError: null,
 
+  // ── Inicialização ────────────────────────────────────────────────────────
+  // Toda a lógica de validação de sessão está em src/lib/authSession.ts.
   initAuth: async () => {
     try {
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      if (session?.user) {
-        let user = session.user;
-        try {
-          const { data: refreshed, error: refreshErr } = await supabaseAuth.auth.refreshSession();
-          if (refreshErr) {
-            // Refresh token revoked (server logout, admin action, expired).
-            // Wipe ALL Supabase keys — don't trust signOut alone since the
-            // same race condition that causes false-login can occur here too.
-            try {
-              Object.keys(localStorage)
-                .filter(k => k.startsWith('sb-') || k.includes('supabase'))
-                .forEach(k => localStorage.removeItem(k));
-            } catch {}
-            await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
-            return; // finally block still runs → initialized: true
-          }
-          if (refreshed.session?.user) user = refreshed.session.user;
-        } catch {
-          // Network error (offline) — keep cached claims until connectivity returns
-        }
-        set({ currentUser: metaToUser(user) });
-      }
+      const user = await getValidSession();
+      if (user) set({ currentUser: metaToUser(user) });
     } catch (e) {
       console.error('initAuth error:', e);
     } finally {
@@ -73,8 +55,39 @@ export const useAuthStore = create<AuthState>()((set) => ({
     }
   },
 
-  // Queries the user_profiles table directly — no Edge Function needed for listing.
-  // RLS on user_profiles filters by company_id automatically.
+  // ── Logout ───────────────────────────────────────────────────────────────
+  // Toda a lógica de limpeza de sessão está em src/lib/authSession.ts.
+  logout: async () => {
+    await performLogout();
+    set({ currentUser: null, users: [] });
+  },
+
+  // ── Login ────────────────────────────────────────────────────────────────
+  login: async (email, password) => {
+    const timeout = <T>(ms: number): Promise<T> =>
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout ${ms}ms`)), ms));
+
+    try {
+      const { data, error } = await Promise.race([
+        supabaseAuth.auth.signInWithPassword({ email, password }),
+        timeout<never>(10000),
+      ]);
+      if (error || !data.user) return error?.message || 'Credenciais inválidas';
+
+      if (data.session) {
+        await setDataSession(data.session.access_token, data.session.refresh_token);
+      }
+
+      onLoginSuccess(); // limpa o stamp de logout anterior
+      set({ currentUser: metaToUser(data.user) });
+      return null;
+    } catch (e) {
+      console.error('[login] erro:', e);
+      return String(e);
+    }
+  },
+
+  // ── Usuários ─────────────────────────────────────────────────────────────
   loadUsers: async () => {
     const me = useAuthStore.getState().currentUser;
     if (me?.isSuperAdmin) { set({ users: [], usersError: null }); return; }
@@ -105,49 +118,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set({ users, usersError: null });
   },
 
-  login: async (email, password) => {
-    const timeout = <T>(ms: number): Promise<T> =>
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout ${ms}ms`)), ms));
-
-    try {
-      const { data, error } = await Promise.race([
-        supabaseAuth.auth.signInWithPassword({ email, password }),
-        timeout<never>(10000),
-      ]);
-      if (error || !data.user) return error?.message || 'Credenciais inválidas';
-
-      if (data.session) {
-        await setDataSession(data.session.access_token, data.session.refresh_token);
-      }
-
-      const currentUser = metaToUser(data.user);
-      set({ currentUser });
-      return null;
-    } catch (e) {
-      console.error('[login] erro:', e);
-      return String(e);
-    }
-  },
-
-  logout: async () => {
-    // Manually wipe ALL Supabase auth keys from localStorage BEFORE calling
-    // signOut. This prevents the autoRefreshToken background timer from racing
-    // with signOut and writing a new session AFTER the signOut clears it —
-    // which was the root cause of the session reappearing on F5.
-    const wipeSbStorage = () => {
-      try {
-        const keys = Object.keys(localStorage).filter(
-          k => k.startsWith('sb-') || k.includes('supabase')
-        );
-        keys.forEach(k => localStorage.removeItem(k));
-      } catch { /* storage API unavailable */ }
-    };
-    wipeSbStorage();
-    await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
-    wipeSbStorage(); // clear again in case autoRefreshToken won the race
-    set({ currentUser: null, users: [] });
-  },
-
   addUser: async (userData, password) => {
     const me = useAuthStore.getState().currentUser;
     const companyId = userData.companyId || me?.companyId;
@@ -176,9 +146,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
       companyId,
     };
 
-    // Await the user_profiles insert so that loadUsers() called right after
-    // finds the record in the DB. User creation in Auth already succeeded above —
-    // a profile insert failure is logged but does not roll back the auth user.
     if (companyId) {
       const { error: profileError } = await supabaseData.from('user_profiles').insert({
         id: newUser.id,
@@ -209,7 +176,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
       ...(Object.keys(meta).length > 0 ? { user_metadata: meta } : {}),
     });
 
-    // Sync user_profiles — awaited so subsequent loadUsers() sees the updated row.
     const profileUpdates: Record<string, unknown> = {};
     if (updates.name !== undefined) profileUpdates.name = updates.name;
     if (updates.role !== undefined) profileUpdates.role = updates.role;

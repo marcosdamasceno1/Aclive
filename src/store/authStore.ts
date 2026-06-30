@@ -121,11 +121,12 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   logout: async () => {
-    // Don't pre-clear currentUser here — the SIGNED_OUT handler in App.tsx
-    // already calls clearAllStores() + sets currentUser: null. Pre-clearing
-    // races with that handler and can wipe stores twice, causing visible
-    // data flashes if the user logs back in quickly.
-    await supabaseAuth.auth.signOut();
+    // Clear local state immediately so the redirect to /login is instant,
+    // regardless of how long the Supabase signOut API call takes.
+    set({ currentUser: null, users: [] });
+    // Fire and forget — SIGNED_OUT handler will also run clearAllStores().
+    // Wrapped in try/catch so a network failure doesn't block the redirect.
+    supabaseAuth.auth.signOut().catch(() => {});
   },
 
   addUser: async (userData, password) => {

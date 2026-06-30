@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // SPA redirect: when server returns 404 for a deep link, encode the path
+      // into the query string and redirect to index.html, which restores it.
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        '/?r=' + encodeURIComponent(l.pathname + l.search) + (l.hash || '')
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

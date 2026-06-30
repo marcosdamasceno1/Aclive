@@ -3,9 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { CalendarEvent, Priority } from '../types';
-import { useAuthStore } from './authStore';
-
-const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
 
 interface CalendarState {
   events: CalendarEvent[];
@@ -25,12 +23,10 @@ export const useCalendarStore = create<CalendarState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ events: [], loading: false }); return; }
     set({ loading: true });
-    const { data, error } = await supabase.from('calendar_events').select('*').order('date').eq('company_id', cid);
+    const { data, error } = await companySelect('calendar_events', cid).order('date');
     if (error) console.error('[calendar.init]', error);
-    set({
-      events: (data || []).map(r => fromDb<CalendarEvent>(r as Record<string, unknown>)),
-      loading: false,
-    });
+    const records = (data || []).map(r => fromDb<CalendarEvent>(r as Record<string, unknown>));
+    set({ events: assertCompanyData(records, cid, 'calendar_events'), loading: false });
   },
 
   addEvent: (data) => {
@@ -44,24 +40,24 @@ export const useCalendarStore = create<CalendarState>()((set, get) => ({
     set(state => ({ events: [...state.events, newEvent] }));
     const dbRow = toDb({ ...newEvent } as unknown as Record<string, unknown>);
     if (!dbRow.end_date) dbRow.end_date = null;
-    dbRow.company_id = cid;
-    supabase.from('calendar_events').insert(dbRow)
+    supabase.from('calendar_events').insert(companyRow(dbRow, cid))
       .then(({ error }) => { if (error) console.error('[calendar.insert]', error); });
     return newEvent;
   },
 
   updateEvent: (id, updates) => {
+    const cid = getCompanyId();
     set(state => ({
       events: state.events.map(e => e.id === id ? { ...e, ...updates } : e),
     }));
-    const dbUpdates = toDb(updates as unknown as Record<string, unknown>);
-    supabase.from('calendar_events').update(dbUpdates).eq('id', id)
+    companyUpdate('calendar_events', id, toDb(updates as unknown as Record<string, unknown>), cid ?? '')
       .then(({ error }) => { if (error) console.error('[calendar.update]', error); });
   },
 
   deleteEvent: (id) => {
+    const cid = getCompanyId();
     set(state => ({ events: state.events.filter(e => e.id !== id) }));
-    supabase.from('calendar_events').delete().eq('id', id)
+    companyDelete('calendar_events', id, cid ?? '')
       .then(({ error }) => { if (error) console.error('[calendar.delete]', error); });
   },
 

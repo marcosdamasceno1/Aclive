@@ -3,9 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Client } from '../types';
-import { useAuthStore } from './authStore';
-
-const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
 
 interface ClientsState {
   clients: Client[];
@@ -25,8 +23,9 @@ export const useClientsStore = create<ClientsState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ clients: [], loading: false }); return; }
     set({ loading: true });
-    const { data } = await supabase.from('clients').select('*').order('created_at').eq('company_id', cid);
-    set({ clients: (data || []).map(r => fromDb<Client>(r as Record<string, unknown>)), loading: false });
+    const { data } = await companySelect('clients', cid).order('created_at');
+    const records = (data || []).map(r => fromDb<Client>(r as Record<string, unknown>));
+    set({ clients: assertCompanyData(records, cid, 'clients'), loading: false });
   },
 
   addClient: (data) => {
@@ -34,22 +33,22 @@ export const useClientsStore = create<ClientsState>()((set, get) => ({
     const newClient: Client = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     if (!cid) return newClient;
     set(state => ({ clients: [...state.clients, newClient] }));
-    const dbRow = toDb({ ...newClient }) as Record<string, unknown>;
-    dbRow.company_id = cid;
-    supabase.from('clients').insert(dbRow)
+    supabase.from('clients').insert(companyRow(toDb({ ...newClient }) as Record<string, unknown>, cid))
       .then(({ error }) => { if (error) console.error('[clients.insert]', error); });
     return newClient;
   },
 
   updateClient: (id, updates) => {
+    const cid = getCompanyId();
     set(state => ({ clients: state.clients.map(c => c.id === id ? { ...c, ...updates } : c) }));
-    supabase.from('clients').update(toDb(updates as Record<string, unknown>)).eq('id', id)
+    companyUpdate('clients', id, toDb(updates as Record<string, unknown>), cid ?? '')
       .then(({ error }) => { if (error) console.error('[clients.update]', error); });
   },
 
   deleteClient: (id) => {
+    const cid = getCompanyId();
     set(state => ({ clients: state.clients.filter(c => c.id !== id) }));
-    supabase.from('clients').delete().eq('id', id)
+    companyDelete('clients', id, cid ?? '')
       .then(({ error }) => { if (error) console.error('[clients.delete]', error); });
   },
 

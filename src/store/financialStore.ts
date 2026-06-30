@@ -3,9 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { FinancialMovement, AuditLog } from '../types';
-import { useAuthStore } from './authStore';
-
-const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
 
 const CATEGORY_KEY = 'financial_custom_categories';
 
@@ -61,12 +59,14 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     if (!cid) { set({ movements: [], auditLog: [], loading: false }); return; }
     set({ loading: true });
     const [movementsResult, auditResult] = await Promise.all([
-      supabase.from('financial_movements').select('*').order('created_at').eq('company_id', cid),
-      supabase.from('audit_logs').select('*').order('created_at').eq('company_id', cid),
+      companySelect('financial_movements', cid).order('created_at'),
+      companySelect('audit_logs', cid).order('created_at'),
     ]);
+    const movements = (movementsResult.data || []).map(r => fromDb<FinancialMovement>(r as Record<string, unknown>));
+    const auditLog = (auditResult.data || []).map(r => fromDb<AuditLog>(r as Record<string, unknown>));
     set({
-      movements: (movementsResult.data || []).map(r => fromDb<FinancialMovement>(r as Record<string, unknown>)),
-      auditLog: (auditResult.data || []).map(r => fromDb<AuditLog>(r as Record<string, unknown>)),
+      movements: assertCompanyData(movements, cid, 'financial_movements'),
+      auditLog: assertCompanyData(auditLog, cid, 'audit_logs'),
       loading: false,
     });
   },
@@ -82,12 +82,12 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     const dbRow = toDb({ ...newMovement }) as Record<string, unknown>;
     if (dbRow.completed_at === '') dbRow.completed_at = null;
     if (dbRow.paid_at === '') dbRow.paid_at = null;
-    dbRow.company_id = cid;
-    supabase.from('financial_movements').insert(dbRow)
+    supabase.from('financial_movements').insert(companyRow(dbRow, cid))
       .then(({ error }) => { if (error) console.error('[financial.registerMovement]', error); });
   },
 
   markAsPaid: (movementId, paidBy, paidByName) => {
+    const cid = getCompanyId();
     const state = get();
     const movement = state.movements.find(m => m.id === movementId);
     if (!movement || movement.status === 'paid') return;
@@ -96,7 +96,7 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     set(s => ({
       movements: s.movements.map(m => m.id === movementId ? { ...m, ...updates } : m),
     }));
-    supabase.from('financial_movements').update(toDb(updates as Record<string, unknown>)).eq('id', movementId)
+    companyUpdate('financial_movements', movementId, toDb(updates as Record<string, unknown>), cid ?? '')
       .then(({ error }) => { if (error) console.error('[financial.markAsPaid]', error); });
 
     get().addAuditLog({
@@ -111,6 +111,7 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
   },
 
   updateMovementValue: (movementId, newValue, updatedBy, updatedByName) => {
+    const cid = getCompanyId();
     const state = get();
     const movement = state.movements.find(m => m.id === movementId);
     if (!movement) return;
@@ -119,7 +120,7 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     set(s => ({
       movements: s.movements.map(m => m.id === movementId ? { ...m, value: newValue } : m),
     }));
-    supabase.from('financial_movements').update({ value: newValue }).eq('id', movementId)
+    companyUpdate('financial_movements', movementId, { value: newValue }, cid ?? '')
       .then(({ error }) => { if (error) console.error('[financial.updateValue]', error); });
 
     get().addAuditLog({
@@ -172,8 +173,9 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
   },
 
   deleteMovement: (id) => {
+    const cid = getCompanyId();
     set(state => ({ movements: state.movements.filter(m => m.id !== id) }));
-    supabase.from('financial_movements').delete().eq('id', id)
+    companyDelete('financial_movements', id, cid ?? '')
       .then(({ error }) => { if (error) console.error('[financial.delete]', error); });
   },
 
@@ -199,8 +201,7 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     };
     set(state => ({ auditLog: [...state.auditLog, newLog] }));
     const dbRow = toDb({ ...newLog }) as Record<string, unknown>;
-    if (cid) dbRow.company_id = cid;
-    supabase.from('audit_logs').insert(dbRow)
+    supabase.from('audit_logs').insert(cid ? companyRow(dbRow, cid) : dbRow)
       .then(({ error }) => { if (error) console.error('[financial.auditLog]', error); });
   },
 

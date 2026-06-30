@@ -3,9 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Professional } from '../types';
-import { useAuthStore } from './authStore';
-
-const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
 
 interface ProfessionalsState {
   professionals: Professional[];
@@ -25,8 +23,9 @@ export const useProfessionalsStore = create<ProfessionalsState>()((set, get) => 
     const cid = getCompanyId();
     if (!cid) { set({ professionals: [], loading: false }); return; }
     set({ loading: true });
-    const { data } = await supabase.from('professionals').select('*').order('created_at').eq('company_id', cid);
-    set({ professionals: (data || []).map(r => fromDb<Professional>(r as Record<string, unknown>)), loading: false });
+    const { data } = await companySelect('professionals', cid).order('created_at');
+    const records = (data || []).map(r => fromDb<Professional>(r as Record<string, unknown>));
+    set({ professionals: assertCompanyData(records, cid, 'professionals'), loading: false });
   },
 
   addProfessional: (data) => {
@@ -34,22 +33,22 @@ export const useProfessionalsStore = create<ProfessionalsState>()((set, get) => 
     const newPro: Professional = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     if (!cid) return newPro;
     set(state => ({ professionals: [...state.professionals, newPro] }));
-    const dbRow = toDb({ ...newPro }) as Record<string, unknown>;
-    dbRow.company_id = cid;
-    supabase.from('professionals').insert(dbRow)
+    supabase.from('professionals').insert(companyRow(toDb({ ...newPro }) as Record<string, unknown>, cid))
       .then(({ error }) => { if (error) console.error('[professionals.insert]', error); });
     return newPro;
   },
 
   updateProfessional: (id, updates) => {
+    const cid = getCompanyId();
     set(state => ({ professionals: state.professionals.map(p => p.id === id ? { ...p, ...updates } : p) }));
-    supabase.from('professionals').update(toDb(updates as Record<string, unknown>)).eq('id', id)
+    companyUpdate('professionals', id, toDb(updates as Record<string, unknown>), cid ?? '')
       .then(({ error }) => { if (error) console.error('[professionals.update]', error); });
   },
 
   deleteProfessional: (id) => {
+    const cid = getCompanyId();
     set(state => ({ professionals: state.professionals.filter(p => p.id !== id) }));
-    supabase.from('professionals').delete().eq('id', id)
+    companyDelete('professionals', id, cid ?? '')
       .then(({ error }) => { if (error) console.error('[professionals.delete]', error); });
   },
 

@@ -3,9 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Demand, KanbanStatus, Comment } from '../types';
-import { useAuthStore } from './authStore';
-
-const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
 
 interface DemandsState {
   demands: Demand[];
@@ -27,8 +25,9 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ demands: [], loading: false }); return; }
     set({ loading: true });
-    const { data } = await supabase.from('demands').select('*').order('created_at').eq('company_id', cid);
-    set({ demands: (data || []).map(r => fromDb<Demand>(r as Record<string, unknown>)), loading: false });
+    const { data } = await companySelect('demands', cid).order('created_at');
+    const records = (data || []).map(r => fromDb<Demand>(r as Record<string, unknown>));
+    set({ demands: assertCompanyData(records, cid, 'demands'), loading: false });
   },
 
   addDemand: (data) => {
@@ -45,24 +44,25 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     const dbRow = toDb({ ...newDemand }) as Record<string, unknown>;
     if (dbRow.deadline === '') dbRow.deadline = null;
     if (dbRow.completed_at === '') dbRow.completed_at = null;
-    dbRow.company_id = cid;
-    supabase.from('demands').insert(dbRow)
+    supabase.from('demands').insert(companyRow(dbRow, cid))
       .then(({ error }) => { if (error) console.error('[demands.insert]', error); });
     return newDemand;
   },
 
   updateDemand: (id, updates) => {
+    const cid = getCompanyId();
     set(state => ({
       demands: state.demands.map(d => d.id === id ? { ...d, ...updates } : d),
     }));
     const dbRow = toDb(updates as Record<string, unknown>) as Record<string, unknown>;
     if (dbRow.deadline === '') dbRow.deadline = null;
     if (dbRow.completed_at === '') dbRow.completed_at = null;
-    supabase.from('demands').update(dbRow).eq('id', id)
+    companyUpdate('demands', id, dbRow, cid ?? '')
       .then(({ error }) => { if (error) console.error('[demands.update]', error); });
   },
 
   moveDemand: (id, newStatus) => {
+    const cid = getCompanyId();
     const demands = get().demands;
     const demand = demands.find(d => d.id === id);
     if (!demand) return;
@@ -76,13 +76,14 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     set(state => ({
       demands: state.demands.map(d => d.id === id ? { ...d, ...updates } : d),
     }));
-    supabase.from('demands').update(toDb(updates as Record<string, unknown>)).eq('id', id)
+    companyUpdate('demands', id, toDb(updates as Record<string, unknown>), cid ?? '')
       .then(({ error }) => { if (error) console.error('[demands.move]', error); });
   },
 
   deleteDemand: (id) => {
+    const cid = getCompanyId();
     set(state => ({ demands: state.demands.filter(d => d.id !== id) }));
-    supabase.from('demands').delete().eq('id', id)
+    companyDelete('demands', id, cid ?? '')
       .then(({ error }) => { if (error) console.error('[demands.delete]', error); });
   },
 

@@ -2,10 +2,8 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
-import { useAuthStore } from './authStore';
+import { getCompanyId, companyRow, companyUpdate, companyDelete, assertCompanyData } from '../lib/companyIsolation';
 import type { SocialAccount, ScheduledPost } from '../types';
-
-const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
 
 interface SocialState {
   accounts: SocialAccount[];
@@ -66,9 +64,11 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
       return;
     }
 
+    const accounts = (accountsData || []).map(r => fromDb<SocialAccount>(r as Record<string, unknown>));
+    const posts = (postsData || []).map(r => fromDb<ScheduledPost>(r as Record<string, unknown>));
     set({
-      accounts: (accountsData || []).map(r => fromDb<SocialAccount>(r as Record<string, unknown>)),
-      posts: (postsData || []).map(r => fromDb<ScheduledPost>(r as Record<string, unknown>)),
+      accounts: assertCompanyData(accounts, cid, 'social_accounts'),
+      posts: assertCompanyData(posts, cid, 'scheduled_posts'),
       loading: false,
       setupNeeded: false,
     });
@@ -79,9 +79,9 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
     if (!cid) return;
     const newAccount: SocialAccount = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     set(state => ({ accounts: [newAccount, ...state.accounts] }));
-    const dbRow = toDbAccount({ ...newAccount } as Record<string, unknown>);
-    dbRow.company_id = cid;
-    const { error } = await supabase.from('social_accounts').insert(dbRow);
+    const { error } = await supabase.from('social_accounts').insert(
+      companyRow(toDbAccount({ ...newAccount } as Record<string, unknown>), cid)
+    );
     if (error) {
       console.error('[social.addAccount]', error);
       set(state => ({ accounts: state.accounts.filter(a => a.id !== newAccount.id) }));
@@ -89,14 +89,16 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
   },
 
   updateAccount: (id, updates) => {
+    const cid = getCompanyId();
     set(state => ({ accounts: state.accounts.map(a => a.id === id ? { ...a, ...updates } : a) }));
-    supabase.from('social_accounts').update(toDbAccount(updates as Record<string, unknown>)).eq('id', id)
+    companyUpdate('social_accounts', id, toDbAccount(updates as Record<string, unknown>), cid ?? '')
       .then(({ error }) => { if (error) console.error('[social.updateAccount]', error); });
   },
 
   deleteAccount: (id) => {
+    const cid = getCompanyId();
     set(state => ({ accounts: state.accounts.filter(a => a.id !== id) }));
-    supabase.from('social_accounts').delete().eq('id', id)
+    companyDelete('social_accounts', id, cid ?? '')
       .then(({ error }) => { if (error) console.error('[social.deleteAccount]', error); });
   },
 
@@ -105,9 +107,9 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
     if (!cid) return;
     const newPost: ScheduledPost = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     set(state => ({ posts: [...state.posts, newPost].sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt)) }));
-    const dbRow = toDbPost({ ...newPost } as Record<string, unknown>);
-    dbRow.company_id = cid;
-    supabase.from('scheduled_posts').insert(dbRow).then(({ error }) => {
+    supabase.from('scheduled_posts').insert(
+      companyRow(toDbPost({ ...newPost } as Record<string, unknown>), cid)
+    ).then(({ error }) => {
       if (error) {
         console.error('[social.addPost]', error);
         set(state => ({ posts: state.posts.filter(p => p.id !== newPost.id) }));
@@ -116,25 +118,28 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
   },
 
   updatePost: (id, updates) => {
+    const cid = getCompanyId();
     set(state => ({
       posts: state.posts
         .map(p => p.id === id ? { ...p, ...updates } : p)
         .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt)),
     }));
-    supabase.from('scheduled_posts').update(toDbPost(updates as Record<string, unknown>)).eq('id', id)
+    companyUpdate('scheduled_posts', id, toDbPost(updates as Record<string, unknown>), cid ?? '')
       .then(({ error }) => { if (error) console.error('[social.updatePost]', error); });
   },
 
   deletePost: (id) => {
+    const cid = getCompanyId();
     set(state => ({ posts: state.posts.filter(p => p.id !== id) }));
-    supabase.from('scheduled_posts').delete().eq('id', id)
+    companyDelete('scheduled_posts', id, cid ?? '')
       .then(({ error }) => { if (error) console.error('[social.deletePost]', error); });
   },
 
   markNotified: (id) => {
+    const cid = getCompanyId();
     const notifiedAt = new Date().toISOString();
     set(state => ({ posts: state.posts.map(p => p.id === id ? { ...p, notifiedAt } : p) }));
-    supabase.from('scheduled_posts').update({ notified_at: notifiedAt }).eq('id', id)
+    companyUpdate('scheduled_posts', id, { notified_at: notifiedAt }, cid ?? '')
       .then(({ error }) => { if (error) console.error('[social.markNotified]', error); });
   },
 }));

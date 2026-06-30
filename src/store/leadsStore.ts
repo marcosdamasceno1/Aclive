@@ -3,9 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Lead, LeadStatus } from '../types';
-import { useAuthStore } from './authStore';
-
-const getCompanyId = () => useAuthStore.getState().currentUser?.companyId ?? null;
+import { getCompanyId, companyRow, companyUpdate, companyDelete, assertCompanyData } from '../lib/companyIsolation';
 
 interface LeadsState {
   leads: Lead[];
@@ -41,8 +39,8 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     const { data, error } = await supabase
       .from('leads')
       .select('*')
-      .order('created_at', { ascending: false })
-      .eq('company_id', cid);
+      .eq('company_id', cid)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('[leads.init]', error);
@@ -50,11 +48,8 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
       return;
     }
 
-    set({
-      leads: (data || []).map(r => fromDb<Lead>(r as Record<string, unknown>)),
-      loading: false,
-      dbError: null,
-    });
+    const records = (data || []).map(r => fromDb<Lead>(r as Record<string, unknown>));
+    set({ leads: assertCompanyData(records, cid, 'leads'), loading: false, dbError: null });
   },
 
   addLead: (data) => {
@@ -62,9 +57,7 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     const newLead: Lead = { ...data, id: uuidv4(), createdAt: new Date().toISOString() };
     if (!cid) return;
     set(state => ({ leads: [newLead, ...state.leads] }));
-    const dbRow = toDbLead({ ...newLead } as Record<string, unknown>);
-    dbRow.company_id = cid;
-    supabase.from('leads').insert(dbRow).then(({ error }) => {
+    supabase.from('leads').insert(companyRow(toDbLead({ ...newLead } as Record<string, unknown>), cid)).then(({ error }) => {
       if (error) {
         console.error('[leads.insert]', error);
         set(state => ({
@@ -76,16 +69,18 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
   },
 
   updateLead: (id, updates) => {
+    const cid = getCompanyId();
     set(state => ({ leads: state.leads.map(l => l.id === id ? { ...l, ...updates } : l) }));
-    supabase.from('leads').update(toDbLead(updates as Record<string, unknown>)).eq('id', id)
+    companyUpdate('leads', id, toDbLead(updates as Record<string, unknown>), cid ?? '')
       .then(({ error }) => { if (error) console.error('[leads.update]', error); });
   },
 
   updateStatus: (id, status) => { get().updateLead(id, { status }); },
 
   deleteLead: (id) => {
+    const cid = getCompanyId();
     set(state => ({ leads: state.leads.filter(l => l.id !== id) }));
-    supabase.from('leads').delete().eq('id', id)
+    companyDelete('leads', id, cid ?? '')
       .then(({ error }) => { if (error) console.error('[leads.delete]', error); });
   },
 
@@ -96,7 +91,7 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     const newLeads = leadsData.map(l => ({ ...l, id: uuidv4(), createdAt: now }));
     set(state => ({ leads: [...newLeads, ...state.leads] }));
     supabase.from('leads').insert(
-      newLeads.map(l => { const row = toDbLead({ ...l } as Record<string, unknown>); row.company_id = cid; return row; })
+      newLeads.map(l => companyRow(toDbLead({ ...l } as Record<string, unknown>), cid))
     ).then(({ error }) => {
       if (error) {
         console.error('[leads.import]', error);

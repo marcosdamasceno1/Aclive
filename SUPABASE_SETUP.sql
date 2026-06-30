@@ -248,3 +248,19 @@ DROP POLICY IF EXISTS "company_isolation" ON audit_logs;
 CREATE POLICY "company_isolation" ON audit_logs
   USING (company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid))
   WITH CHECK (company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid));
+
+
+-- ---- COMPANY SETTINGS (integrações por agência: Google Drive, etc.) ----
+CREATE TABLE IF NOT EXISTS company_settings (
+  company_id            UUID PRIMARY KEY,
+  google_client_id      TEXT,
+  google_access_token   TEXT,
+  google_token_expiry   TIMESTAMPTZ,
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  updated_at            TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE company_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "company_isolation" ON company_settings;
+CREATE POLICY "company_isolation" ON company_settings
+  USING (company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid))
+  WITH CHECK (company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid));

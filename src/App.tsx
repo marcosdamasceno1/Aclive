@@ -10,6 +10,7 @@ import { useLeadsStore } from './store/leadsStore';
 import { useCalendarStore } from './store/calendarStore';
 import { useCompaniesStore } from './store/companiesStore';
 import { useSocialStore } from './store/socialStore';
+import { useCompanySettingsStore } from './store/companySettingsStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -55,6 +56,7 @@ function App() {
   const { init: initCalendar } = useCalendarStore();
   const { init: initCompanies } = useCompaniesStore();
   const { init: initSocial } = useSocialStore();
+  const { init: initCompanySettings } = useCompanySettingsStore();
 
   useEffect(() => {
     // Timeout fallback: never stay stuck loading more than 6s
@@ -69,7 +71,7 @@ function App() {
       if (me?.isSuperAdmin) {
         await initCompanies();
       } else {
-        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar(), initSocial()]);
+        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar(), initSocial(), initCompanySettings()]);
       }
       useAuthStore.getState().loadUsers();
     };
@@ -97,6 +99,7 @@ function App() {
       useCalendarStore.setState({ events: [] });
       useSocialStore.setState({ accounts: [], posts: [] });
       useAuthStore.setState({ users: [] });
+      useCompanySettingsStore.setState({ googleClientId: '', googleAccessToken: null, googleTokenExpiry: null });
     };
 
     const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {

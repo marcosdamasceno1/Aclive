@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useProfessionalsStore } from '../store/professionalsStore';
+import { useCompanySettingsStore } from '../store/companySettingsStore';
 import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
 import { getZApiConfig, saveZApiConfig } from '../utils/whatsapp';
+import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
+import { DriveBrowser } from '../components/drive/DriveBrowser';
 import type { UserRole, ProfessionType } from '../types';
-import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, FolderOpen, Link2, Link2Off, Loader2 } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -53,6 +56,42 @@ export const Settings = () => {
     saveZApiConfig({ instance: zapiInstance.trim(), token: zapiToken.trim(), clientToken: zapiClientToken.trim() });
     setZapiSaved(true);
     setTimeout(() => setZapiSaved(false), 2500);
+  };
+
+  // Google Drive state
+  const { googleClientId, googleAccessToken, init: initSettings, saveClientId, saveToken, clearToken, isConnected } = useCompanySettingsStore();
+  const [driveClientId, setDriveClientId] = useState('');
+  const [driveConnecting, setDriveConnecting] = useState(false);
+  const [driveError, setDriveError] = useState('');
+  const [driveSaved, setDriveSaved] = useState(false);
+  const [showDriveBrowser, setShowDriveBrowser] = useState(false);
+
+  useEffect(() => { initSettings(); }, []);
+  useEffect(() => { setDriveClientId(googleClientId); }, [googleClientId]);
+
+  const handleSaveClientId = async () => {
+    await saveClientId(driveClientId.trim());
+    setDriveSaved(true);
+    setTimeout(() => setDriveSaved(false), 2500);
+  };
+
+  const handleConnectDrive = () => {
+    if (!driveClientId.trim()) { setDriveError('Insira o Client ID antes de conectar.'); return; }
+    setDriveError('');
+    setDriveConnecting(true);
+    requestGoogleToken(
+      driveClientId.trim(),
+      async (token, expiresIn) => {
+        await saveToken(token, expiresIn);
+        setDriveConnecting(false);
+      },
+      (msg) => { setDriveError(msg); setDriveConnecting(false); },
+    );
+  };
+
+  const handleDisconnectDrive = async () => {
+    if (googleAccessToken) revokeGoogleToken(googleAccessToken);
+    await clearToken();
   };
 
   const [showUserModal, setShowUserModal] = useState(false);
@@ -504,7 +543,94 @@ export const Settings = () => {
               <p>• O telefone do profissional deve estar preenchido no cadastro (com DDD)</p>
             </div>
           </div>
+
+          {/* ── Google Drive ── */}
+          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <HardDrive className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">Google Drive</h3>
+                  <p className="text-xs text-slate-500">Armazene e organize arquivos da agência diretamente no Drive</p>
+                </div>
+              </div>
+              {isConnected() && (
+                <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                  <CheckCircle className="w-3.5 h-3.5" /> Conectado
+                </span>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Client ID (Google Cloud)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={driveClientId}
+                  onChange={e => setDriveClientId(e.target.value)}
+                  placeholder="xxxxxxxxxxxx-xxxxxxxx.apps.googleusercontent.com"
+                  className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={handleSaveClientId}
+                  disabled={!driveClientId.trim() || driveClientId === googleClientId}
+                  className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white rounded-lg transition-colors"
+                >
+                  {driveSaved ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : 'Salvar'}
+                </button>
+              </div>
+            </div>
+
+            {driveError && (
+              <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-400">{driveError}</p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 flex-wrap">
+              {!isConnected() ? (
+                <button
+                  onClick={handleConnectDrive}
+                  disabled={driveConnecting || !googleClientId}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  {driveConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+                  {driveConnecting ? 'Conectando...' : 'Conectar Drive'}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setShowDriveBrowser(true)}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    <FolderOpen className="w-4 h-4" />
+                    Abrir Drive
+                  </button>
+                  <button
+                    onClick={handleDisconnectDrive}
+                    className="flex items-center gap-2 text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Link2Off className="w-4 h-4" />
+                    Desconectar
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="border-t border-white/[0.05] pt-4 text-xs text-slate-500 space-y-1">
+              <p>• Acesse <strong className="text-slate-400">console.cloud.google.com</strong> → crie um projeto → ative a <strong className="text-slate-400">Google Drive API</strong></p>
+              <p>• Em Credenciais → crie OAuth 2.0 → tipo <strong className="text-slate-400">Aplicativo da Web</strong> → adicione o domínio do app em "Origens autorizadas"</p>
+              <p>• Copie o <strong className="text-slate-400">Client ID</strong> gerado e cole acima</p>
+            </div>
+          </div>
         </div>
+      )}
+
+      {showDriveBrowser && googleAccessToken && (
+        <DriveBrowser accessToken={googleAccessToken} onClose={() => setShowDriveBrowser(false)} />
       )}
 
       {/* Create User Modal */}

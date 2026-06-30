@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users,
   Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
-  ChevronLeft, ChevronRight, CalendarDays, X, Camera, Loader2,
+  ChevronLeft, ChevronRight, CalendarDays, X, Camera, Loader2, HardDrive,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { hasPageAccess } from '../../utils/permissions';
@@ -59,6 +59,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
     { to: '/calendar',  icon: CalendarDays,    label: 'Calendário',           pageKey: 'calendar' },
     { to: '/leads',     icon: Target,          label: 'Leads',                pageKey: 'leads' },
     { to: '/social',   icon: Camera,       label: 'Editorial',            pageKey: 'social' },
+    { to: '/drive',    icon: HardDrive,    label: 'Drive',                pageKey: 'drive' },
   ].filter(i => access(i.pageKey));
 
   const adminItems: NavItemDef[] = [

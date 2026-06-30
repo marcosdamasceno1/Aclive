@@ -6,9 +6,8 @@ import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
 import { getZApiConfig, saveZApiConfig } from '../utils/whatsapp';
 import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
-import { DriveBrowser } from '../components/drive/DriveBrowser';
 import type { UserRole, ProfessionType } from '../types';
-import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, FolderOpen, Link2, Link2Off, Loader2 } from 'lucide-react';
+import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, Link2, Link2Off, Loader2 } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -64,7 +63,6 @@ export const Settings = () => {
   const [driveConnecting, setDriveConnecting] = useState(false);
   const [driveError, setDriveError] = useState('');
   const [driveSaved, setDriveSaved] = useState(false);
-  const [showDriveBrowser, setShowDriveBrowser] = useState(false);
 
   useEffect(() => { initSettings(); }, []);
   useEffect(() => { setDriveClientId(googleClientId); }, [googleClientId]);
@@ -601,22 +599,13 @@ export const Settings = () => {
                   {driveConnecting ? 'Conectando...' : 'Conectar Drive'}
                 </button>
               ) : (
-                <>
-                  <button
-                    onClick={() => setShowDriveBrowser(true)}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                  >
-                    <FolderOpen className="w-4 h-4" />
-                    Abrir Drive
-                  </button>
-                  <button
-                    onClick={handleDisconnectDrive}
-                    className="flex items-center gap-2 text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <Link2Off className="w-4 h-4" />
-                    Desconectar
-                  </button>
-                </>
+                <button
+                  onClick={handleDisconnectDrive}
+                  className="flex items-center gap-2 text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Link2Off className="w-4 h-4" />
+                  Desconectar
+                </button>
               )}
             </div>
 
@@ -627,10 +616,6 @@ export const Settings = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {showDriveBrowser && googleAccessToken && (
-        <DriveBrowser accessToken={googleAccessToken} onClose={() => setShowDriveBrowser(false)} />
       )}
 
       {/* Create User Modal */}

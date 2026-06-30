@@ -25,6 +25,7 @@ import { Leads } from './pages/Leads';
 import { Calendar } from './pages/Calendar';
 import { Master } from './pages/Master';
 import { Social } from './pages/Social';
+import { Drive } from './pages/Drive';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = useAuthStore();
@@ -169,6 +170,7 @@ function App() {
           <Route path="leads"        element={<AgencyRoute><Leads /></AgencyRoute>} />
           <Route path="calendar"     element={<AgencyRoute><Calendar /></AgencyRoute>} />
           <Route path="social"       element={<AgencyRoute><Social /></AgencyRoute>} />
+          <Route path="drive"        element={<AgencyRoute><Drive /></AgencyRoute>} />
           <Route path="reports"      element={<AgencyRoute><Reports /></AgencyRoute>} />
           <Route path="settings"     element={<AgencyRoute><Settings /></AgencyRoute>} />
           <Route path="master"       element={<MasterRoute><Master /></MasterRoute>} />

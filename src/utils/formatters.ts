@@ -8,7 +8,8 @@ export const formatCurrency = (value: number): string => {
 // Date-only strings (YYYY-MM-DD) must be treated as local time.
 // new Date("2024-12-26") → UTC midnight → UTC-3 = 2024-12-25 21:00 → shows wrong day.
 // Fix: append T12:00:00 so JS parses as local noon, safe in any UTC-N timezone.
-const parseLocalDate = (dateStr: string): Date =>
+// For full ISO strings (from timestamp columns) use them directly — no suffix needed.
+export const parseLocalDate = (dateStr: string): Date =>
   /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? new Date(dateStr + 'T12:00:00') : new Date(dateStr);
 
 export const formatDate = (dateStr: string): string => {

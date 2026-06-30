@@ -16,7 +16,7 @@ import type { Demand, KanbanStatus, Priority, TaskType } from '../types';
 import {
   formatCurrency, formatDate, formatDateTime,
   getPriorityColor, getPriorityLabel, getStatusLabel, getStatusColor,
-  getTaskTypeLabel, isOverdue,
+  getTaskTypeLabel, isOverdue, parseLocalDate,
 } from '../utils/formatters';
 import { canMoveDemands, canCreateDemands, canViewAllDemands } from '../utils/permissions';
 import {
@@ -121,7 +121,7 @@ const DraggableCard = ({ demand, clientName, professionalName, onOpen, didDrag }
           <div className={`flex items-center gap-0.5 text-[11px] ${overdue ? 'text-red-400' : 'text-slate-600'}`}>
             <Calendar className="w-3 h-3" />
             {demand.deadline
-              ? new Date(demand.deadline + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+              ? parseLocalDate(demand.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
               : '—'}
           </div>
         </div>

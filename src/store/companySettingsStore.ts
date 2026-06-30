@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabaseData } from '../lib/supabase';
 import { useAuthStore } from './authStore';
+import { requestGoogleTokenSilent } from '../lib/googleDrive';
 
 interface CompanySettingsState {
   googleClientId: string;
@@ -12,6 +13,8 @@ interface CompanySettingsState {
   saveToken: (token: string, expiresIn: number) => Promise<void>;
   clearToken: () => Promise<void>;
   isConnected: () => boolean;
+  minutesUntilExpiry: () => number;
+  tryAutoRefresh: () => Promise<boolean>;
 }
 
 const companyId = () => useAuthStore.getState().currentUser?.companyId;
@@ -65,4 +68,25 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
     if (!googleAccessToken || !googleTokenExpiry) return false;
     return new Date(googleTokenExpiry) > new Date();
   },
+
+  minutesUntilExpiry: () => {
+    const { googleTokenExpiry } = get();
+    if (!googleTokenExpiry) return -1;
+    return Math.floor((new Date(googleTokenExpiry).getTime() - Date.now()) / 60000);
+  },
+
+  tryAutoRefresh: () => new Promise<boolean>((resolve) => {
+    const { googleClientId, saveToken } = get();
+    if (!googleClientId) { resolve(false); return; }
+    requestGoogleTokenSilent(
+      googleClientId,
+      async (token, expiresIn) => {
+        await saveToken(token, expiresIn);
+        resolve(true);
+      },
+      () => resolve(false),
+    );
+    // Timeout de segurança: GIS às vezes não chama callback em caso de falha silenciosa
+    setTimeout(() => resolve(false), 5000);
+  }),
 }));

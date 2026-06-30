@@ -39,6 +39,34 @@ export function requestGoogleToken(
   client.requestAccessToken({ prompt: 'consent' });
 }
 
+/**
+ * Tenta renovar o token silenciosamente (sem popup) usando a sessão Google ativa.
+ * Funciona se o usuário já autorizou o app anteriormente e o cookie Google está válido.
+ * Em caso de falha, chama onError com o motivo — sem exibir nenhuma UI ao usuário.
+ */
+export function requestGoogleTokenSilent(
+  clientId: string,
+  onSuccess: (token: string, expiresIn: number) => void,
+  onError: (msg: string) => void,
+) {
+  if (!window.google?.accounts?.oauth2) {
+    onError('gis_not_loaded');
+    return;
+  }
+  const client = window.google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: SCOPES,
+    callback: (r) => {
+      if (r.error) { onError(r.error); return; }
+      if (r.access_token && r.expires_in) onSuccess(r.access_token, r.expires_in);
+      else onError('no_token');
+    },
+  });
+  // prompt: '' → usa sessão Google existente, sem popup.
+  // Se não houver sessão/grant, dispara error 'interaction_required'.
+  client.requestAccessToken({ prompt: '' });
+}
+
 export function revokeGoogleToken(token: string) {
   window.google?.accounts?.oauth2?.revoke(token);
 }

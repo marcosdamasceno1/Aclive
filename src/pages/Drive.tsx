@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   FolderOpen, Folder, Upload, FolderPlus, Trash2,
   ChevronRight, ExternalLink, Loader2, File as FileIcon, RefreshCw,
-  HardDrive, X, Link2, Settings as SettingsIcon,
+  HardDrive, X, Link2, Link2Off, Settings as SettingsIcon, ShieldAlert,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,6 +11,7 @@ import {
   type DriveFile,
 } from '../lib/googleDrive';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
+import { useAuthStore } from '../store/authStore';
 
 const MIME_ICONS: Record<string, string> = {
   'application/pdf': '📄',
@@ -35,8 +36,20 @@ interface Crumb { id: string; name: string }
 
 export const Drive = () => {
   const navigate = useNavigate();
-  const { googleAccessToken, googleClientId, isConnected, init } = useCompanySettingsStore();
+  const { currentUser } = useAuthStore();
+  const {
+    googleAccessToken, googleClientId, isConnected,
+    minutesUntilExpiry, tryAutoRefresh, init,
+  } = useCompanySettingsStore();
 
+  const isAdmin = currentUser?.role === 'admin';
+
+  // auto-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshFailed, setRefreshFailed] = useState(false);
+  const didAutoRefresh = useRef(false);
+
+  // browser state
   const [crumbs, setCrumbs] = useState<Crumb[]>([{ id: 'root', name: 'Meu Drive' }]);
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,9 +62,30 @@ export const Drive = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const currentFolderId = crumbs[crumbs.length - 1].id;
-  const connected = isConnected();
 
-  useEffect(() => { init(); }, []);
+  useEffect(() => {
+    init().then(() => {
+      // After loading settings, if token is expired/missing, try silent refresh once
+      const connected = useCompanySettingsStore.getState().isConnected();
+      if (!connected && !didAutoRefresh.current) {
+        didAutoRefresh.current = true;
+        setRefreshing(true);
+        useCompanySettingsStore.getState().tryAutoRefresh().then(ok => {
+          setRefreshing(false);
+          if (!ok) setRefreshFailed(true);
+        });
+      }
+    });
+  }, []);
+
+  // Proactive refresh: if token expires in < 8 minutes, renew silently now
+  useEffect(() => {
+    if (!isConnected()) return;
+    const mins = minutesUntilExpiry();
+    if (mins > 0 && mins <= 8) {
+      tryAutoRefresh(); // fire-and-forget, updates store + DB on success
+    }
+  }, [googleAccessToken]);
 
   const load = async (folderId = currentFolderId) => {
     if (!googleAccessToken) return;
@@ -67,8 +101,8 @@ export const Drive = () => {
   };
 
   useEffect(() => {
-    if (connected) load();
-  }, [currentFolderId, connected]);
+    if (isConnected()) load();
+  }, [currentFolderId, googleAccessToken]);
 
   const openFolder = (f: DriveFile) =>
     setCrumbs(c => [...c, { id: f.id, name: f.name }]);
@@ -113,13 +147,10 @@ export const Drive = () => {
     new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
   /* ── not configured ── */
-  if (!googleClientId) {
+  if (!googleClientId && !refreshing) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Drive</h1>
-          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Armazenamento de arquivos</p>
-        </div>
+        <DriveHeader />
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-5">
             <HardDrive className="w-7 h-7 text-blue-400" />
@@ -128,41 +159,96 @@ export const Drive = () => {
           <p className="text-sm text-slate-500 max-w-sm mb-6">
             Configure o Client ID do Google Cloud nas Configurações para usar o Drive.
           </p>
-          <button
-            onClick={() => navigate('/settings')}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-          >
-            <SettingsIcon className="w-4 h-4" />
-            Ir para Configurações
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/settings')}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+            >
+              <SettingsIcon className="w-4 h-4" />
+              Ir para Configurações
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── trying silent refresh ── */
+  if (refreshing) {
+    return (
+      <div className="space-y-6">
+        <DriveHeader />
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-4" />
+          <p className="text-sm text-slate-400">Reconectando ao Drive…</p>
         </div>
       </div>
     );
   }
 
   /* ── token expired / not connected ── */
-  if (!connected) {
+  if (!isConnected()) {
+    if (isAdmin) {
+      /* admin: can reconnect */
+      return (
+        <div className="space-y-6">
+          <DriveHeader />
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-14 h-14 bg-slate-500/10 rounded-2xl flex items-center justify-center mb-5">
+              <Link2Off className="w-7 h-7 text-slate-500" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-200 mb-2">Drive desconectado</h2>
+            <p className="text-sm text-slate-500 max-w-sm mb-6">
+              A sessão do Google Drive expirou. Reconecte nas Configurações para que toda a equipe volte a ter acesso.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setRefreshFailed(false);
+                  setRefreshing(true);
+                  tryAutoRefresh().then(ok => {
+                    setRefreshing(false);
+                    if (!ok) setRefreshFailed(true);
+                  });
+                }}
+                className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Tentar reconexão silenciosa
+              </button>
+              <button
+                onClick={() => navigate('/settings')}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+              >
+                <Link2 className="w-4 h-4" />
+                Reconectar no Settings
+              </button>
+            </div>
+            {refreshFailed && (
+              <p className="text-xs text-slate-600 mt-4 max-w-xs">
+                Reconexão automática falhou. Use o botão acima para reconectar manualmente.
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* non-admin: cannot reconnect */
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Drive</h1>
-          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Armazenamento de arquivos</p>
-        </div>
+        <DriveHeader />
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-14 h-14 bg-slate-500/10 rounded-2xl flex items-center justify-center mb-5">
-            <HardDrive className="w-7 h-7 text-slate-500" />
+          <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-5">
+            <ShieldAlert className="w-7 h-7 text-amber-400" />
           </div>
-          <h2 className="text-lg font-bold text-slate-200 mb-2">Drive desconectado</h2>
-          <p className="text-sm text-slate-500 max-w-sm mb-6">
-            A sessão do Google Drive expirou. Reconecte nas Configurações.
+          <h2 className="text-lg font-bold text-slate-200 mb-2">Drive temporariamente indisponível</h2>
+          <p className="text-sm text-slate-500 max-w-sm mb-3">
+            O acesso ao Google Drive expirou. Solicite ao <strong className="text-slate-400">administrador</strong> que reconecte o Drive nas Configurações.
           </p>
-          <button
-            onClick={() => navigate('/settings')}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-          >
-            <Link2 className="w-4 h-4" />
-            Reconectar no Settings
-          </button>
+          <p className="text-xs text-slate-600 max-w-xs">
+            Após a reconexão, todos os usuários voltarão a ter acesso automaticamente.
+          </p>
         </div>
       </div>
     );
@@ -171,13 +257,8 @@ export const Drive = () => {
   /* ── connected: show browser ── */
   return (
     <div className="space-y-4">
-      {/* Page header */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Drive</h1>
-        <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Armazenamento de arquivos</p>
-      </div>
+      <DriveHeader />
 
-      {/* Browser card */}
       <div className="bg-[#161b22] border border-white/[0.08] rounded-xl flex flex-col min-h-[calc(100vh-220px)]">
 
         {/* Breadcrumb header */}
@@ -225,6 +306,17 @@ export const Drive = () => {
             {uploading ? 'Enviando...' : 'Upload'}
           </button>
           <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+
+          {/* Expiry hint for admins */}
+          {isAdmin && (() => {
+            const mins = minutesUntilExpiry();
+            if (mins <= 15 && mins > 0) return (
+              <span className="ml-auto text-xs text-amber-400/70">
+                Sessão expira em ~{mins} min
+              </span>
+            );
+            return null;
+          })()}
         </div>
 
         {/* New folder input */}
@@ -251,7 +343,6 @@ export const Drive = () => {
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="mx-5 mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
             {error}
@@ -336,3 +427,10 @@ export const Drive = () => {
     </div>
   );
 };
+
+const DriveHeader = () => (
+  <div>
+    <h1 className="text-3xl font-extrabold tracking-tight text-white">Drive</h1>
+    <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Armazenamento de arquivos</p>
+  </div>
+);

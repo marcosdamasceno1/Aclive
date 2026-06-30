@@ -76,9 +76,10 @@ function App() {
       useAuthStore.getState().loadUsers();
     };
 
-    // Guard: only initialize stores once per session to prevent data flickering
-    // if SIGNED_IN fires again (e.g. token refresh edge-cases in some Supabase versions).
+    // Tracks whether stores are loaded for the current session.
+    // Reset to false on every SIGNED_OUT so the next SIGNED_IN reloads fresh.
     let storesLoaded = false;
+
     const doInitAllStores = async () => {
       if (storesLoaded) return;
       storesLoaded = true;
@@ -104,14 +105,17 @@ function App() {
 
     const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
+        // Ignore events with no session (malformed / teardown edge cases).
+        if (!session?.user) return;
+
         // Capture previous user BEFORE syncing — detects account switches even when
         // SIGNED_OUT didn't fire (Supabase v2 fires SIGNED_IN directly on signInWithPassword
         // without a preceding SIGNED_OUT when the user switches accounts).
         const prevUserId = useAuthStore.getState().currentUser?.id ?? null;
-        const newUserId = session?.user?.id ?? null;
-        const userChanged = newUserId !== null && prevUserId !== newUserId;
+        const newUserId = session.user.id;
+        const userChanged = prevUserId !== null && prevUserId !== newUserId;
 
-        if (session?.user) useAuthStore.getState().syncSession(session.user);
+        useAuthStore.getState().syncSession(session.user);
         if (session) await setDataSession(session.access_token, session.refresh_token);
 
         if (!storesLoaded || userChanged) {

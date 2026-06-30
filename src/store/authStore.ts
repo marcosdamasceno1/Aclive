@@ -45,17 +45,21 @@ export const useAuthStore = create<AuthState>()((set) => ({
     try {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       if (session?.user) {
-        // Force a token refresh so user_metadata claims (company_id, role) are
-        // always current. getSession() returns the cached JWT which may predate
-        // metadata changes — stale company_id causes RLS to return empty rows
-        // even though data exists, which is why the dashboard looks blank on
-        // reload but works fine in incognito (fresh login = fresh claims).
-        let activeUser = session.user;
+        let user = session.user;
         try {
-          const { data: refreshed } = await supabaseAuth.auth.refreshSession();
-          if (refreshed.session?.user) activeUser = refreshed.session.user;
-        } catch { /* network error — fall back to cached claims */ }
-        set({ currentUser: metaToUser(activeUser) });
+          const { data: refreshed, error: refreshErr } = await supabaseAuth.auth.refreshSession();
+          if (refreshErr) {
+            // Refresh token revoked (server logout, admin action, expired).
+            // Wipe the stale local session so the user lands on /login and is
+            // never silently "logged in" with a dead token after pressing F5.
+            await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
+            return; // finally block still runs → initialized: true
+          }
+          if (refreshed.session?.user) user = refreshed.session.user;
+        } catch {
+          // Network error (offline) — keep cached claims until connectivity returns
+        }
+        set({ currentUser: metaToUser(user) });
       }
     } catch (e) {
       console.error('initAuth error:', e);
@@ -121,11 +125,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   logout: async () => {
-    // Await signOut fully before clearing local state. This guarantees
-    // localStorage is cleared (SIGNED_OUT fires) before the redirect,
-    // so a page refresh after logout stays on /login instead of restoring
-    // the session. The spinner in Sidebar shows while this runs (~300ms).
-    await supabaseAuth.auth.signOut().catch(() => {});
+    // scope:'local' clears the browser session INSTANTLY without a server
+    // roundtrip. This guarantees localStorage is wiped even if the network
+    // is slow, the server is unreachable, or the request times out.
+    // The server-side refresh token expires naturally (Supabase default: 7d).
+    await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
     set({ currentUser: null, users: [] });
   },
 

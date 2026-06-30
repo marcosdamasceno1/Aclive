@@ -121,14 +121,12 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   logout: async () => {
-    // 1. Clear React state immediately → instant redirect to /login
+    // Await signOut fully before clearing local state. This guarantees
+    // localStorage is cleared (SIGNED_OUT fires) before the redirect,
+    // so a page refresh after logout stays on /login instead of restoring
+    // the session. The spinner in Sidebar shows while this runs (~300ms).
+    await supabaseAuth.auth.signOut().catch(() => {});
     set({ currentUser: null, users: [] });
-    // 2. Clear localStorage session synchronously (scope:'local' = no network
-    //    call). This ensures a page refresh after logout stays on /login
-    //    instead of restoring the old session via initAuth → getSession().
-    await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
-    // 3. Invalidate refresh token on the server in background.
-    supabaseAuth.auth.signOut({ scope: 'global' }).catch(() => {});
   },
 
   addUser: async (userData, password) => {

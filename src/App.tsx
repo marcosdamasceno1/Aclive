@@ -127,11 +127,6 @@ function App() {
         if (session) await setDataSession(session.access_token, session.refresh_token);
       }
       if (event === 'SIGNED_OUT') {
-        // Guard: fire-and-forget signOut() in logout() can arrive late, AFTER
-        // the user has already re-authenticated (SIGNED_IN already fired and
-        // stores are loaded). Skip cleanup in that case to avoid wiping
-        // freshly loaded data for the new session.
-        if (useAuthStore.getState().currentUser) return;
         storesLoaded = false;
         await clearDataSession();
         clearAllStores();

@@ -7,7 +7,7 @@ import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters'
 import {
   CheckCircle2, X, History, Edit2, Search,
   TrendingUp, TrendingDown, Plus, Trash2, ArrowUpCircle, ArrowDownCircle,
-  DollarSign, Users, BarChart3,
+  DollarSign, Users, BarChart3, Clock,
 } from 'lucide-react';
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
@@ -51,6 +51,9 @@ const ProfessionalView = () => {
       )
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   }, [movements, currentUser, selectedMonth]);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _clients = clients;
 
   const filtered = useMemo(() =>
     statusFilter === 'all' ? myMovements : myMovements.filter(m => m.status === statusFilter),
@@ -97,7 +100,6 @@ const ProfessionalView = () => {
         </select>
       </div>
 
-      {/* Cards */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
           <div className="flex items-center gap-2 mb-3">
@@ -131,7 +133,6 @@ const ProfessionalView = () => {
         </div>
       </div>
 
-      {/* Filter */}
       <div className="flex gap-2">
         {(['all', 'pending', 'paid'] as const).map(s => (
           <button
@@ -148,7 +149,6 @@ const ProfessionalView = () => {
         ))}
       </div>
 
-      {/* Table */}
       <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
         <table className="w-full">
           <thead className="bg-slate-900">
@@ -207,6 +207,7 @@ const emptyEntry = {
   date: new Date().toISOString().split('T')[0],
   notes: '',
   clientId: '',
+  status: 'paid' as 'pending' | 'paid',
 };
 
 const AdminView = () => {
@@ -216,6 +217,7 @@ const AdminView = () => {
   const { clients } = useClientsStore();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'professionals' | 'demands' | 'entries'>('overview');
+  const [entriesSubTab, setEntriesSubTab] = useState<'income' | 'expense'>('income');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
   const [professionalFilter, setProfessionalFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -243,13 +245,18 @@ const AdminView = () => {
     return list.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   }, [movements, statusFilter, professionalFilter, search]);
 
-  // Manual entries
-  const manualEntries = useMemo(() =>
-    movements
-      .filter(m => m.type === 'income' || m.type === 'expense')
-      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()),
-    [movements]
-  );
+  // Entries split by type: pending first (soonest due), then paid (most recent)
+  const entriesByType = useMemo(() => {
+    const sortFn = (a: typeof movements[number], b: typeof movements[number]) => {
+      if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
+      if (a.status === 'pending') return new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime();
+      return new Date(b.paidAt || b.completedAt).getTime() - new Date(a.paidAt || a.completedAt).getTime();
+    };
+    return {
+      income: movements.filter(m => m.type === 'income').sort(sortFn),
+      expense: movements.filter(m => m.type === 'expense').sort(sortFn),
+    };
+  }, [movements]);
 
   // Professional balances
   const professionalsWithBalance = useMemo(() => {
@@ -266,15 +273,26 @@ const AdminView = () => {
       .sort((a, b) => b.balance.pending - a.balance.pending);
   }, [professionals, movements]);
 
-  // Summary totals
+  // Extended summary
   const summary = useMemo(() => {
     const credits = movements.filter(m => m.type === 'credit');
     const pendingPro = credits.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
     const paidPro = credits.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
-    const income = manualEntries.filter(m => m.type === 'income').reduce((s, m) => s + m.value, 0);
-    const expense = manualEntries.filter(m => m.type === 'expense').reduce((s, m) => s + m.value, 0);
-    return { pendingPro, paidPro, income, expense, balance: income - expense - pendingPro };
-  }, [movements, manualEntries]);
+    const incomes = movements.filter(m => m.type === 'income');
+    const expenses = movements.filter(m => m.type === 'expense');
+    const pendingIncome = incomes.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
+    const paidIncome = incomes.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
+    const pendingExpense = expenses.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
+    const paidExpense = expenses.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
+    return {
+      pendingPro, paidPro,
+      pendingIncome, paidIncome,
+      pendingExpense, paidExpense,
+      income: pendingIncome + paidIncome,
+      expense: pendingExpense + paidExpense,
+      balance: paidIncome - paidExpense - pendingPro,
+    };
+  }, [movements]);
 
   const handleMarkPaid = (movementId: string) => {
     if (!currentUser) return;
@@ -306,8 +324,9 @@ const AdminView = () => {
       notes: entryForm.notes || undefined,
       clientId: entryForm.clientId || undefined,
       clientName: selectedClient?.companyName || undefined,
+      status: entryForm.status,
     });
-    setEntryForm(emptyEntry);
+    setEntryForm({ ...emptyEntry, type: entryForm.type });
     setShowEntryModal(false);
     setSubmitting(false);
   };
@@ -324,9 +343,19 @@ const AdminView = () => {
     setShowNewCatInput(false);
   };
 
+  const openEntryModal = (type: 'income' | 'expense') => {
+    setEntryForm({ ...emptyEntry, type, status: 'paid' });
+    setShowNewCatInput(false);
+    setNewCatName('');
+    setShowEntryModal(true);
+  };
+
   const recentAudit = [...auditLog]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 20);
+
+  // For context-aware confirm modal
+  const confirmPayMovement = confirmPay ? movements.find(m => m.id === confirmPay) : null;
 
   const TABS = [
     { key: 'overview', label: 'Visão Geral', icon: BarChart3 },
@@ -390,21 +419,27 @@ const AdminView = () => {
               <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center mb-3">
                 <TrendingUp className="w-4 h-4 text-blue-400" />
               </div>
-              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.income)}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Entradas</p>
+              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.paidIncome)}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Entradas Realizadas</p>
+              {summary.pendingIncome > 0 && (
+                <p className="text-xs text-orange-400 mt-0.5">+ {formatCurrency(summary.pendingIncome)} previsto</p>
+              )}
             </div>
             <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
               <div className="w-8 h-8 bg-red-500/[0.12] rounded-lg flex items-center justify-center mb-3">
                 <TrendingDown className="w-4 h-4 text-red-400" />
               </div>
-              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.expense)}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Saídas</p>
+              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.paidExpense)}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Saídas Realizadas</p>
+              {summary.pendingExpense > 0 && (
+                <p className="text-xs text-orange-400 mt-0.5">+ {formatCurrency(summary.pendingExpense)} previsto</p>
+              )}
             </div>
           </div>
 
           {/* Saldo */}
           <div className={`rounded-xl p-5 border ${summary.balance >= 0 ? 'bg-emerald-500/[0.06] border-emerald-500/[0.2]' : 'bg-red-500/[0.06] border-red-500/[0.2]'}`}>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Saldo Operacional (Entradas − Saídas − A Pagar)</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Saldo Operacional (Entradas − Saídas − A Pagar Prof.)</p>
             <p className={`text-3xl font-extrabold tracking-tight ${summary.balance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {formatCurrency(summary.balance)}
             </p>
@@ -415,7 +450,7 @@ const AdminView = () => {
             <div className="px-6 py-4 border-b border-white/[0.05]">
               <h3 className="text-sm font-bold text-slate-100">Últimas movimentações de demandas</h3>
             </div>
-            {movements.filter(m => m.type === 'credit').slice(0, 5).length === 0 ? (
+            {movements.filter(m => m.type === 'credit').length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">Nenhuma movimentação registrada</div>
             ) : (
               <div className="divide-y divide-white/[0.05]">
@@ -617,92 +652,179 @@ const AdminView = () => {
       {/* ── Entries Tab ── */}
       {activeTab === 'entries' && (
         <div className="space-y-4">
+          {/* Sub-tabs + action button */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Registre entradas (receitas) e saídas (despesas) manualmente.</p>
+            <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl">
+              <button
+                onClick={() => setEntriesSubTab('income')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  entriesSubTab === 'income' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+                }`}
+              >
+                <ArrowUpCircle className="w-4 h-4 text-blue-400" />
+                Entradas
+                {summary.pendingIncome > 0 && (
+                  <span className="ml-1 text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full">
+                    {entriesByType.income.filter(m => m.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setEntriesSubTab('expense')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  entriesSubTab === 'expense' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+                }`}
+              >
+                <ArrowDownCircle className="w-4 h-4 text-red-400" />
+                Saídas
+                {summary.pendingExpense > 0 && (
+                  <span className="ml-1 text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full">
+                    {entriesByType.expense.filter(m => m.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+            </div>
             <button
-              onClick={() => { setEntryForm(emptyEntry); setShowNewCatInput(false); setNewCatName(''); setShowEntryModal(true); }}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              onClick={() => openEntryModal(entriesSubTab)}
+              className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                entriesSubTab === 'income' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'
+              }`}
             >
               <Plus className="w-4 h-4" />
-              Novo Lançamento
+              {entriesSubTab === 'income' ? 'Nova Entrada' : 'Nova Saída'}
             </button>
           </div>
 
-          {/* Entries summary */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08] flex items-center gap-4">
-              <div className="w-10 h-10 bg-blue-500/[0.12] rounded-xl flex items-center justify-center flex-shrink-0">
-                <ArrowUpCircle className="w-5 h-5 text-blue-400" />
+          {/* Summary cards */}
+          {entriesSubTab === 'income' ? (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-[#21262d] rounded-xl p-4 border border-orange-500/20">
+                <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-2">
+                  <Clock className="w-4 h-4 text-orange-400" />
+                </div>
+                <p className="text-lg font-bold text-orange-400">{formatCurrency(summary.pendingIncome)}</p>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">A Receber</p>
+                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.income.filter(m => m.status === 'pending').length} lançamento(s)</p>
               </div>
-              <div>
-                <p className="text-xs text-slate-500 uppercase tracking-wide">Total Entradas</p>
-                <p className="text-lg font-bold text-blue-400">{formatCurrency(summary.income)}</p>
+              <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+                <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center mb-2">
+                  <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                </div>
+                <p className="text-lg font-bold text-blue-400">{formatCurrency(summary.paidIncome)}</p>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Recebido</p>
+                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.income.filter(m => m.status === 'paid').length} lançamento(s)</p>
+              </div>
+              <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+                <div className="w-8 h-8 bg-slate-500/[0.12] rounded-lg flex items-center justify-center mb-2">
+                  <TrendingUp className="w-4 h-4 text-slate-400" />
+                </div>
+                <p className="text-lg font-bold text-slate-100">{formatCurrency(summary.income)}</p>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Total</p>
+                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.income.length} lançamento(s)</p>
               </div>
             </div>
-            <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08] flex items-center gap-4">
-              <div className="w-10 h-10 bg-red-500/[0.12] rounded-xl flex items-center justify-center flex-shrink-0">
-                <ArrowDownCircle className="w-5 h-5 text-red-400" />
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-[#21262d] rounded-xl p-4 border border-orange-500/20">
+                <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-2">
+                  <Clock className="w-4 h-4 text-orange-400" />
+                </div>
+                <p className="text-lg font-bold text-orange-400">{formatCurrency(summary.pendingExpense)}</p>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">A Pagar</p>
+                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.expense.filter(m => m.status === 'pending').length} lançamento(s)</p>
               </div>
-              <div>
-                <p className="text-xs text-slate-500 uppercase tracking-wide">Total Saídas</p>
-                <p className="text-lg font-bold text-red-400">{formatCurrency(summary.expense)}</p>
+              <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+                <div className="w-8 h-8 bg-red-500/[0.12] rounded-lg flex items-center justify-center mb-2">
+                  <CheckCircle2 className="w-4 h-4 text-red-400" />
+                </div>
+                <p className="text-lg font-bold text-red-400">{formatCurrency(summary.paidExpense)}</p>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Pago</p>
+                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.expense.filter(m => m.status === 'paid').length} lançamento(s)</p>
+              </div>
+              <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+                <div className="w-8 h-8 bg-slate-500/[0.12] rounded-lg flex items-center justify-center mb-2">
+                  <TrendingDown className="w-4 h-4 text-slate-400" />
+                </div>
+                <p className="text-lg font-bold text-slate-100">{formatCurrency(summary.expense)}</p>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Total</p>
+                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.expense.length} lançamento(s)</p>
               </div>
             </div>
-          </div>
+          )}
 
+          {/* Entries table */}
           <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
             <table className="w-full">
               <thead className="bg-slate-900">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Tipo</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Descrição</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Categoria</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Data</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Vencimento</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.05]">
-                {manualEntries.length === 0 ? (
+                {entriesByType[entriesSubTab].length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-slate-500 text-sm">
-                      Nenhum lançamento registrado. Clique em "Novo Lançamento" para começar.
+                      Nenhum lançamento. Clique em "{entriesSubTab === 'income' ? 'Nova Entrada' : 'Nova Saída'}" para começar.
                     </td>
                   </tr>
-                ) : manualEntries.map(m => (
-                  <tr key={m.id} className="hover:bg-white/[0.04] transition-colors">
-                    <td className="px-4 py-3">
-                      {m.type === 'income' ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold bg-blue-500/[0.1] text-blue-400">
-                          <ArrowUpCircle className="w-3.5 h-3.5" /> Entrada
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold bg-red-500/[0.1] text-red-400">
-                          <ArrowDownCircle className="w-3.5 h-3.5" /> Saída
-                        </span>
-                      )}
-                    </td>
+                ) : entriesByType[entriesSubTab].map(m => (
+                  <tr key={m.id} className={`hover:bg-white/[0.04] transition-colors ${m.status === 'pending' ? 'border-l-2 border-orange-500/40' : ''}`}>
                     <td className="px-4 py-3">
                       <p className="text-sm font-medium text-slate-100">{m.demandTitle}</p>
-                      {m.notes && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">{m.notes}</p>}
+                      {m.notes && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">{m.notes}</p>}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-400">{m.category || '—'}</td>
                     <td className="px-4 py-3 text-sm text-slate-400">{m.clientName || '—'}</td>
                     <td className="px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`text-sm font-bold ${m.type === 'income' ? 'text-blue-400' : 'text-red-400'}`}>
-                        {m.type === 'income' ? '+' : '-'}{formatCurrency(m.value)}
+                      <span className={`text-sm font-bold ${entriesSubTab === 'income' ? 'text-blue-400' : 'text-red-400'}`}>
+                        {entriesSubTab === 'income' ? '+' : '-'}{formatCurrency(m.value)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => deleteMovement(m.id)}
-                        className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/[0.1] rounded-lg transition-colors"
-                        title="Excluir lançamento"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {m.status === 'paid' ? (
+                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/[0.1] text-emerald-400 inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          {entriesSubTab === 'income' ? 'Recebido' : 'Pago'}
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-orange-500/[0.1] text-orange-400 inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {entriesSubTab === 'income' ? 'A Receber' : 'A Pagar'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        {m.status === 'pending' && (
+                          <button
+                            onClick={() => setConfirmPay(m.id)}
+                            className={`text-xs text-white px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                              entriesSubTab === 'income'
+                                ? 'bg-blue-600 hover:bg-blue-700'
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
+                          >
+                            {entriesSubTab === 'income' ? 'Receber' : 'Pagar'}
+                          </button>
+                        )}
+                        {m.status === 'paid' && m.paidAt && (
+                          <span className="text-xs text-slate-500">{formatDate(m.paidAt)}</span>
+                        )}
+                        <button
+                          onClick={() => deleteMovement(m.id)}
+                          className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/[0.1] rounded-lg transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -720,17 +842,22 @@ const AdminView = () => {
               <div className="w-10 h-10 bg-green-500/[0.12] rounded-xl flex items-center justify-center">
                 <CheckCircle2 className="w-5 h-5 text-green-400" />
               </div>
-              <h3 className="text-lg font-bold text-slate-100">Confirmar pagamento</h3>
+              <h3 className="text-lg font-bold text-slate-100">
+                {confirmPayMovement?.type === 'income' ? 'Confirmar recebimento' : 'Confirmar pagamento'}
+              </h3>
             </div>
             <p className="text-slate-400 text-sm mb-6">
-              Confirmar que este pagamento foi realizado? Esta ação ficará registrada no histórico.
+              {confirmPayMovement?.type === 'income'
+                ? 'Confirmar que este recebimento foi realizado hoje? Esta ação ficará registrada no histórico.'
+                : 'Confirmar que este pagamento foi realizado hoje? Esta ação ficará registrada no histórico.'
+              }
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmPay(null)} className="flex-1 border border-white/[0.08] text-slate-400 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
                 Cancelar
               </button>
               <button onClick={() => handleMarkPaid(confirmPay)} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-bold">
-                Confirmar
+                {confirmPayMovement?.type === 'income' ? 'Confirmar Recebimento' : 'Confirmar Pagamento'}
               </button>
             </div>
           </div>
@@ -740,9 +867,11 @@ const AdminView = () => {
       {/* ── New Entry Modal ── */}
       {showEntryModal && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-              <h2 className="text-lg font-bold text-slate-100">Novo Lançamento</h2>
+              <h2 className="text-lg font-bold text-slate-100">
+                {entryForm.type === 'income' ? 'Nova Entrada' : 'Nova Saída'}
+              </h2>
               <button onClick={() => setShowEntryModal(false)} className="text-slate-400 hover:text-slate-300 p-1 rounded-lg hover:bg-white/[0.06]">
                 <X className="w-5 h-5" />
               </button>
@@ -777,6 +906,36 @@ const AdminView = () => {
                 </div>
               </div>
 
+              {/* Status toggle */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Status *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEntryForm(f => ({ ...f, status: 'paid' }))}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+                      entryForm.status === 'paid'
+                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                        : 'border-white/[0.08] text-slate-400 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Já realizado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEntryForm(f => ({ ...f, status: 'pending' }))}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+                      entryForm.status === 'pending'
+                        ? 'bg-orange-600 border-orange-600 text-white'
+                        : 'border-white/[0.08] text-slate-400 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <Clock className="w-4 h-4" /> Previsão
+                  </button>
+                </div>
+              </div>
+
+              {/* Category */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-sm font-medium text-slate-300">Categoria *</label>
@@ -799,18 +958,10 @@ const AdminView = () => {
                       className="flex-1 border border-blue-500/[0.4] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Nome da nova categoria..."
                     />
-                    <button
-                      type="button"
-                      onClick={handleAddCustomCategory}
-                      className="px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
-                    >
+                    <button type="button" onClick={handleAddCustomCategory} className="px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
                       Criar
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowNewCatInput(false)}
-                      className="px-3 py-2.5 border border-white/[0.08] text-slate-400 rounded-lg text-sm hover:bg-white/[0.04]"
-                    >
+                    <button type="button" onClick={() => setShowNewCatInput(false)} className="px-3 py-2.5 border border-white/[0.08] text-slate-400 rounded-lg text-sm hover:bg-white/[0.04]">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -867,7 +1018,9 @@ const AdminView = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Data *</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                    {entryForm.status === 'pending' ? 'Data de vencimento *' : 'Data *'}
+                  </label>
                   <input
                     type="date"
                     value={entryForm.date}

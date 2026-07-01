@@ -29,6 +29,7 @@ interface ManualEntryInput {
   notes?: string;
   clientId?: string;
   clientName?: string;
+  status?: 'pending' | 'paid';
 }
 
 interface FinancialState {
@@ -137,6 +138,7 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
   addManualEntry: (data) => {
     const cid = getCompanyId();
     if (!cid) return;
+    const isPaid = data.status !== 'pending';
     const newEntry: FinancialMovement = {
       id: uuidv4(),
       professionalId: '',
@@ -146,10 +148,10 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       clientName: data.clientName || '',
       value: data.value,
       type: data.type,
-      status: 'paid',
+      status: isPaid ? 'paid' : 'pending',
       completedAt: data.date,
-      paidAt: data.date,
-      paidBy: data.createdBy,
+      paidAt: isPaid ? data.date : undefined,
+      paidBy: isPaid ? data.createdBy : undefined,
       notes: data.notes || '',
       category: data.category,
     };
@@ -161,10 +163,10 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       client_name: data.clientName || null,
       value: data.value,
       type: data.type,
-      status: 'paid',
+      status: isPaid ? 'paid' : 'pending',
       completed_at: data.date || null,
-      paid_at: data.date || null,
-      paid_by: data.createdBy,
+      paid_at: isPaid ? data.date : null,
+      paid_by: isPaid ? data.createdBy : null,
       notes: data.notes || null,
       category: data.category,
       company_id: cid,

@@ -8,7 +8,7 @@ import { getZApiConfig, saveZApiConfig, clearZApiConfig } from '../utils/whatsap
 import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
 import type { UserRole, ProfessionType } from '../types';
 import type { WhatsAppProvider } from '../utils/whatsapp';
-import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, Link2, Link2Off, Loader2, MessageCircle } from 'lucide-react';
+import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, Link2, Link2Off, Loader2, MessageCircle, Target, Copy, RefreshCw } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -51,6 +51,8 @@ export const Settings = () => {
     saveClientId, saveToken, clearToken, isConnected,
     whatsappProvider, metaAccessToken, metaPhoneNumberId, metaTemplateName,
     saveWhatsappProvider, saveMetaConfig, clearMetaConfig,
+    metaLeadsPageId, metaLeadsPageToken, metaLeadsVerifyToken,
+    saveMetaLeadsConfig, clearMetaLeadsConfig,
   } = useCompanySettingsStore();
 
   // Z-API config state
@@ -88,6 +90,34 @@ export const Settings = () => {
 
   const handleProviderChange = async (p: WhatsAppProvider) => {
     await saveWhatsappProvider(p);
+  };
+
+  // Meta Lead Ads state
+  const [leadsPageId, setLeadsPageId] = useState('');
+  const [leadsPageToken, setLeadsPageToken] = useState('');
+  const [leadsShowPageToken, setLeadsShowPageToken] = useState(false);
+  const [leadsSaved, setLeadsSaved] = useState(false);
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [copiedVerifyToken, setCopiedVerifyToken] = useState(false);
+
+  useEffect(() => {
+    setLeadsPageId(metaLeadsPageId || '');
+    setLeadsPageToken(metaLeadsPageToken || '');
+  }, [metaLeadsPageId, metaLeadsPageToken]);
+
+  const WEBHOOK_URL = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1/meta-leads-webhook';
+
+  const copyToClipboard = (text: string, setCopied: (v: boolean) => void) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveLeadsConfig = async () => {
+    const verifyToken = metaLeadsVerifyToken || crypto.randomUUID();
+    await saveMetaLeadsConfig(leadsPageId.trim(), leadsPageToken.trim(), verifyToken);
+    setLeadsSaved(true);
+    setTimeout(() => setLeadsSaved(false), 2500);
   };
 
   const zapiIsConfigured = !!getZApiConfig();
@@ -756,6 +786,119 @@ export const Settings = () => {
               <p>• Acesse <strong className="text-slate-400">console.cloud.google.com</strong> → crie um projeto → ative a <strong className="text-slate-400">Google Drive API</strong></p>
               <p>• Em Credenciais → crie OAuth 2.0 → tipo <strong className="text-slate-400">Aplicativo da Web</strong> → adicione o domínio do app em "Origens autorizadas"</p>
               <p>• Copie o <strong className="text-slate-400">Client ID</strong> gerado e cole acima</p>
+            </div>
+          </div>
+
+          {/* ── Meta Lead Ads ── */}
+          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Target className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-100">Meta Lead Ads — Captação automática</h3>
+                <p className="text-xs text-slate-500">Leads dos formulários do Facebook/Instagram chegam automaticamente na aba Leads</p>
+              </div>
+            </div>
+
+            {/* Webhook URL */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={WEBHOOK_URL}
+                  className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                />
+                <button
+                  onClick={() => copyToClipboard(WEBHOOK_URL, setCopiedWebhook)}
+                  className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                >
+                  {copiedWebhook ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedWebhook ? 'Copiado!' : 'Copiar'}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Page ID</label>
+                <input
+                  type="text"
+                  value={leadsPageId}
+                  onChange={e => setLeadsPageId(e.target.value)}
+                  className="w-full bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="ID da sua Página do Facebook"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Page Access Token</label>
+                <div className="relative">
+                  <input
+                    type={leadsShowPageToken ? 'text' : 'password'}
+                    value={leadsPageToken}
+                    onChange={e => setLeadsPageToken(e.target.value)}
+                    className="w-full bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="EAAxxxxxxxx..."
+                  />
+                  <button
+                    onClick={() => setLeadsShowPageToken(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    {leadsShowPageToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Verify Token — shown after first save */}
+              {metaLeadsVerifyToken && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Verify Token</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={metaLeadsVerifyToken}
+                      className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                    />
+                    <button
+                      onClick={() => copyToClipboard(metaLeadsVerifyToken, setCopiedVerifyToken)}
+                      className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      {copiedVerifyToken ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedVerifyToken ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Use este token ao configurar o webhook no Meta Business Manager</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveLeadsConfig}
+                disabled={!leadsPageId.trim() || !leadsPageToken.trim()}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              >
+                {leadsSaved ? <CheckCircle className="w-4 h-4" /> : <Target className="w-4 h-4" />}
+                {leadsSaved ? 'Salvo!' : 'Salvar configuração'}
+              </button>
+              {(metaLeadsPageId || metaLeadsPageToken) && (
+                <button
+                  onClick={() => { clearMetaLeadsConfig(); setLeadsPageId(''); setLeadsPageToken(''); }}
+                  className="text-xs text-slate-500 hover:text-red-400 transition-colors"
+                >
+                  Remover configuração
+                </button>
+              )}
+            </div>
+
+            <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
+              <p>• Acesse <strong className="text-slate-400">business.facebook.com</strong> → Configurações → Webhooks → adicione a URL acima</p>
+              <p>• Inscreva-se no objeto <strong className="text-slate-400">page</strong>, campo <strong className="text-slate-400">leadgen</strong>, usando o Verify Token gerado</p>
+              <p>• Page ID e Page Access Token: <strong className="text-slate-400">Meta Business Manager → Configurações → Páginas</strong></p>
             </div>
           </div>
         </div>

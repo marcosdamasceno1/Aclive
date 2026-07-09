@@ -19,7 +19,7 @@ interface LeadsState {
 
 const toDbLead = (lead: Record<string, unknown>): Record<string, unknown> => {
   const row = toDb(lead);
-  for (const col of ['phone', 'website', 'address', 'city', 'notes', 'category', 'converted_client_id']) {
+  for (const col of ['email', 'phone', 'website', 'address', 'city', 'notes', 'category', 'converted_client_id']) {
     if (row[col] === '' || row[col] === undefined) row[col] = null;
   }
   if (row['rating']       === undefined) row['rating']       = null;

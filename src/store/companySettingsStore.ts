@@ -14,6 +14,10 @@ interface CompanySettingsState {
   metaAccessToken: string;
   metaPhoneNumberId: string;
   metaTemplateName: string;
+  // Meta Lead Ads
+  metaLeadsPageId: string;
+  metaLeadsPageToken: string;
+  metaLeadsVerifyToken: string;
   // misc
   loading: boolean;
 
@@ -31,6 +35,10 @@ interface CompanySettingsState {
   saveWhatsappProvider: (provider: WhatsAppProvider) => Promise<void>;
   saveMetaConfig: (accessToken: string, phoneNumberId: string, templateName: string) => Promise<void>;
   clearMetaConfig: () => Promise<void>;
+
+  // Meta Lead Ads
+  saveMetaLeadsConfig: (pageId: string, pageToken: string, verifyToken: string) => Promise<void>;
+  clearMetaLeadsConfig: () => Promise<void>;
 }
 
 const companyId = () => useAuthStore.getState().currentUser?.companyId;
@@ -51,6 +59,9 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaAccessToken: '',
   metaPhoneNumberId: '',
   metaTemplateName: 'nova_demanda',
+  metaLeadsPageId: '',
+  metaLeadsPageToken: '',
+  metaLeadsVerifyToken: '',
   loading: false,
 
   init: async () => {
@@ -61,19 +72,23 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       .from('company_settings')
       .select(
         'google_client_id, google_access_token, google_token_expiry, ' +
-        'whatsapp_provider, meta_access_token, meta_phone_number_id, meta_template_name',
+        'whatsapp_provider, meta_access_token, meta_phone_number_id, meta_template_name, ' +
+        'meta_leads_page_id, meta_leads_page_token, meta_leads_verify_token',
       )
       .eq('company_id', cid)
       .maybeSingle();
     const row = data as Record<string, unknown> | null;
     set({
-      googleClientId:    (row?.google_client_id    as string) || '',
-      googleAccessToken: (row?.google_access_token as string) || null,
-      googleTokenExpiry: (row?.google_token_expiry as string) || null,
-      whatsappProvider:  ((row?.whatsapp_provider  as WhatsAppProvider) || 'zapi'),
-      metaAccessToken:   (row?.meta_access_token   as string) || '',
-      metaPhoneNumberId: (row?.meta_phone_number_id as string) || '',
-      metaTemplateName:  (row?.meta_template_name  as string) || 'nova_demanda',
+      googleClientId:       (row?.google_client_id       as string) || '',
+      googleAccessToken:    (row?.google_access_token    as string) || null,
+      googleTokenExpiry:    (row?.google_token_expiry    as string) || null,
+      whatsappProvider:     ((row?.whatsapp_provider     as WhatsAppProvider) || 'zapi'),
+      metaAccessToken:      (row?.meta_access_token      as string) || '',
+      metaPhoneNumberId:    (row?.meta_phone_number_id   as string) || '',
+      metaTemplateName:     (row?.meta_template_name     as string) || 'nova_demanda',
+      metaLeadsPageId:      (row?.meta_leads_page_id     as string) || '',
+      metaLeadsPageToken:   (row?.meta_leads_page_token  as string) || '',
+      metaLeadsVerifyToken: (row?.meta_leads_verify_token as string) || '',
       loading: false,
     });
   },
@@ -138,5 +153,21 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   clearMetaConfig: async () => {
     set({ metaAccessToken: '', metaPhoneNumberId: '', metaTemplateName: 'nova_demanda' });
     await upsert({ meta_access_token: null, meta_phone_number_id: null, meta_template_name: null });
+  },
+
+  // ── Meta Lead Ads ──────────────────────────────────────────────────────────
+
+  saveMetaLeadsConfig: async (pageId, pageToken, verifyToken) => {
+    set({ metaLeadsPageId: pageId, metaLeadsPageToken: pageToken, metaLeadsVerifyToken: verifyToken });
+    await upsert({
+      meta_leads_page_id:      pageId,
+      meta_leads_page_token:   pageToken,
+      meta_leads_verify_token: verifyToken,
+    });
+  },
+
+  clearMetaLeadsConfig: async () => {
+    set({ metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '' });
+    await upsert({ meta_leads_page_id: null, meta_leads_page_token: null, meta_leads_verify_token: null });
   },
 }));

@@ -123,6 +123,7 @@ export type LeadStatus = 'new' | 'contacted' | 'proposal' | 'client' | 'lost';
 export interface Lead {
   id: string;
   name: string;
+  email?: string;
   phone?: string;
   website?: string;
   address?: string;
@@ -132,7 +133,7 @@ export interface Lead {
   category?: string;
   status: LeadStatus;
   notes?: string;
-  source: 'apify' | 'manual';
+  source: 'apify' | 'manual' | 'meta';
   createdAt: string;
   convertedClientId?: string;
 }

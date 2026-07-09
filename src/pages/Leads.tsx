@@ -13,7 +13,7 @@ import type { Lead, LeadStatus } from '../types';
 import {
   Plus, Search, Trash2, X, ExternalLink, Phone, MapPin,
   Star, Globe, Target, Loader2, CheckSquare, Square, Key,
-  Building2, ArrowRight, AlertTriangle,
+  Building2, ArrowRight, AlertTriangle, Mail,
 } from 'lucide-react';
 
 // ─── Pipeline config ───────────────────────────────────────────────────────────
@@ -119,6 +119,11 @@ const DraggableLeadCard = ({
           {lead.source === 'apify' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 flex-shrink-0 font-medium">
               Maps
+            </span>
+          )}
+          {lead.source === 'meta' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 flex-shrink-0 font-medium">
+              Meta
             </span>
           )}
         </div>
@@ -826,6 +831,9 @@ export const Leads = () => {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {showDetail.phone && (
                   <div className="flex items-center gap-2 text-slate-400"><Phone className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.phone}</div>
+                )}
+                {showDetail.email && (
+                  <div className="flex items-center gap-2 text-slate-400"><Mail className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.email}</div>
                 )}
                 {showDetail.city && (
                   <div className="flex items-center gap-2 text-slate-400"><MapPin className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.city}</div>

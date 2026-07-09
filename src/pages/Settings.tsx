@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useProfessionalsStore } from '../store/professionalsStore';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
@@ -159,6 +159,7 @@ export const Settings = () => {
   const [userForm, setUserForm] = useState(emptyUserForm);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'system' | 'integrations'>('users');
+  const [integrationTab, setIntegrationTab] = useState<'whatsapp' | 'drive' | 'meta-leads'>('whatsapp');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -531,376 +532,406 @@ export const Settings = () => {
       {activeTab === 'integrations' && (
         <div className="space-y-4">
 
-          {/* ── WhatsApp ── */}
-          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="w-5 h-5 text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-100">WhatsApp — Notificações</h3>
-                <p className="text-xs text-slate-500">Notificações automáticas para profissionais ao criar demandas</p>
-              </div>
-            </div>
-
-            {/* Provider selector */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Provedor ativo</label>
-              <div className="flex gap-2">
-                {([
-                  { id: 'zapi', label: 'Z-API', desc: 'Não oficial · SaaS gerenciado' },
-                  { id: 'meta', label: 'Meta Oficial', desc: 'API oficial da Meta' },
-                ] as { id: WhatsAppProvider; label: string; desc: string }[]).map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => handleProviderChange(p.id)}
-                    className={`flex-1 flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
-                      whatsappProvider === p.id
-                        ? 'border-blue-500/50 bg-blue-500/10 text-blue-300'
-                        : 'border-white/[0.08] text-slate-400 hover:border-white/20 hover:text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <div className={`w-2 h-2 rounded-full ${whatsappProvider === p.id ? 'bg-blue-400' : 'bg-slate-600'}`} />
-                      <span className="text-sm font-semibold">{p.label}</span>
-                      {p.id === 'zapi' && zapiIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
-                      {p.id === 'meta' && metaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
-                    </div>
-                    <span className="text-xs text-slate-500 pl-4">{p.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Z-API fields */}
-            {whatsappProvider === 'zapi' && (
-              <div className="space-y-3 pt-1">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Instance ID</label>
-                  <input
-                    type="text"
-                    value={zapiInstance}
-                    onChange={e => setZapiInstance(e.target.value)}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Ex: 3C56F5B73..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Token</label>
-                  <div className="relative">
-                    <input
-                      type={zapiShowToken ? 'text' : 'password'}
-                      value={zapiToken}
-                      onChange={e => setZapiToken(e.target.value)}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Token da instância"
-                    />
-                    <button
-                      onClick={() => setZapiShowToken(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                    >
-                      {zapiShowToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Client Token</label>
-                  <input
-                    type="password"
-                    value={zapiClientToken}
-                    onChange={e => setZapiClientToken(e.target.value)}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Client-Token da conta Z-API"
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleSaveZApi}
-                    disabled={!zapiInstance.trim() || !zapiToken.trim()}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                  >
-                    {zapiSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                    {zapiSaved ? 'Salvo!' : 'Salvar'}
-                  </button>
-                  {zapiIsConfigured && (
-                    <button
-                      onClick={() => { clearZApiConfig(); setZapiInstance(''); setZapiToken(''); setZapiClientToken(''); }}
-                      className="text-xs text-slate-500 hover:text-red-400 transition-colors"
-                    >
-                      Remover configuração
-                    </button>
-                  )}
-                </div>
-                <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                  <p>• Instance ID e Token no painel da instância em <strong className="text-slate-400">app.z-api.io</strong></p>
-                  <p>• Client Token em Conta → Security no painel Z-API</p>
-                </div>
-              </div>
-            )}
-
-            {/* Meta Official API fields */}
-            {whatsappProvider === 'meta' && (
-              <div className="space-y-3 pt-1">
-                <div className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2.5">
-                  <AlertTriangle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-300">
-                    Requer conta no <strong>Meta Business Manager</strong> com WhatsApp Business API ativado e um template de mensagem aprovado pela Meta.
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Access Token</label>
-                  <div className="relative">
-                    <input
-                      type={metaShowToken ? 'text' : 'password'}
-                      value={metaToken}
-                      onChange={e => setMetaToken(e.target.value)}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="EAAxxxxxxxx..."
-                    />
-                    <button
-                      onClick={() => setMetaShowToken(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                    >
-                      {metaShowToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Phone Number ID</label>
-                  <input
-                    type="text"
-                    value={metaPhoneId}
-                    onChange={e => setMetaPhoneId(e.target.value)}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="1234567890"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
-                    Nome do Template
-                    <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(aprovado pela Meta)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={metaTemplate}
-                    onChange={e => setMetaTemplate(e.target.value)}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="nova_demanda"
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleSaveMeta}
-                    disabled={!metaToken.trim() || !metaPhoneId.trim()}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                  >
-                    {metaSaved ? <CheckCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-                    {metaSaved ? 'Salvo!' : 'Salvar'}
-                  </button>
-                  {metaIsConfigured && (
-                    <button
-                      onClick={() => { clearMetaConfig(); setMetaToken(''); setMetaPhoneId(''); setMetaTemplate('nova_demanda'); }}
-                      className="text-xs text-slate-500 hover:text-red-400 transition-colors"
-                    >
-                      Remover configuração
-                    </button>
-                  )}
-                </div>
-                <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                  <p>• Access Token e Phone Number ID em <strong className="text-slate-400">business.facebook.com</strong> → WhatsApp → API Setup</p>
-                  <p>• O template deve ter 5 variáveis: profissional, demanda, cliente, prazo, prioridade</p>
-                  <p>• Crie e aprove o template em WhatsApp Manager → Message Templates</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── Google Drive ── */}
-          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <HardDrive className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-100">Google Drive</h3>
-                  <p className="text-xs text-slate-500">Armazene e organize arquivos da agência diretamente no Drive</p>
-                </div>
-              </div>
-              {isConnected() && (
-                <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                  <CheckCircle className="w-3.5 h-3.5" /> Conectado
+          {/* ── Integration sub-tabs ── */}
+          <div className="flex gap-2">
+            {([
+              {
+                key: 'whatsapp',
+                icon: <MessageCircle className="w-4 h-4" />,
+                label: 'WhatsApp',
+                color: 'green',
+                configured: zapiIsConfigured || metaIsConfigured,
+              },
+              {
+                key: 'drive',
+                icon: <HardDrive className="w-4 h-4" />,
+                label: 'Google Drive',
+                color: 'blue',
+                configured: isConnected(),
+              },
+              {
+                key: 'meta-leads',
+                icon: <Target className="w-4 h-4" />,
+                label: 'Meta Lead Ads',
+                color: 'blue',
+                configured: !!(metaLeadsPageId && metaLeadsPageToken),
+              },
+            ] as { key: string; icon: React.ReactNode; label: string; color: string; configured: boolean }[]).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setIntegrationTab(tab.key as typeof integrationTab)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                  integrationTab === tab.key
+                    ? 'bg-[#21262d] border-white/[0.15] text-slate-100 shadow-sm'
+                    : 'border-white/[0.05] text-slate-500 hover:text-slate-300 hover:border-white/[0.1]'
+                }`}
+              >
+                <span className={integrationTab === tab.key ? (tab.color === 'green' ? 'text-green-400' : 'text-blue-400') : 'text-slate-500'}>
+                  {tab.icon}
                 </span>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Client ID (Google Cloud)</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={driveClientId}
-                  onChange={e => setDriveClientId(e.target.value)}
-                  placeholder="xxxxxxxxxxxx-xxxxxxxx.apps.googleusercontent.com"
-                  className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onClick={handleSaveClientId}
-                  disabled={!driveClientId.trim() || driveClientId === googleClientId}
-                  className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white rounded-lg transition-colors"
-                >
-                  {driveSaved ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : 'Salvar'}
-                </button>
-              </div>
-            </div>
-
-            {driveError && (
-              <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-red-400">{driveError}</p>
-              </div>
-            )}
-
-            <div className="flex items-center gap-3 flex-wrap">
-              {!isConnected() ? (
-                <button
-                  onClick={handleConnectDrive}
-                  disabled={driveConnecting || !googleClientId}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                >
-                  {driveConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-                  {driveConnecting ? 'Conectando...' : 'Conectar Drive'}
-                </button>
-              ) : (
-                <button
-                  onClick={handleDisconnectDrive}
-                  className="flex items-center gap-2 text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  <Link2Off className="w-4 h-4" />
-                  Desconectar
-                </button>
-              )}
-            </div>
-
-            <div className="border-t border-white/[0.05] pt-4 text-xs text-slate-500 space-y-1">
-              <p>• Acesse <strong className="text-slate-400">console.cloud.google.com</strong> → crie um projeto → ative a <strong className="text-slate-400">Google Drive API</strong></p>
-              <p>• Em Credenciais → crie OAuth 2.0 → tipo <strong className="text-slate-400">Aplicativo da Web</strong> → adicione o domínio do app em "Origens autorizadas"</p>
-              <p>• Copie o <strong className="text-slate-400">Client ID</strong> gerado e cole acima</p>
-            </div>
+                {tab.label}
+                {tab.configured && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* ── Meta Lead Ads ── */}
-          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Target className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-100">Meta Lead Ads — Captação automática</h3>
-                <p className="text-xs text-slate-500">Leads dos formulários do Facebook/Instagram chegam automaticamente na aba Leads</p>
-              </div>
-            </div>
-
-            {/* Webhook URL */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={WEBHOOK_URL}
-                  className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
-                />
-                <button
-                  onClick={() => copyToClipboard(WEBHOOK_URL, setCopiedWebhook)}
-                  className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
-                >
-                  {copiedWebhook ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedWebhook ? 'Copiado!' : 'Copiar'}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Page ID</label>
-                <input
-                  type="text"
-                  value={leadsPageId}
-                  onChange={e => setLeadsPageId(e.target.value)}
-                  className="w-full bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="ID da sua Página do Facebook"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Page Access Token</label>
-                <div className="relative">
-                  <input
-                    type={leadsShowPageToken ? 'text' : 'password'}
-                    value={leadsPageToken}
-                    onChange={e => setLeadsPageToken(e.target.value)}
-                    className="w-full bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="EAAxxxxxxxx..."
-                  />
-                  <button
-                    onClick={() => setLeadsShowPageToken(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                  >
-                    {leadsShowPageToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+          {/* ── WhatsApp ── */}
+          {integrationTab === 'whatsapp' && (
+            <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">WhatsApp — Notificações</h3>
+                  <p className="text-xs text-slate-500">Notificações automáticas para profissionais ao criar demandas</p>
                 </div>
               </div>
 
-              {/* Verify Token — shown after first save */}
-              {metaLeadsVerifyToken && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Verify Token</label>
-                  <div className="flex gap-2">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Provedor ativo</label>
+                <div className="flex gap-2">
+                  {([
+                    { id: 'zapi', label: 'Z-API', desc: 'Não oficial · SaaS gerenciado' },
+                    { id: 'meta', label: 'Meta Oficial', desc: 'API oficial da Meta' },
+                  ] as { id: WhatsAppProvider; label: string; desc: string }[]).map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => handleProviderChange(p.id)}
+                      className={`flex-1 flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
+                        whatsappProvider === p.id
+                          ? 'border-blue-500/50 bg-blue-500/10 text-blue-300'
+                          : 'border-white/[0.08] text-slate-400 hover:border-white/20 hover:text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <div className={`w-2 h-2 rounded-full ${whatsappProvider === p.id ? 'bg-blue-400' : 'bg-slate-600'}`} />
+                        <span className="text-sm font-semibold">{p.label}</span>
+                        {p.id === 'zapi' && zapiIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
+                        {p.id === 'meta' && metaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
+                      </div>
+                      <span className="text-xs text-slate-500 pl-4">{p.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {whatsappProvider === 'zapi' && (
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Instance ID</label>
                     <input
                       type="text"
-                      readOnly
-                      value={metaLeadsVerifyToken}
-                      className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                      value={zapiInstance}
+                      onChange={e => setZapiInstance(e.target.value)}
+                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: 3C56F5B73..."
                     />
-                    <button
-                      onClick={() => copyToClipboard(metaLeadsVerifyToken, setCopiedVerifyToken)}
-                      className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
-                    >
-                      {copiedVerifyToken ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copiedVerifyToken ? 'Copiado!' : 'Copiar'}
-                    </button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Use este token ao configurar o webhook no Meta Business Manager</p>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Token</label>
+                    <div className="relative">
+                      <input
+                        type={zapiShowToken ? 'text' : 'password'}
+                        value={zapiToken}
+                        onChange={e => setZapiToken(e.target.value)}
+                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Token da instância"
+                      />
+                      <button onClick={() => setZapiShowToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                        {zapiShowToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Client Token</label>
+                    <input
+                      type="password"
+                      value={zapiClientToken}
+                      onChange={e => setZapiClientToken(e.target.value)}
+                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Client-Token da conta Z-API"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleSaveZApi}
+                      disabled={!zapiInstance.trim() || !zapiToken.trim()}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      {zapiSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                      {zapiSaved ? 'Salvo!' : 'Salvar'}
+                    </button>
+                    {zapiIsConfigured && (
+                      <button onClick={() => { clearZApiConfig(); setZapiInstance(''); setZapiToken(''); setZapiClientToken(''); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                        Remover configuração
+                      </button>
+                    )}
+                  </div>
+                  <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
+                    <p>• Instance ID e Token no painel da instância em <strong className="text-slate-400">app.z-api.io</strong></p>
+                    <p>• Client Token em Conta → Security no painel Z-API</p>
+                  </div>
+                </div>
+              )}
+
+              {whatsappProvider === 'meta' && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2.5">
+                    <AlertTriangle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-300">
+                      Requer conta no <strong>Meta Business Manager</strong> com WhatsApp Business API ativado e um template de mensagem aprovado pela Meta.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Access Token</label>
+                    <div className="relative">
+                      <input
+                        type={metaShowToken ? 'text' : 'password'}
+                        value={metaToken}
+                        onChange={e => setMetaToken(e.target.value)}
+                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="EAAxxxxxxxx..."
+                      />
+                      <button onClick={() => setMetaShowToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                        {metaShowToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Phone Number ID</label>
+                    <input
+                      type="text"
+                      value={metaPhoneId}
+                      onChange={e => setMetaPhoneId(e.target.value)}
+                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="1234567890"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+                      Nome do Template
+                      <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(aprovado pela Meta)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={metaTemplate}
+                      onChange={e => setMetaTemplate(e.target.value)}
+                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="nova_demanda"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleSaveMeta}
+                      disabled={!metaToken.trim() || !metaPhoneId.trim()}
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      {metaSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                      {metaSaved ? 'Salvo!' : 'Salvar'}
+                    </button>
+                    {metaIsConfigured && (
+                      <button onClick={() => { clearMetaConfig(); setMetaToken(''); setMetaPhoneId(''); setMetaTemplate('nova_demanda'); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                        Remover configuração
+                      </button>
+                    )}
+                  </div>
+                  <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
+                    <p>• Access Token e Phone Number ID em <strong className="text-slate-400">business.facebook.com</strong> → WhatsApp → API Setup</p>
+                    <p>• O template deve ter 5 variáveis: profissional, demanda, cliente, prazo, prioridade</p>
+                    <p>• Crie e aprove o template em WhatsApp Manager → Message Templates</p>
+                  </div>
                 </div>
               )}
             </div>
+          )}
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleSaveLeadsConfig}
-                disabled={!leadsPageId.trim() || !leadsPageToken.trim()}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-              >
-                {leadsSaved ? <CheckCircle className="w-4 h-4" /> : <Target className="w-4 h-4" />}
-                {leadsSaved ? 'Salvo!' : 'Salvar configuração'}
-              </button>
-              {(metaLeadsPageId || metaLeadsPageToken) && (
-                <button
-                  onClick={() => { clearMetaLeadsConfig(); setLeadsPageId(''); setLeadsPageToken(''); }}
-                  className="text-xs text-slate-500 hover:text-red-400 transition-colors"
-                >
-                  Remover configuração
-                </button>
+          {/* ── Google Drive ── */}
+          {integrationTab === 'drive' && (
+            <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <HardDrive className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-100">Google Drive</h3>
+                    <p className="text-xs text-slate-500">Armazene e organize arquivos da agência diretamente no Drive</p>
+                  </div>
+                </div>
+                {isConnected() && (
+                  <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                    <CheckCircle className="w-3.5 h-3.5" /> Conectado
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Client ID (Google Cloud)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={driveClientId}
+                    onChange={e => setDriveClientId(e.target.value)}
+                    placeholder="xxxxxxxxxxxx-xxxxxxxx.apps.googleusercontent.com"
+                    className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={handleSaveClientId}
+                    disabled={!driveClientId.trim() || driveClientId === googleClientId}
+                    className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white rounded-lg transition-colors"
+                  >
+                    {driveSaved ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : 'Salvar'}
+                  </button>
+                </div>
+              </div>
+
+              {driveError && (
+                <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-400">{driveError}</p>
+                </div>
               )}
-            </div>
 
-            <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-              <p>• Acesse <strong className="text-slate-400">business.facebook.com</strong> → Configurações → Webhooks → adicione a URL acima</p>
-              <p>• Inscreva-se no objeto <strong className="text-slate-400">page</strong>, campo <strong className="text-slate-400">leadgen</strong>, usando o Verify Token gerado</p>
-              <p>• Page ID e Page Access Token: <strong className="text-slate-400">Meta Business Manager → Configurações → Páginas</strong></p>
+              <div className="flex items-center gap-3 flex-wrap">
+                {!isConnected() ? (
+                  <button
+                    onClick={handleConnectDrive}
+                    disabled={driveConnecting || !googleClientId}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    {driveConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+                    {driveConnecting ? 'Conectando...' : 'Conectar Drive'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleDisconnectDrive}
+                    className="flex items-center gap-2 text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Link2Off className="w-4 h-4" />
+                    Desconectar
+                  </button>
+                )}
+              </div>
+
+              <div className="border-t border-white/[0.05] pt-4 text-xs text-slate-500 space-y-1">
+                <p>• Acesse <strong className="text-slate-400">console.cloud.google.com</strong> → crie um projeto → ative a <strong className="text-slate-400">Google Drive API</strong></p>
+                <p>• Em Credenciais → crie OAuth 2.0 → tipo <strong className="text-slate-400">Aplicativo da Web</strong> → adicione o domínio do app em "Origens autorizadas"</p>
+                <p>• Copie o <strong className="text-slate-400">Client ID</strong> gerado e cole acima</p>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* ── Meta Lead Ads ── */}
+          {integrationTab === 'meta-leads' && (
+            <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Target className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">Meta Lead Ads — Captação automática</h3>
+                  <p className="text-xs text-slate-500">Leads dos formulários do Facebook/Instagram chegam automaticamente na aba Leads</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={WEBHOOK_URL}
+                    className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(WEBHOOK_URL, setCopiedWebhook)}
+                    className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                  >
+                    {copiedWebhook ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedWebhook ? 'Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Page ID</label>
+                  <input
+                    type="text"
+                    value={leadsPageId}
+                    onChange={e => setLeadsPageId(e.target.value)}
+                    className="w-full bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="ID da sua Página do Facebook"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Page Access Token</label>
+                  <div className="relative">
+                    <input
+                      type={leadsShowPageToken ? 'text' : 'password'}
+                      value={leadsPageToken}
+                      onChange={e => setLeadsPageToken(e.target.value)}
+                      className="w-full bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="EAAxxxxxxxx..."
+                    />
+                    <button onClick={() => setLeadsShowPageToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      {leadsShowPageToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {metaLeadsVerifyToken && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Verify Token</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={metaLeadsVerifyToken}
+                        className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                      />
+                      <button
+                        onClick={() => copyToClipboard(metaLeadsVerifyToken, setCopiedVerifyToken)}
+                        className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                      >
+                        {copiedVerifyToken ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedVerifyToken ? 'Copiado!' : 'Copiar'}
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">Use este token ao configurar o webhook no Meta Business Manager</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSaveLeadsConfig}
+                  disabled={!leadsPageId.trim() || !leadsPageToken.trim()}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  {leadsSaved ? <CheckCircle className="w-4 h-4" /> : <Target className="w-4 h-4" />}
+                  {leadsSaved ? 'Salvo!' : 'Salvar configuração'}
+                </button>
+                {(metaLeadsPageId || metaLeadsPageToken) && (
+                  <button
+                    onClick={() => { clearMetaLeadsConfig(); setLeadsPageId(''); setLeadsPageToken(''); }}
+                    className="text-xs text-slate-500 hover:text-red-400 transition-colors"
+                  >
+                    Remover configuração
+                  </button>
+                )}
+              </div>
+
+              <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
+                <p>• Acesse <strong className="text-slate-400">business.facebook.com</strong> → Configurações → Webhooks → adicione a URL acima</p>
+                <p>• Inscreva-se no objeto <strong className="text-slate-400">page</strong>, campo <strong className="text-slate-400">leadgen</strong>, usando o Verify Token gerado</p>
+                <p>• Page ID e Page Access Token: <strong className="text-slate-400">Meta Business Manager → Configurações → Páginas</strong></p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

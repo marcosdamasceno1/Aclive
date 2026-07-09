@@ -3,6 +3,18 @@ import { supabaseData } from '../lib/supabase';
 import { useAuthStore } from './authStore';
 import { requestGoogleTokenSilent } from '../lib/googleDrive';
 import type { WhatsAppProvider } from '../utils/whatsapp';
+import type { KanbanStage } from '../types';
+
+export const DEFAULT_KANBAN_STAGES: KanbanStage[] = [
+  { id: 'new',         label: 'Nova',      icon: '🚀', color: 'text-slate-300' },
+  { id: 'briefing',    label: 'Briefing',  icon: '📋', color: 'text-blue-400' },
+  { id: 'production',  label: 'Produção',  icon: '⚡', color: 'text-indigo-400' },
+  { id: 'review',      label: 'Revisão',   icon: '🔍', color: 'text-purple-400' },
+  { id: 'adjustments', label: 'Ajustes',   icon: '🔧', color: 'text-orange-400' },
+  { id: 'approved',    label: 'Aprovado',  icon: '✅', color: 'text-green-400' },
+  { id: 'completed',   label: 'Concluído', icon: '🎯', color: 'text-emerald-400', triggersFinancial: true, isTerminal: true },
+  { id: 'paid',        label: 'Pago',      icon: '💰', color: 'text-slate-500', isTerminal: true },
+];
 
 interface CompanySettingsState {
   // Google Drive
@@ -18,6 +30,8 @@ interface CompanySettingsState {
   metaLeadsPageId: string;
   metaLeadsPageToken: string;
   metaLeadsVerifyToken: string;
+  // Kanban stages
+  kanbanStages: KanbanStage[];
   // misc
   loading: boolean;
 
@@ -39,6 +53,9 @@ interface CompanySettingsState {
   // Meta Lead Ads
   saveMetaLeadsConfig: (pageId: string, pageToken: string, verifyToken: string) => Promise<void>;
   clearMetaLeadsConfig: () => Promise<void>;
+
+  // Kanban
+  saveKanbanStages: (stages: KanbanStage[]) => Promise<void>;
 }
 
 const companyId = () => useAuthStore.getState().currentUser?.companyId;
@@ -62,6 +79,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaLeadsPageId: '',
   metaLeadsPageToken: '',
   metaLeadsVerifyToken: '',
+  kanbanStages: DEFAULT_KANBAN_STAGES,
   loading: false,
 
   init: async () => {
@@ -73,7 +91,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       .select(
         'google_client_id, google_access_token, google_token_expiry, ' +
         'whatsapp_provider, meta_access_token, meta_phone_number_id, meta_template_name, ' +
-        'meta_leads_page_id, meta_leads_page_token, meta_leads_verify_token',
+        'meta_leads_page_id, meta_leads_page_token, meta_leads_verify_token, kanban_stages',
       )
       .eq('company_id', cid)
       .maybeSingle();
@@ -89,6 +107,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       metaLeadsPageId:      (row?.meta_leads_page_id     as string) || '',
       metaLeadsPageToken:   (row?.meta_leads_page_token  as string) || '',
       metaLeadsVerifyToken: (row?.meta_leads_verify_token as string) || '',
+      kanbanStages:         (row?.kanban_stages as KanbanStage[]) || DEFAULT_KANBAN_STAGES,
       loading: false,
     });
   },
@@ -169,5 +188,12 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   clearMetaLeadsConfig: async () => {
     set({ metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '' });
     await upsert({ meta_leads_page_id: null, meta_leads_page_token: null, meta_leads_verify_token: null });
+  },
+
+  // ── Kanban stages ──────────────────────────────────────────────────────────
+
+  saveKanbanStages: async (stages) => {
+    set({ kanbanStages: stages });
+    await upsert({ kanban_stages: stages });
   },
 }));

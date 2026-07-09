@@ -23,15 +23,16 @@ export type TaskType =
   | 'posting'
   | 'other';
 
-export type KanbanStatus =
-  | 'new'
-  | 'briefing'
-  | 'production'
-  | 'review'
-  | 'adjustments'
-  | 'approved'
-  | 'completed'
-  | 'paid';
+export type KanbanStatus = string;
+
+export interface KanbanStage {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  triggersFinancial?: boolean;
+  isTerminal?: boolean;
+}
 
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 

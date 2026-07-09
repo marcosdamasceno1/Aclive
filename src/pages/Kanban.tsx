@@ -12,39 +12,47 @@ import { useClientsStore } from '../store/clientsStore';
 import { useProfessionalsStore } from '../store/professionalsStore';
 import { useFinancialStore } from '../store/financialStore';
 import { useAuthStore } from '../store/authStore';
-import type { Demand, KanbanStatus, Priority, TaskType } from '../types';
+import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES } from '../store/companySettingsStore';
+import type { Demand, KanbanStatus, KanbanStage, Priority, TaskType } from '../types';
 import {
   formatCurrency, formatDate, formatDateTime,
-  getPriorityColor, getPriorityLabel, getStatusLabel, getStatusColor,
-  getTaskTypeLabel, isOverdue, parseLocalDate,
+  getPriorityColor, getPriorityLabel, getTaskTypeLabel, isOverdue, parseLocalDate,
 } from '../utils/formatters';
 import { canMoveDemands, canCreateDemands, canViewAllDemands } from '../utils/permissions';
 import {
   AlertTriangle, Calendar, DollarSign, ChevronDown,
   Plus, X, Edit2, Trash2, MessageSquare, Send, MessageCircle, CheckCircle,
+  Settings2, ChevronUp, Pencil, Save, GripVertical,
 } from 'lucide-react';
 import { sendWhatsAppNotification, getZApiConfig } from '../utils/whatsapp';
 
-// ─── Column config ─────────────────────────────────────────────────────────────
+// ─── Stage color presets ───────────────────────────────────────────────────────
 
-const COLUMNS: { id: KanbanStatus; label: string; icon: string; accent: string }[] = [
-  { id: 'new',         label: 'Nova',       icon: '🚀', accent: 'text-slate-300' },
-  { id: 'briefing',    label: 'Briefing',   icon: '📋', accent: 'text-blue-400' },
-  { id: 'production',  label: 'Produção',   icon: '⚡', accent: 'text-indigo-400' },
-  { id: 'review',      label: 'Revisão',    icon: '🔍', accent: 'text-purple-400' },
-  { id: 'adjustments', label: 'Ajustes',    icon: '🔧', accent: 'text-orange-400' },
-  { id: 'approved',    label: 'Aprovado',   icon: '✅', accent: 'text-green-400' },
-  { id: 'completed',   label: 'Concluído',  icon: '🎯', accent: 'text-emerald-400' },
-  { id: 'paid',        label: 'Pago',       icon: '💰', accent: 'text-slate-500' },
+const STAGE_COLORS: { cls: string; dot: string; label: string }[] = [
+  { cls: 'text-slate-300',  dot: 'bg-slate-300',  label: 'Cinza'    },
+  { cls: 'text-blue-400',   dot: 'bg-blue-400',   label: 'Azul'     },
+  { cls: 'text-indigo-400', dot: 'bg-indigo-400', label: 'Índigo'   },
+  { cls: 'text-purple-400', dot: 'bg-purple-400', label: 'Roxo'     },
+  { cls: 'text-orange-400', dot: 'bg-orange-400', label: 'Laranja'  },
+  { cls: 'text-green-400',  dot: 'bg-green-400',  label: 'Verde'    },
+  { cls: 'text-emerald-400',dot: 'bg-emerald-400',label: 'Esmeralda'},
+  { cls: 'text-red-400',    dot: 'bg-red-400',    label: 'Vermelho' },
+  { cls: 'text-pink-400',   dot: 'bg-pink-400',   label: 'Rosa'     },
+  { cls: 'text-yellow-400', dot: 'bg-yellow-400', label: 'Amarelo'  },
+  { cls: 'text-cyan-400',   dot: 'bg-cyan-400',   label: 'Ciano'    },
+  { cls: 'text-teal-400',   dot: 'bg-teal-400',   label: 'Teal'     },
+  { cls: 'text-slate-500',  dot: 'bg-slate-500',  label: 'Escuro'   },
 ];
+
+const dotFor = (color: string) =>
+  STAGE_COLORS.find(c => c.cls === color)?.dot ?? 'bg-slate-400';
+
+// ─── Consts ────────────────────────────────────────────────────────────────────
 
 const TASK_TYPES: TaskType[] = [
   'video', 'art', 'copy', 'traffic', 'meeting', 'planning', 'editing', 'review', 'posting', 'other',
 ];
 const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent'];
-const STATUSES: KanbanStatus[] = [
-  'new', 'briefing', 'production', 'review', 'adjustments', 'approved', 'completed', 'paid',
-];
 
 const emptyForm = {
   clientId: '',
@@ -65,6 +73,8 @@ interface CardProps {
   demand: Demand;
   clientName: string;
   professionalName: string;
+  stageLabel: string;
+  stageColor: string;
   onOpen: (id: string) => void;
   didDrag: React.MutableRefObject<boolean>;
 }
@@ -141,7 +151,7 @@ const OverlayCard = ({ demand, clientName }: { demand: Demand; clientName: strin
 // ─── Column ────────────────────────────────────────────────────────────────────
 
 interface ColumnProps {
-  col: typeof COLUMNS[number];
+  stage: KanbanStage;
   demands: Demand[];
   clients: { id: string; companyName: string }[];
   professionals: { id: string; name: string }[];
@@ -150,14 +160,14 @@ interface ColumnProps {
   didDrag: React.MutableRefObject<boolean>;
 }
 
-const KanbanColumn = ({ col, demands, clients, professionals, isLast, onOpen, didDrag }: ColumnProps) => {
-  const { setNodeRef, isOver } = useDroppable({ id: col.id });
+const KanbanColumn = ({ stage, demands, clients, professionals, isLast, onOpen, didDrag }: ColumnProps) => {
+  const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   return (
     <div className={`flex flex-col flex-shrink-0 w-56 ${!isLast ? 'border-r border-white/[0.05]' : ''}`}>
       <div className={`flex items-center gap-2 px-3 py-3 transition-colors ${isOver ? 'bg-blue-500/5' : ''}`}>
-        <span className="text-sm leading-none">{col.icon}</span>
-        <span className={`text-xs font-bold uppercase tracking-widest ${col.accent}`}>{col.label}</span>
+        <span className="text-sm leading-none">{stage.icon}</span>
+        <span className={`text-xs font-bold uppercase tracking-widest ${stage.color}`}>{stage.label}</span>
         <span className="ml-auto text-xs font-bold text-slate-600 bg-white/[0.04] px-1.5 py-0.5 rounded-full min-w-5 text-center">
           {demands.length}
         </span>
@@ -177,6 +187,8 @@ const KanbanColumn = ({ col, demands, clients, professionals, isLast, onOpen, di
                 demand={demand}
                 clientName={client?.companyName || '—'}
                 professionalName={prof?.name || '—'}
+                stageLabel={stage.label}
+                stageColor={stage.color}
                 onOpen={onOpen}
                 didDrag={didDrag}
               />
@@ -203,46 +215,63 @@ export const Kanban = () => {
   const { clients } = useClientsStore();
   const { professionals } = useProfessionalsStore();
   const { registerMovement } = useFinancialStore();
+  const { kanbanStages, saveKanbanStages } = useCompanySettingsStore();
+
+  const columns: KanbanStage[] = kanbanStages?.length ? kanbanStages : DEFAULT_KANBAN_STAGES;
+
+  const stageMap = useMemo(
+    () => Object.fromEntries(columns.map(s => [s.id, s])),
+    [columns],
+  );
 
   // DnD
   const [activeId, setActiveId] = useState<string | null>(null);
   const [confirmMove, setConfirmMove] = useState<{
-    demandId: string; newStatus: KanbanStatus; value: number; professionalName: string;
+    demandId: string; newStatus: string; value: number; professionalName: string; stageLabel: string;
   } | null>(null);
-  const [pendingMove, setPendingMove] = useState<{ id: string; status: KanbanStatus } | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ id: string; status: string } | null>(null);
   const didDrag = useRef(false);
 
   // Filters
   const [clientFilter, setClientFilter] = useState<'all' | string>('all');
 
   // Modals
-  const [showModal, setShowModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [viewingId, setViewingId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
-  const [commentText, setCommentText] = useState('');
+  const [showModal, setShowModal]           = useState(false);
+  const [showViewModal, setShowViewModal]   = useState(false);
+  const [showStagesModal, setShowStagesModal] = useState(false);
+  const [editingId, setEditingId]           = useState<string | null>(null);
+  const [viewingId, setViewingId]           = useState<string | null>(null);
+  const [deleteId, setDeleteId]             = useState<string | null>(null);
+  const [form, setForm]                     = useState(emptyForm);
+  const [commentText, setCommentText]       = useState('');
   const [whatsappStatus, setWhatsappStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
-  const [whatsappMsg, setWhatsappMsg] = useState('');
+  const [whatsappMsg, setWhatsappMsg]       = useState('');
   const zapiConfigured = !!getZApiConfig();
 
-  const canCreate = currentUser ? canCreateDemands(currentUser.role) : false;
+  // Stage management state
+  const [editingStages, setEditingStages]   = useState<KanbanStage[]>([]);
+  const [stageEditId, setStageEditId]       = useState<string | null>(null);
+  const [stageForm, setStageForm]           = useState({ label: '', icon: '', color: '' });
+  const [newStageForm, setNewStageForm]     = useState({ label: '', icon: '📌', color: 'text-blue-400' });
+  const [stageSaving, setStageSaving]       = useState(false);
+  const [stageDeleteWarn, setStageDeleteWarn] = useState<string | null>(null);
+
+  const canCreate  = currentUser ? canCreateDemands(currentUser.role) : false;
   const canViewAll = currentUser ? canViewAllDemands(currentUser.role) : false;
-  const canMove = currentUser ? canMoveDemands(currentUser.role) : false;
+  const canMove    = currentUser ? canMoveDemands(currentUser.role) : false;
+  const isAdmin    = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
   const canEditDemand = (demand: Demand) => {
     if (!currentUser) return false;
     if (currentUser.role === 'admin' || currentUser.role === 'manager') return true;
-    if (currentUser.role === 'professional') return demand.createdBy === currentUser.id;
-    return false;
+    return currentUser.role === 'professional' && demand.createdBy === currentUser.id;
   };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  // Auto-fill value when professional + task type changes
+  // Auto-fill value
   useEffect(() => {
     if (form.professionalId && form.taskType) {
       const prof = professionals.find(p => p.id === form.professionalId);
@@ -251,7 +280,7 @@ export const Kanban = () => {
     }
   }, [form.professionalId, form.taskType, professionals]);
 
-  // Filtered demands for board
+  // Filtered demands
   const filteredDemands = useMemo(() => {
     let list = demands;
     if (!canViewAll && currentUser?.role === 'professional') {
@@ -264,18 +293,25 @@ export const Kanban = () => {
   }, [demands, currentUser, canViewAll, clientFilter]);
 
   const demandsByColumn = useMemo(() => {
-    const byCol = {} as Record<KanbanStatus, Demand[]>;
-    COLUMNS.forEach(col => { byCol[col.id] = []; });
-    filteredDemands.forEach(d => { if (byCol[d.status]) byCol[d.status].push(d); });
+    const byCol: Record<string, Demand[]> = {};
+    columns.forEach(col => { byCol[col.id] = []; });
+    filteredDemands.forEach(d => {
+      if (byCol[d.status] !== undefined) {
+        byCol[d.status].push(d);
+      } else {
+        // Demand with unknown status → put in first column
+        const firstId = columns[0]?.id;
+        if (firstId) byCol[firstId].push(d);
+      }
+    });
     return byCol;
-  }, [filteredDemands]);
+  }, [filteredDemands, columns]);
 
   const activeDemand = activeId ? demands.find(d => d.id === activeId) : null;
   const activeClient = activeDemand ? clients.find(c => c.id === activeDemand.clientId) : null;
 
   const visibleClientIds = useMemo(() => {
     const ids = new Set<string>();
-    // Build from unfiltered source so pills don't disappear when a client is selected
     let source = demands;
     if (!canViewAll && currentUser?.role === 'professional') {
       source = demands.filter(d =>
@@ -288,10 +324,14 @@ export const Kanban = () => {
 
   const visibleClients = useMemo(
     () => clients.filter(c => visibleClientIds.has(c.id)),
-    [clients, visibleClientIds]
+    [clients, visibleClientIds],
   );
 
-  // ── DnD handlers
+  const openCount = filteredDemands.filter(d => !stageMap[d.status]?.isTerminal).length;
+  const completedCount = filteredDemands.filter(d => stageMap[d.status]?.triggersFinancial).length;
+
+  // ── DnD handlers ──────────────────────────────────────────────────────────
+
   const handleDragStart = ({ active }: DragStartEvent) => {
     if (!canMove) return;
     didDrag.current = true;
@@ -306,13 +346,14 @@ export const Kanban = () => {
     const draggedDemand = demands.find(d => d.id === active.id);
     if (!draggedDemand) return;
 
-    let targetStatus: KanbanStatus | null = null;
-    const columnIds = COLUMNS.map(c => c.id);
-    if (columnIds.includes(over.id as KanbanStatus)) {
-      targetStatus = over.id as KanbanStatus;
+    const columnIds = columns.map(c => c.id);
+    let targetStatus: string | null = null;
+
+    if (columnIds.includes(over.id as string)) {
+      targetStatus = over.id as string;
     } else {
-      for (const col of COLUMNS) {
-        if (demandsByColumn[col.id].some(d => d.id === over.id)) {
+      for (const col of columns) {
+        if ((demandsByColumn[col.id] || []).some(d => d.id === over.id)) {
           targetStatus = col.id;
           break;
         }
@@ -321,13 +362,15 @@ export const Kanban = () => {
 
     if (!targetStatus || targetStatus === draggedDemand.status) return;
 
-    if (targetStatus === 'completed' && !draggedDemand.financialRegistered) {
+    const targetStage = stageMap[targetStatus];
+    if (targetStage?.triggersFinancial && !draggedDemand.financialRegistered) {
       const prof = professionals.find(p => p.id === draggedDemand.professionalId);
       setConfirmMove({
         demandId: draggedDemand.id,
         newStatus: targetStatus,
         value: draggedDemand.value,
         professionalName: prof?.name || 'profissional',
+        stageLabel: targetStage.label,
       });
       setPendingMove({ id: draggedDemand.id, status: targetStatus });
     } else {
@@ -335,8 +378,9 @@ export const Kanban = () => {
     }
   };
 
-  const executeMove = (demandId: string, newStatus: KanbanStatus, demand: Demand) => {
-    if (newStatus === 'completed' && !demand.financialRegistered) {
+  const executeMove = (demandId: string, newStatus: string, demand: Demand) => {
+    const stage = stageMap[newStatus];
+    if (stage?.triggersFinancial && !demand.financialRegistered) {
       const client = clients.find(c => c.id === demand.clientId);
       registerMovement({
         professionalId: demand.professionalId,
@@ -361,9 +405,10 @@ export const Kanban = () => {
     setPendingMove(null);
   };
 
-  // ── Demand CRUD
+  // ── Demand CRUD ──────────────────────────────────────────────────────────────
+
   const openAdd = () => {
-    setForm({ ...emptyForm });
+    setForm({ ...emptyForm, status: columns[0]?.id || 'new' });
     setEditingId(null);
     setShowModal(true);
   };
@@ -381,13 +426,11 @@ export const Kanban = () => {
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.professionalId || !form.clientId) return;
-    // Exclude UI-only field from the demand data sent to Supabase
     const { notifyWhatsapp, ...demandFields } = form;
     if (editingId) {
       updateDemand(editingId, demandFields);
     } else {
       const newDemand = addDemand({ ...demandFields, createdBy: currentUser?.id || '' });
-
       if (notifyWhatsapp) {
         const prof   = professionals.find(p => p.id === form.professionalId);
         const client = clients.find(c => c.id === form.clientId);
@@ -403,13 +446,8 @@ export const Kanban = () => {
             taskType:         form.taskType,
             value:            form.value,
           });
-          if (err) {
-            setWhatsappStatus('error');
-            setWhatsappMsg(err);
-          } else {
-            setWhatsappStatus('ok');
-            setWhatsappMsg('WhatsApp enviado!');
-          }
+          if (err) { setWhatsappStatus('error'); setWhatsappMsg(err); }
+          else     { setWhatsappStatus('ok');    setWhatsappMsg('WhatsApp enviado!'); }
           setTimeout(() => setWhatsappStatus('idle'), 4000);
         }
       }
@@ -418,35 +456,90 @@ export const Kanban = () => {
   };
 
   const handleDelete = () => {
-    if (deleteId) {
-      deleteDemand(deleteId);
-      setDeleteId(null);
-      setShowViewModal(false);
-    }
+    if (deleteId) { deleteDemand(deleteId); setDeleteId(null); setShowViewModal(false); }
   };
 
   const handleAddComment = () => {
     if (!commentText.trim() || !viewingId || !currentUser) return;
-    addComment(viewingId, {
-      authorId: currentUser.id,
-      authorName: currentUser.name,
-      text: commentText.trim(),
-    });
+    addComment(viewingId, { authorId: currentUser.id, authorName: currentUser.name, text: commentText.trim() });
     setCommentText('');
   };
 
-  const openView = (id: string) => {
-    setViewingId(id);
-    setShowViewModal(true);
-  };
+  const openView = (id: string) => { setViewingId(id); setShowViewModal(true); };
 
-  const viewingDemand = demands.find(d => d.id === viewingId);
-  const viewingClient = clients.find(c => c.id === viewingDemand?.clientId);
+  const viewingDemand      = demands.find(d => d.id === viewingId);
+  const viewingClient      = clients.find(c => c.id === viewingDemand?.clientId);
   const viewingProfessional = professionals.find(p => p.id === viewingDemand?.professionalId);
 
   const selectedClientName = clientFilter === 'all'
     ? 'Todos os clientes'
     : clients.find(c => c.id === clientFilter)?.companyName || 'Cliente';
+
+  // ── Stage management ──────────────────────────────────────────────────────
+
+  const openStagesModal = () => {
+    setEditingStages(columns.map(s => ({ ...s })));
+    setStageEditId(null);
+    setStageDeleteWarn(null);
+    setNewStageForm({ label: '', icon: '📌', color: 'text-blue-400' });
+    setShowStagesModal(true);
+  };
+
+  const moveStageUp = (idx: number) => {
+    if (idx === 0) return;
+    const arr = [...editingStages];
+    [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+    setEditingStages(arr);
+  };
+
+  const moveStageDown = (idx: number) => {
+    if (idx === editingStages.length - 1) return;
+    const arr = [...editingStages];
+    [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+    setEditingStages(arr);
+  };
+
+  const startEditStage = (stage: KanbanStage) => {
+    setStageEditId(stage.id);
+    setStageForm({ label: stage.label, icon: stage.icon, color: stage.color });
+  };
+
+  const saveStageEdit = () => {
+    if (!stageForm.label.trim()) return;
+    setEditingStages(prev => prev.map(s =>
+      s.id === stageEditId ? { ...s, label: stageForm.label.trim(), icon: stageForm.icon || s.icon, color: stageForm.color } : s
+    ));
+    setStageEditId(null);
+  };
+
+  const tryDeleteStage = (id: string) => {
+    const hasDemandsInStage = demands.some(d => d.status === id);
+    if (hasDemandsInStage) { setStageDeleteWarn(id); return; }
+    setEditingStages(prev => prev.filter(s => s.id !== id));
+    setStageDeleteWarn(null);
+  };
+
+  const addNewStage = () => {
+    if (!newStageForm.label.trim()) return;
+    const id = `stage_${Date.now()}`;
+    setEditingStages(prev => [...prev, {
+      id,
+      label: newStageForm.label.trim(),
+      icon:  newStageForm.icon || '📌',
+      color: newStageForm.color,
+    }]);
+    setNewStageForm({ label: '', icon: '📌', color: 'text-blue-400' });
+  };
+
+  const saveStages = async () => {
+    if (stageEditId) saveStageEdit();
+    setStageSaving(true);
+    await saveKanbanStages(editingStages);
+    setStageSaving(false);
+    setShowStagesModal(false);
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full -mx-6 -mt-6">
@@ -456,12 +549,22 @@ export const Kanban = () => {
         <div>
           <h1 className="text-base font-bold text-slate-100 leading-none">Esteira de Produção</h1>
           <p className="text-xs text-slate-600 mt-0.5">
-            {filteredDemands.filter(d => !['completed', 'paid'].includes(d.status)).length} em aberto
-            · {filteredDemands.filter(d => d.status === 'completed').length} concluída(s)
+            {openCount} em aberto · {completedCount} concluída(s)
           </p>
         </div>
 
         <div className="flex-1" />
+
+        {isAdmin && (
+          <button
+            onClick={openStagesModal}
+            className="flex items-center gap-1.5 border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/20 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+            title="Gerenciar etapas"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            Etapas
+          </button>
+        )}
 
         {canCreate && (
           <button
@@ -539,16 +642,16 @@ export const Kanban = () => {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex h-full" style={{ minWidth: `${COLUMNS.length * 224 + 48}px` }}>
+          <div className="flex h-full" style={{ minWidth: `${columns.length * 224 + 48}px` }}>
             <div className="w-6 flex-shrink-0" />
-            {COLUMNS.map((col, i) => (
+            {columns.map((stage, i) => (
               <KanbanColumn
-                key={col.id}
-                col={col}
-                demands={demandsByColumn[col.id] || []}
+                key={stage.id}
+                stage={stage}
+                demands={demandsByColumn[stage.id] || []}
                 clients={clients}
                 professionals={professionals}
-                isLast={i === COLUMNS.length - 1}
+                isLast={i === columns.length - 1}
                 onOpen={openView}
                 didDrag={didDrag}
               />
@@ -564,7 +667,7 @@ export const Kanban = () => {
         </DndContext>
       </div>
 
-      {/* ── WhatsApp status toast ── */}
+      {/* ── WhatsApp toast ── */}
       {whatsappStatus !== 'idle' && (
         <div className={`fixed bottom-6 right-6 z-[70] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-semibold transition-all ${
           whatsappStatus === 'sending' ? 'bg-[#21262d] border-white/10 text-slate-300' :
@@ -575,6 +678,198 @@ export const Kanban = () => {
           {whatsappStatus === 'ok'      && <CheckCircle className="w-4 h-4" />}
           {whatsappStatus === 'error'   && <AlertTriangle className="w-4 h-4" />}
           {whatsappStatus === 'sending' ? 'Enviando WhatsApp…' : whatsappMsg}
+        </div>
+      )}
+
+      {/* ── Stages Management Modal ── */}
+      {showStagesModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] flex-shrink-0">
+              <div>
+                <h2 className="text-base font-bold text-slate-100">Gerenciar Etapas</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Arranje, renomeie ou crie novas etapas para sua esteira</p>
+              </div>
+              <button onClick={() => setShowStagesModal(false)} className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-white/[0.06]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-4 space-y-2">
+              {editingStages.map((stage, idx) => (
+                <div key={stage.id}>
+                  {stageEditId === stage.id ? (
+                    /* ── Inline edit form ── */
+                    <div className="bg-[#161b22] border border-blue-500/30 rounded-xl p-3 space-y-3">
+                      <div className="grid grid-cols-[3rem_1fr] gap-2">
+                        <div>
+                          <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wide">Ícone</label>
+                          <input
+                            type="text"
+                            value={stageForm.icon}
+                            onChange={e => setStageForm(f => ({ ...f, icon: e.target.value }))}
+                            maxLength={4}
+                            className="w-full bg-[#0d1117] border border-white/[0.08] rounded-lg px-2 py-2 text-base text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wide">Nome *</label>
+                          <input
+                            type="text"
+                            value={stageForm.label}
+                            onChange={e => setStageForm(f => ({ ...f, label: e.target.value }))}
+                            autoFocus
+                            className="w-full bg-[#0d1117] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Nome da etapa"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500 mb-1.5 uppercase tracking-wide">Cor</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {STAGE_COLORS.map(c => (
+                            <button
+                              key={c.cls}
+                              onClick={() => setStageForm(f => ({ ...f, color: c.cls }))}
+                              className={`w-6 h-6 rounded-full border-2 transition-all ${c.dot} ${
+                                stageForm.color === c.cls ? 'border-white scale-110' : 'border-transparent opacity-60 hover:opacity-100'
+                              }`}
+                              title={c.label}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => setStageEditId(null)}
+                          className="flex-1 border border-white/[0.08] text-slate-500 py-1.5 rounded-lg text-xs font-medium hover:bg-white/[0.04]"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={saveStageEdit}
+                          disabled={!stageForm.label.trim()}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
+                        >
+                          <Save className="w-3.5 h-3.5" /> Salvar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Stage row ── */
+                    <div className="flex items-center gap-2 bg-[#161b22] border border-white/[0.06] rounded-xl px-3 py-2.5 group hover:border-white/[0.12] transition-colors">
+                      <GripVertical className="w-3.5 h-3.5 text-slate-700 flex-shrink-0" />
+                      <span className="text-base leading-none flex-shrink-0">{stage.icon}</span>
+                      <span className={`text-sm font-semibold flex-1 ${stage.color}`}>{stage.label}</span>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {stage.triggersFinancial && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold mr-1">Financeiro</span>
+                        )}
+                        {stage.isTerminal && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 font-semibold mr-1">Terminal</span>
+                        )}
+                        <button
+                          onClick={() => moveStageUp(idx)}
+                          disabled={idx === 0}
+                          className="p-1 text-slate-600 hover:text-slate-300 disabled:opacity-20 rounded transition-colors"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => moveStageDown(idx)}
+                          disabled={idx === editingStages.length - 1}
+                          className="p-1 text-slate-600 hover:text-slate-300 disabled:opacity-20 rounded transition-colors"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => startEditStage(stage)}
+                          className="p-1 text-slate-600 hover:text-blue-400 rounded transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => tryDeleteStage(stage.id)}
+                          className="p-1 text-slate-600 hover:text-red-400 rounded transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delete warning */}
+                  {stageDeleteWarn === stage.id && (
+                    <div className="mt-1 flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 text-xs text-orange-400">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="flex-1">Esta etapa tem demandas. Mova-as primeiro.</span>
+                      <button onClick={() => setStageDeleteWarn(null)} className="text-orange-300 hover:text-white">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* ── Add new stage ── */}
+              <div className="border-t border-white/[0.05] pt-4 space-y-2">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Nova etapa</p>
+                <div className="grid grid-cols-[3rem_1fr] gap-2">
+                  <input
+                    type="text"
+                    value={newStageForm.icon}
+                    onChange={e => setNewStageForm(f => ({ ...f, icon: e.target.value }))}
+                    maxLength={4}
+                    className="bg-[#161b22] border border-white/[0.08] rounded-lg px-2 py-2 text-base text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="text"
+                    value={newStageForm.label}
+                    onChange={e => setNewStageForm(f => ({ ...f, label: e.target.value }))}
+                    onKeyDown={e => e.key === 'Enter' && addNewStage()}
+                    className="bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Nome da etapa"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {STAGE_COLORS.map(c => (
+                    <button
+                      key={c.cls}
+                      onClick={() => setNewStageForm(f => ({ ...f, color: c.cls }))}
+                      className={`w-5 h-5 rounded-full border-2 transition-all ${c.dot} ${
+                        newStageForm.color === c.cls ? 'border-white scale-110' : 'border-transparent opacity-50 hover:opacity-100'
+                      }`}
+                      title={c.label}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={addNewStage}
+                  disabled={!newStageForm.label.trim()}
+                  className="w-full flex items-center justify-center gap-2 border border-dashed border-white/[0.1] text-slate-500 hover:text-slate-300 hover:border-white/20 disabled:opacity-30 py-2 rounded-xl text-sm font-medium transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Adicionar etapa
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05] flex-shrink-0">
+              <button
+                onClick={() => setShowStagesModal(false)}
+                className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveStages}
+                disabled={stageSaving || editingStages.length === 0}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2"
+              >
+                {stageSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
+                {stageSaving ? 'Salvando...' : 'Salvar etapas'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -645,10 +940,7 @@ export const Kanban = () => {
                     )}
                   </label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.value}
+                    type="number" min="0" step="0.01" value={form.value}
                     onChange={e => setForm({ ...form, value: parseFloat(e.target.value) || 0 })}
                     className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -656,8 +948,7 @@ export const Kanban = () => {
                 <div>
                   <label className="block text-sm font-medium text-slate-200 mb-1.5">Prazo</label>
                   <input
-                    type="date"
-                    value={form.deadline}
+                    type="date" value={form.deadline}
                     onChange={e => setForm({ ...form, deadline: e.target.value })}
                     className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -677,10 +968,12 @@ export const Kanban = () => {
                     <label className="block text-sm font-medium text-slate-200 mb-1.5">Status</label>
                     <select
                       value={form.status}
-                      onChange={e => setForm({ ...form, status: e.target.value as KanbanStatus })}
+                      onChange={e => setForm({ ...form, status: e.target.value })}
                       className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#21262d]"
                     >
-                      {STATUSES.map(s => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
+                      {columns.map(s => (
+                        <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                      ))}
                     </select>
                   </div>
                 )}
@@ -696,13 +989,13 @@ export const Kanban = () => {
                 />
               </div>
 
-              {/* WhatsApp notification — only for new demands */}
               {!editingId && (
-                <div className={`flex items-start gap-3 rounded-xl px-4 py-3 border transition-colors cursor-pointer ${
-                  form.notifyWhatsapp
-                    ? 'bg-green-500/10 border-green-500/30'
-                    : 'bg-white/[0.03] border-white/[0.08] hover:border-white/20'
-                }`}
+                <div
+                  className={`flex items-start gap-3 rounded-xl px-4 py-3 border transition-colors cursor-pointer ${
+                    form.notifyWhatsapp
+                      ? 'bg-green-500/10 border-green-500/30'
+                      : 'bg-white/[0.03] border-white/[0.08] hover:border-white/20'
+                  }`}
                   onClick={() => setForm(f => ({ ...f, notifyWhatsapp: !f.notifyWhatsapp }))}
                 >
                   <input
@@ -758,14 +1051,12 @@ export const Kanban = () => {
                     <button
                       onClick={() => { setShowViewModal(false); openEdit(viewingDemand); }}
                       className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-                      title="Editar"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setDeleteId(viewingDemand.id)}
                       className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                      title="Excluir"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -781,9 +1072,15 @@ export const Kanban = () => {
             </div>
             <div className="p-6 space-y-5">
               <div className="flex flex-wrap gap-2">
-                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getStatusColor(viewingDemand.status)}`}>
-                  {getStatusLabel(viewingDemand.status)}
-                </span>
+                {/* Stage badge from dynamic stages */}
+                {(() => {
+                  const stage = stageMap[viewingDemand.status];
+                  return stage ? (
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold bg-white/[0.06] ${stage.color}`}>
+                      {stage.icon} {stage.label}
+                    </span>
+                  ) : null;
+                })()}
                 <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getPriorityColor(viewingDemand.priority)}`}>
                   {getPriorityLabel(viewingDemand.priority)}
                 </span>
@@ -849,8 +1146,7 @@ export const Kanban = () => {
                 )}
                 <div className="flex gap-2 mt-3">
                   <input
-                    type="text"
-                    value={commentText}
+                    type="text" value={commentText}
                     onChange={e => setCommentText(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleAddComment()}
                     placeholder="Adicionar comentário..."
@@ -903,7 +1199,7 @@ export const Kanban = () => {
             </div>
             <div className="bg-emerald-500/[0.07] rounded-xl p-4 mb-5 border border-emerald-500/20">
               <p className="text-sm text-slate-200 leading-relaxed">
-                Mover para <strong>Concluído</strong> vai registrar{' '}
+                Mover para <strong>{confirmMove.stageLabel}</strong> vai registrar{' '}
                 <span className="text-emerald-400 font-bold">{formatCurrency(confirmMove.value)}</span>{' '}
                 no saldo de <strong>{confirmMove.professionalName}</strong>.
               </p>

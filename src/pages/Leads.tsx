@@ -9,11 +9,12 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { useLeadsStore } from '../store/leadsStore';
 import { useClientsStore } from '../store/clientsStore';
+import { useCompanySettingsStore } from '../store/companySettingsStore';
 import type { Lead, LeadStatus } from '../types';
 import {
   Plus, Search, Trash2, X, ExternalLink, Phone, MapPin,
   Star, Globe, Target, Loader2, CheckSquare, Square, Key,
-  Building2, ArrowRight, AlertTriangle, Mail,
+  Building2, ArrowRight, AlertTriangle, Mail, RefreshCw, CheckCircle,
 } from 'lucide-react';
 
 // ─── Pipeline config ───────────────────────────────────────────────────────────
@@ -267,6 +268,7 @@ const emptyForm = { name: '', phone: '', website: '', city: '', category: '', no
 export const Leads = () => {
   const { leads, addLead, updateLead, updateStatus, deleteLead, importLeads, dbError } = useLeadsStore();
   const { addClient } = useClientsStore();
+  const { metaLeadsPageId, metaLeadsPageToken } = useCompanySettingsStore();
 
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -295,6 +297,10 @@ export const Leads = () => {
   // Detail edit
   const [detailNotes, setDetailNotes]   = useState('');
   const [detailStatus, setDetailStatus] = useState<LeadStatus>('new');
+
+  // Meta sync
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
+  const [syncMsg, setSyncMsg]       = useState('');
 
   // dnd sensors — need 5px movement to start drag (avoids blocking clicks)
   const sensors = useSensors(
@@ -487,6 +493,86 @@ export const Leads = () => {
     setShowDetail(null);
   };
 
+  // ─── Meta sync ───────────────────────────────────────────────────────────────
+
+  const LS_META_IDS = 'meta_imported_ids';
+
+  const syncMeta = async () => {
+    if (!metaLeadsPageId || !metaLeadsPageToken) return;
+    const importedIds = new Set<string>(JSON.parse(localStorage.getItem(LS_META_IDS) || '[]'));
+
+    setSyncStatus('running');
+    setSyncMsg('Buscando formulários...');
+
+    try {
+      const formsRes = await fetch(
+        `https://graph.facebook.com/v19.0/${metaLeadsPageId}/leadgen_forms?fields=id,name&access_token=${metaLeadsPageToken}&limit=50`
+      );
+      if (!formsRes.ok) throw new Error('Token inválido ou sem permissão. Verifique o Page Access Token nas Configurações.');
+      const formsData = await formsRes.json();
+      if (formsData.error) throw new Error(formsData.error.message);
+      const forms: { id: string; name: string }[] = formsData.data || [];
+
+      if (forms.length === 0) {
+        setSyncStatus('done');
+        setSyncMsg('Nenhum formulário encontrado nesta página.');
+        setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 4000);
+        return;
+      }
+
+      const newLeads: Omit<Lead, 'id' | 'createdAt'>[] = [];
+
+      for (const form of forms) {
+        setSyncMsg(`Buscando leads de "${form.name}"...`);
+        const leadsRes = await fetch(
+          `https://graph.facebook.com/v19.0/${form.id}/leads?fields=id,field_data,created_time&access_token=${metaLeadsPageToken}&limit=100`
+        );
+        if (!leadsRes.ok) continue;
+        const leadsData = await leadsRes.json();
+        if (leadsData.error) continue;
+
+        for (const lead of (leadsData.data || [])) {
+          if (importedIds.has(lead.id)) continue;
+
+          const f: Record<string, string> = {};
+          for (const fd of (lead.field_data || [])) {
+            f[fd.name] = fd.values?.[0] ?? '';
+          }
+
+          const name =
+            f['full_name'] || f['nome_completo'] || f['nome'] ||
+            [f['first_name'] || f['primeiro_nome'], f['last_name'] || f['sobrenome']]
+              .filter(Boolean).join(' ') || 'Lead Meta';
+
+          newLeads.push({
+            name: name.trim(),
+            phone:  f['phone_number'] || f['telefone'] || f['celular'] || undefined,
+            email:  f['email'] || f['e-mail'] || undefined,
+            source: 'meta',
+            status: 'new',
+            notes:  `Formulário: ${form.name}`,
+          });
+          importedIds.add(lead.id);
+        }
+      }
+
+      if (newLeads.length > 0) {
+        importLeads(newLeads);
+        localStorage.setItem(LS_META_IDS, JSON.stringify([...importedIds]));
+        setSyncStatus('done');
+        setSyncMsg(`${newLeads.length} lead(s) importado(s)!`);
+      } else {
+        setSyncStatus('done');
+        setSyncMsg('Nenhum lead novo encontrado.');
+      }
+    } catch (err) {
+      setSyncStatus('error');
+      setSyncMsg(err instanceof Error ? err.message : 'Erro desconhecido');
+    }
+
+    setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 5000);
+  };
+
   return (
     <div className="flex flex-col h-full space-y-5">
       {/* Header */}
@@ -495,7 +581,7 @@ export const Leads = () => {
           <h1 className="text-3xl font-extrabold tracking-tight text-white">Leads</h1>
           <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">{leads.length} lead(s) no funil</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => { setShowApify(true); setApifyStatus('idle'); setResults([]); setSelected(new Set()); }}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
@@ -503,9 +589,30 @@ export const Leads = () => {
             <Target className="w-4 h-4" />
             Buscar no Google
           </button>
+
+          {metaLeadsPageId && metaLeadsPageToken && (
+            <button
+              onClick={syncMeta}
+              disabled={syncStatus === 'running'}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 ${
+                syncStatus === 'error'
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : syncStatus === 'done'
+                  ? 'bg-blue-700 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              {syncStatus === 'running' && <Loader2 className="w-4 h-4 animate-spin" />}
+              {syncStatus === 'done'    && <CheckCircle className="w-4 h-4" />}
+              {syncStatus === 'error'   && <AlertTriangle className="w-4 h-4" />}
+              {syncStatus === 'idle'    && <RefreshCw className="w-4 h-4" />}
+              {syncStatus === 'idle' ? 'Sincronizar Meta' : syncMsg}
+            </button>
+          )}
+
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
             Novo Lead

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   DndContext, DragOverlay,
   PointerSensor, useSensor, useSensors, closestCorners,
@@ -264,6 +264,8 @@ const LeadColumn = ({
 // ─── Main component ────────────────────────────────────────────────────────────
 
 const emptyForm = { name: '', phone: '', website: '', city: '', category: '', notes: '' };
+const LS_META_IDS = 'meta_imported_ids';
+const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
 export const Leads = () => {
   const { leads, addLead, updateLead, updateStatus, deleteLead, importLeads, dbError } = useLeadsStore();
@@ -301,6 +303,8 @@ export const Leads = () => {
   // Meta sync
   const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
   const [syncMsg, setSyncMsg]       = useState('');
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
+  const [, setTick] = useState(0); // forces re-render every minute for "X min atrás"
 
   // dnd sensors — need 5px movement to start drag (avoids blocking clicks)
   const sensors = useSensors(
@@ -495,9 +499,7 @@ export const Leads = () => {
 
   // ─── Meta sync ───────────────────────────────────────────────────────────────
 
-  const LS_META_IDS = 'meta_imported_ids';
-
-  const syncMeta = async () => {
+  const syncMeta = useCallback(async () => {
     if (!metaLeadsPageId || !metaLeadsPageToken) return;
     const importedIds = new Set<string>(JSON.parse(localStorage.getItem(LS_META_IDS) || '[]'));
 
@@ -515,7 +517,8 @@ export const Leads = () => {
 
       if (forms.length === 0) {
         setSyncStatus('done');
-        setSyncMsg('Nenhum formulário encontrado nesta página.');
+        setSyncMsg('Nenhum formulário encontrado.');
+        setLastSyncAt(new Date());
         setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 4000);
         return;
       }
@@ -563,15 +566,29 @@ export const Leads = () => {
         setSyncMsg(`${newLeads.length} lead(s) importado(s)!`);
       } else {
         setSyncStatus('done');
-        setSyncMsg('Nenhum lead novo encontrado.');
+        setSyncMsg('Nenhum lead novo.');
       }
+      setLastSyncAt(new Date());
     } catch (err) {
       setSyncStatus('error');
       setSyncMsg(err instanceof Error ? err.message : 'Erro desconhecido');
     }
 
     setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 5000);
-  };
+  }, [metaLeadsPageId, metaLeadsPageToken, importLeads]);
+
+  // Auto-sync every 5 minutes
+  useEffect(() => {
+    if (!metaLeadsPageId || !metaLeadsPageToken) return;
+    const id = setInterval(syncMeta, SYNC_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [syncMeta, metaLeadsPageId, metaLeadsPageToken]);
+
+  // Re-render every minute to keep "X min atrás" fresh
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="flex flex-col h-full space-y-5">
@@ -591,23 +608,30 @@ export const Leads = () => {
           </button>
 
           {metaLeadsPageId && metaLeadsPageToken && (
-            <button
-              onClick={syncMeta}
-              disabled={syncStatus === 'running'}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 ${
-                syncStatus === 'error'
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : syncStatus === 'done'
-                  ? 'bg-blue-700 text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              {syncStatus === 'running' && <Loader2 className="w-4 h-4 animate-spin" />}
-              {syncStatus === 'done'    && <CheckCircle className="w-4 h-4" />}
-              {syncStatus === 'error'   && <AlertTriangle className="w-4 h-4" />}
-              {syncStatus === 'idle'    && <RefreshCw className="w-4 h-4" />}
-              {syncStatus === 'idle' ? 'Sincronizar Meta' : syncMsg}
-            </button>
+            <div className="flex flex-col items-start gap-0.5">
+              <button
+                onClick={syncMeta}
+                disabled={syncStatus === 'running'}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 ${
+                  syncStatus === 'error'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : syncStatus === 'done'
+                    ? 'bg-blue-700 text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {syncStatus === 'running' && <Loader2 className="w-4 h-4 animate-spin" />}
+                {syncStatus === 'done'    && <CheckCircle className="w-4 h-4" />}
+                {syncStatus === 'error'   && <AlertTriangle className="w-4 h-4" />}
+                {syncStatus === 'idle'    && <RefreshCw className="w-4 h-4" />}
+                {syncStatus === 'idle' ? 'Sincronizar Meta' : syncMsg}
+              </button>
+              <span className="text-[10px] text-slate-600 pl-1">
+                {lastSyncAt
+                  ? `sinc. ${Math.round((Date.now() - lastSyncAt.getTime()) / 60000) || '<1'} min atrás · auto 5min`
+                  : 'auto-sync ativo · a cada 5min'}
+              </span>
+            </div>
           )}
 
           <button

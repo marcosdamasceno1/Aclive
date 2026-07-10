@@ -24,7 +24,7 @@ import {
   Plus, X, Edit2, Trash2, MessageSquare, Send, MessageCircle, CheckCircle,
   Settings2, ChevronUp, Pencil, Save, GripVertical,
 } from 'lucide-react';
-import { sendWhatsAppNotification, getZApiConfig } from '../utils/whatsapp';
+import { sendWhatsAppNotification, getWahaConfig } from '../utils/whatsapp';
 
 // ─── Stage color presets ───────────────────────────────────────────────────────
 
@@ -246,7 +246,10 @@ export const Kanban = () => {
   const [commentText, setCommentText]       = useState('');
   const [whatsappStatus, setWhatsappStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
   const [whatsappMsg, setWhatsappMsg]       = useState('');
-  const zapiConfigured = !!getZApiConfig();
+  const { whatsappProvider, metaAccessToken, metaPhoneNumberId } = useCompanySettingsStore();
+  const whatsappConfigured = whatsappProvider === 'meta'
+    ? !!(metaAccessToken && metaPhoneNumberId)
+    : !!getWahaConfig();
 
   // Stage management state
   const [editingStages, setEditingStages]   = useState<KanbanStage[]>([]);
@@ -1010,8 +1013,8 @@ export const Kanban = () => {
                       <MessageCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                       <span className="text-sm font-semibold text-slate-100">Notificar profissional via WhatsApp</span>
                     </div>
-                    {!zapiConfigured ? (
-                      <p className="text-xs text-amber-400 mt-0.5">Z-API não configurada — configure em Configurações → Integrações</p>
+                    {!whatsappConfigured ? (
+                      <p className="text-xs text-amber-400 mt-0.5">WhatsApp não configurado — configure em Configurações → Integrações</p>
                     ) : (
                       <p className="text-xs text-slate-500 mt-0.5">
                         {form.professionalId

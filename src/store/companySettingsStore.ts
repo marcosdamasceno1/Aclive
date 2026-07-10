@@ -59,7 +59,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   googleClientId: '',
   googleAccessToken: null,
   googleTokenExpiry: null,
-  whatsappProvider: 'zapi',
+  whatsappProvider: 'waha',
   metaAccessToken: '',
   metaPhoneNumberId: '',
   metaTemplateName: 'nova_demanda',
@@ -88,7 +88,8 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       googleClientId:       (row?.google_client_id        as string) || '',
       googleAccessToken:    (row?.google_access_token     as string) || null,
       googleTokenExpiry:    (row?.google_token_expiry     as string) || null,
-      whatsappProvider:     (row?.whatsapp_provider       as WhatsAppProvider) || 'zapi',
+      // Valor legado 'zapi' no banco vira 'waha' (Z-API foi descontinuada)
+      whatsappProvider:     (row?.whatsapp_provider === 'meta' ? 'meta' : 'waha') as WhatsAppProvider,
       metaAccessToken:      (row?.meta_access_token       as string) || '',
       metaPhoneNumberId:    (row?.meta_phone_number_id    as string) || '',
       metaTemplateName:     (row?.meta_template_name      as string) || 'nova_demanda',

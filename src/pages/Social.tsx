@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useSocialStore } from '../store/socialStore';
 import { useAuthStore } from '../store/authStore';
-import { getZApiConfig } from '../utils/whatsapp';
+import { sendWhatsAppText } from '../utils/whatsapp';
 import type { SocialAccount, ScheduledPost, PostStatus } from '../types';
 
 /* ─── SQL for setup banner ─────────────────────────────────────────────────── */
@@ -479,17 +479,11 @@ export const Social = () => {
       );
       for (const post of postsToNotify) {
         const account = accounts.find(a => a.id === post.accountId);
-        const cfg = getZApiConfig();
-        if (cfg && post.notifyPhone) {
-          const phone = post.notifyPhone.replace(/\D/g, '');
-          const formattedPhone = phone.startsWith('55') ? phone : '55' + phone;
+        if (post.notifyPhone) {
           const scheduledTime = new Date(post.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           const message = `⏰ *Hora de publicar!*\n\n📱 @${account?.username || 'conta'}\n📝 ${post.caption.slice(0, 100)}${post.caption.length > 100 ? '...' : ''}\n${post.hashtags ? `🏷️ ${post.hashtags.split(' ').slice(0, 3).join(' ')}\n` : ''}🕐 Agendado para ${scheduledTime}\n\nAcesse o Growth Expert para ver os detalhes.`;
-          await fetch(`https://api.z-api.io/instances/${cfg.instance}/token/${cfg.token}/send-text`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'client-token': cfg.clientToken },
-            body: JSON.stringify({ phone: formattedPhone, message }),
-          }).catch(err => console.error('[social.notify]', err));
+          const err = await sendWhatsAppText(post.notifyPhone, message);
+          if (err) console.error('[social.notify]', err);
         }
         markNotified(post.id);
       }

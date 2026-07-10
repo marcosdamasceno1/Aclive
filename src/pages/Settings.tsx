@@ -4,7 +4,7 @@ import { useProfessionalsStore } from '../store/professionalsStore';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
 import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
-import { getZApiConfig, saveZApiConfig, clearZApiConfig } from '../utils/whatsapp';
+import { getWahaConfig, saveWahaConfig, clearWahaConfig } from '../utils/whatsapp';
 import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
 import type { UserRole, ProfessionType } from '../types';
 import type { WhatsAppProvider } from '../utils/whatsapp';
@@ -55,18 +55,18 @@ export const Settings = () => {
     saveMetaLeadsConfig, clearMetaLeadsConfig,
   } = useCompanySettingsStore();
 
-  // Z-API config state
-  const existingZApi = getZApiConfig();
-  const [zapiInstance,     setZapiInstance]     = useState(existingZApi?.instance     || '');
-  const [zapiToken,        setZapiToken]        = useState(existingZApi?.token        || '');
-  const [zapiClientToken,  setZapiClientToken]  = useState(existingZApi?.clientToken  || '');
-  const [zapiShowToken,    setZapiShowToken]    = useState(false);
-  const [zapiSaved,        setZapiSaved]        = useState(false);
+  // WAHA config state
+  const existingWaha = getWahaConfig();
+  const [wahaUrl,     setWahaUrl]     = useState(existingWaha?.baseUrl || '');
+  const [wahaApiKey,  setWahaApiKey]  = useState(existingWaha?.apiKey  || '');
+  const [wahaSession, setWahaSession] = useState(existingWaha?.session || 'default');
+  const [wahaShowKey, setWahaShowKey] = useState(false);
+  const [wahaSaved,   setWahaSaved]   = useState(false);
 
-  const handleSaveZApi = () => {
-    saveZApiConfig({ instance: zapiInstance.trim(), token: zapiToken.trim(), clientToken: zapiClientToken.trim() });
-    setZapiSaved(true);
-    setTimeout(() => setZapiSaved(false), 2500);
+  const handleSaveWaha = () => {
+    saveWahaConfig({ baseUrl: wahaUrl.trim(), apiKey: wahaApiKey.trim(), session: wahaSession.trim() || 'default' });
+    setWahaSaved(true);
+    setTimeout(() => setWahaSaved(false), 2500);
   };
 
   // Meta API state
@@ -121,7 +121,7 @@ export const Settings = () => {
     setTimeout(() => setLeadsSaved(false), 2500);
   };
 
-  const zapiIsConfigured = !!getZApiConfig();
+  const wahaIsConfigured = !!getWahaConfig();
   const metaIsConfigured = !!(metaAccessToken && metaPhoneNumberId);
   const [driveClientId, setDriveClientId] = useState('');
   const [driveConnecting, setDriveConnecting] = useState(false);
@@ -545,7 +545,7 @@ export const Settings = () => {
                 icon: <MessageCircle className="w-4 h-4" />,
                 label: 'WhatsApp',
                 color: 'green',
-                configured: zapiIsConfigured || metaIsConfigured,
+                configured: wahaIsConfigured || metaIsConfigured,
               },
               {
                 key: 'drive',
@@ -606,7 +606,7 @@ export const Settings = () => {
                 <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Provedor ativo</label>
                 <div className="flex gap-2">
                   {([
-                    { id: 'zapi', label: 'Z-API', desc: 'Não oficial · SaaS gerenciado' },
+                    { id: 'waha', label: 'WAHA', desc: 'Self-hosted · WhatsApp HTTP API' },
                     { id: 'meta', label: 'Meta Oficial', desc: 'API oficial da Meta' },
                   ] as { id: WhatsAppProvider; label: string; desc: string }[]).map(p => (
                     <button
@@ -621,7 +621,7 @@ export const Settings = () => {
                       <div className="flex items-center gap-2 mb-0.5">
                         <div className={`w-2 h-2 rounded-full ${whatsappProvider === p.id ? 'bg-blue-400' : 'bg-slate-600'}`} />
                         <span className="text-sm font-semibold">{p.label}</span>
-                        {p.id === 'zapi' && zapiIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
+                        {p.id === 'waha' && wahaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
                         {p.id === 'meta' && metaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
                       </div>
                       <span className="text-xs text-slate-500 pl-4">{p.desc}</span>
@@ -630,61 +630,66 @@ export const Settings = () => {
                 </div>
               </div>
 
-              {whatsappProvider === 'zapi' && (
+              {whatsappProvider === 'waha' && (
                 <div className="space-y-3 pt-1">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Instance ID</label>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do servidor</label>
                     <input
                       type="text"
-                      value={zapiInstance}
-                      onChange={e => setZapiInstance(e.target.value)}
+                      value={wahaUrl}
+                      onChange={e => setWahaUrl(e.target.value)}
                       className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Ex: 3C56F5B73..."
+                      placeholder="https://waha.seudominio.com"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Token</label>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+                      API Key
+                      <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(se configurada no servidor)</span>
+                    </label>
                     <div className="relative">
                       <input
-                        type={zapiShowToken ? 'text' : 'password'}
-                        value={zapiToken}
-                        onChange={e => setZapiToken(e.target.value)}
+                        type={wahaShowKey ? 'text' : 'password'}
+                        value={wahaApiKey}
+                        onChange={e => setWahaApiKey(e.target.value)}
                         className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Token da instância"
+                        placeholder="Valor de WHATSAPP_API_KEY"
                       />
-                      <button onClick={() => setZapiShowToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                        {zapiShowToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      <button onClick={() => setWahaShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                        {wahaShowKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Client Token</label>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Nome da sessão</label>
                     <input
-                      type="password"
-                      value={zapiClientToken}
-                      onChange={e => setZapiClientToken(e.target.value)}
+                      type="text"
+                      value={wahaSession}
+                      onChange={e => setWahaSession(e.target.value)}
                       className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Client-Token da conta Z-API"
+                      placeholder="default"
                     />
                   </div>
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={handleSaveZApi}
-                      disabled={!zapiInstance.trim() || !zapiToken.trim()}
+                      onClick={handleSaveWaha}
+                      disabled={!wahaUrl.trim()}
                       className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
                     >
-                      {zapiSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                      {zapiSaved ? 'Salvo!' : 'Salvar'}
+                      {wahaSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                      {wahaSaved ? 'Salvo!' : 'Salvar'}
                     </button>
-                    {zapiIsConfigured && (
-                      <button onClick={() => { clearZApiConfig(); setZapiInstance(''); setZapiToken(''); setZapiClientToken(''); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                    {wahaIsConfigured && (
+                      <button onClick={() => { clearWahaConfig(); setWahaUrl(''); setWahaApiKey(''); setWahaSession('default'); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
                         Remover configuração
                       </button>
                     )}
                   </div>
                   <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                    <p>• Instance ID e Token no painel da instância em <strong className="text-slate-400">app.z-api.io</strong></p>
-                    <p>• Client Token em Conta → Security no painel Z-API</p>
+                    <p>• WAHA é self-hosted: instale com Docker — <strong className="text-slate-400">docker run -p 3000:3000 devlikeapro/waha</strong></p>
+                    <p>• Conecte seu WhatsApp escaneando o QR code no painel do WAHA (Dashboard → Sessions)</p>
+                    <p>• Documentação completa em <strong className="text-slate-400">waha.devlike.pro</strong></p>
+                    <p>• A URL precisa ser acessível pelo navegador (HTTPS se o sistema estiver em HTTPS)</p>
                   </div>
                 </div>
               )}

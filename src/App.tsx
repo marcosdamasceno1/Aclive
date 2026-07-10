@@ -103,7 +103,7 @@ function App() {
       useAuthStore.setState({ users: [] });
       useCompanySettingsStore.setState({
         googleClientId: '', googleAccessToken: null, googleTokenExpiry: null,
-        whatsappProvider: 'zapi',
+        whatsappProvider: 'waha',
         metaAccessToken: '', metaPhoneNumberId: '', metaTemplateName: 'nova_demanda',
         metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '',
         kanbanStages: DEFAULT_KANBAN_STAGES,

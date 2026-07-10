@@ -1,38 +1,43 @@
-// ─── Z-API ────────────────────────────────────────────────────────────────────
+// ─── WAHA (WhatsApp HTTP API — self-hosted) ──────────────────────────────────
 
-const LS_INSTANCE     = 'zapi_instance';
-const LS_TOKEN        = 'zapi_token';
-const LS_CLIENT_TOKEN = 'zapi_client_token';
+const LS_WAHA_URL     = 'waha_url';
+const LS_WAHA_API_KEY = 'waha_api_key';
+const LS_WAHA_SESSION = 'waha_session';
 
-export interface ZApiConfig {
-  instance: string;
-  token: string;
-  clientToken: string;
+// Migração: remove as chaves da antiga integração Z-API (descontinuada).
+try {
+  ['zapi_instance', 'zapi_token', 'zapi_client_token'].forEach(k => localStorage.removeItem(k));
+} catch { /* SSR/test */ }
+
+export interface WahaConfig {
+  baseUrl: string;
+  apiKey: string;
+  session: string;
 }
 
-export const getZApiConfig = (): ZApiConfig | null => {
-  const instance    = localStorage.getItem(LS_INSTANCE)     || '';
-  const token       = localStorage.getItem(LS_TOKEN)        || '';
-  const clientToken = localStorage.getItem(LS_CLIENT_TOKEN) || '';
-  if (!instance || !token) return null;
-  return { instance, token, clientToken };
+export const getWahaConfig = (): WahaConfig | null => {
+  const baseUrl = localStorage.getItem(LS_WAHA_URL)     || '';
+  const apiKey  = localStorage.getItem(LS_WAHA_API_KEY) || '';
+  const session = localStorage.getItem(LS_WAHA_SESSION) || 'default';
+  if (!baseUrl) return null;
+  return { baseUrl, apiKey, session };
 };
 
-export const saveZApiConfig = (cfg: ZApiConfig) => {
-  localStorage.setItem(LS_INSTANCE,     cfg.instance);
-  localStorage.setItem(LS_TOKEN,        cfg.token);
-  localStorage.setItem(LS_CLIENT_TOKEN, cfg.clientToken);
+export const saveWahaConfig = (cfg: WahaConfig) => {
+  localStorage.setItem(LS_WAHA_URL,     cfg.baseUrl.replace(/\/+$/, ''));
+  localStorage.setItem(LS_WAHA_API_KEY, cfg.apiKey);
+  localStorage.setItem(LS_WAHA_SESSION, cfg.session || 'default');
 };
 
-export const clearZApiConfig = () => {
-  localStorage.removeItem(LS_INSTANCE);
-  localStorage.removeItem(LS_TOKEN);
-  localStorage.removeItem(LS_CLIENT_TOKEN);
+export const clearWahaConfig = () => {
+  localStorage.removeItem(LS_WAHA_URL);
+  localStorage.removeItem(LS_WAHA_API_KEY);
+  localStorage.removeItem(LS_WAHA_SESSION);
 };
 
 // ─── Payload comum ────────────────────────────────────────────────────────────
 
-export type WhatsAppProvider = 'zapi' | 'meta';
+export type WhatsAppProvider = 'waha' | 'meta';
 
 export interface NotificationPayload {
   phone: string;
@@ -68,9 +73,9 @@ const formatDeadline = (deadline: string): string =>
         .toLocaleDateString('pt-BR')
     : 'Sem prazo definido';
 
-// ─── Z-API sender ─────────────────────────────────────────────────────────────
+// ─── WAHA sender ──────────────────────────────────────────────────────────────
 
-const buildZapiMessage = (p: NotificationPayload): string => {
+const buildTextMessage = (p: NotificationPayload): string => {
   const value = p.value > 0 ? `R$ ${p.value.toFixed(2).replace('.', ',')}` : '—';
   return [
     `Olá, ${p.professionalName}! 👋`,
@@ -88,26 +93,34 @@ const buildZapiMessage = (p: NotificationPayload): string => {
   ].join('\n');
 };
 
-const sendViaZapi = async (payload: NotificationPayload): Promise<string | null> => {
-  const cfg = getZApiConfig();
-  if (!cfg) return 'Z-API não configurada. Configure em Configurações → Integrações.';
+/**
+ * Envia texto livre via WAHA (POST /api/sendText).
+ * Retorna null em sucesso ou string de erro.
+ */
+const sendViaWaha = async (phone: string, text: string): Promise<string | null> => {
+  const cfg = getWahaConfig();
+  if (!cfg) return 'WAHA não configurado. Configure em Configurações → Integrações.';
 
   try {
-    const res = await fetch(
-      `https://api.z-api.io/instances/${cfg.instance}/token/${cfg.token}/send-text`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'client-token': cfg.clientToken },
-        body: JSON.stringify({ phone: formatPhone(payload.phone), message: buildZapiMessage(payload) }),
+    const res = await fetch(`${cfg.baseUrl}/api/sendText`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cfg.apiKey ? { 'X-Api-Key': cfg.apiKey } : {}),
       },
-    );
+      body: JSON.stringify({
+        session: cfg.session || 'default',
+        chatId: `${formatPhone(phone)}@c.us`,
+        text,
+      }),
+    });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      return (body as { message?: string })?.message || `Erro Z-API: ${res.status}`;
+      return (body as { message?: string })?.message || `Erro WAHA: ${res.status}`;
     }
     return null;
   } catch (err) {
-    return err instanceof Error ? err.message : 'Erro de rede (Z-API)';
+    return err instanceof Error ? err.message : 'Erro de rede (WAHA)';
   }
 };
 
@@ -173,33 +186,83 @@ const sendViaMeta = async (payload: NotificationPayload, cfg: MetaConfig): Promi
   }
 };
 
+/** Texto livre via Meta Cloud API (só entrega dentro da janela de 24h). */
+const sendTextViaMeta = async (phone: string, text: string, cfg: MetaConfig): Promise<string | null> => {
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/${cfg.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${cfg.accessToken}`,
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: formatPhone(phone),
+          type: 'text',
+          text: { body: text },
+        }),
+      },
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
+      return err?.error?.message || `Erro Meta API: ${res.status}`;
+    }
+    return null;
+  } catch (err) {
+    return err instanceof Error ? err.message : 'Erro de rede (Meta API)';
+  }
+};
+
 // ─── Router público ───────────────────────────────────────────────────────────
 
+const getProvider = async (): Promise<{ provider: WhatsAppProvider; meta: MetaConfig | null }> => {
+  // import dinâmico evita dependência circular (store → whatsapp → store)
+  const { useCompanySettingsStore } = await import('../store/companySettingsStore');
+  const state = useCompanySettingsStore.getState();
+  const provider: WhatsAppProvider = state.whatsappProvider === 'meta' ? 'meta' : 'waha';
+  const meta = state.metaAccessToken && state.metaPhoneNumberId
+    ? {
+        accessToken: state.metaAccessToken,
+        phoneNumberId: state.metaPhoneNumberId,
+        templateName: state.metaTemplateName || 'nova_demanda',
+      }
+    : null;
+  return { provider, meta };
+};
+
 /**
- * Envia notificação WhatsApp pelo provider configurado na agência.
- * Importa o store dinamicamente para evitar dependência circular.
+ * Envia notificação de nova demanda pelo provider configurado na agência.
  * Retorna null em sucesso ou string de erro.
  */
 export const sendWhatsAppNotification = async (
   payload: NotificationPayload,
 ): Promise<string | null> => {
-  // import dinâmico evita dependência circular (store → whatsapp → store)
-  const { useCompanySettingsStore } = await import('../store/companySettingsStore');
-  const state = useCompanySettingsStore.getState();
-  const provider: WhatsAppProvider = state.whatsappProvider || 'zapi';
+  const { provider, meta } = await getProvider();
 
   if (provider === 'meta') {
-    const { metaAccessToken, metaPhoneNumberId, metaTemplateName } = state;
-    if (!metaAccessToken || !metaPhoneNumberId) {
-      return 'Meta API não configurada. Configure em Configurações → Integrações.';
-    }
-    return sendViaMeta(payload, {
-      accessToken: metaAccessToken,
-      phoneNumberId: metaPhoneNumberId,
-      templateName: metaTemplateName || 'nova_demanda',
-    });
+    if (!meta) return 'Meta API não configurada. Configure em Configurações → Integrações.';
+    return sendViaMeta(payload, meta);
   }
 
-  // default: Z-API
-  return sendViaZapi(payload);
+  return sendViaWaha(payload.phone, buildTextMessage(payload));
+};
+
+/**
+ * Envia uma mensagem de texto livre pelo provider configurado.
+ * Usado para lembretes (ex: postagens agendadas no Social).
+ */
+export const sendWhatsAppText = async (
+  phone: string,
+  message: string,
+): Promise<string | null> => {
+  const { provider, meta } = await getProvider();
+
+  if (provider === 'meta') {
+    if (!meta) return 'Meta API não configurada. Configure em Configurações → Integrações.';
+    return sendTextViaMeta(phone, message, meta);
+  }
+
+  return sendViaWaha(phone, message);
 };

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabaseAuth, supabaseData, setDataSession, adminApi } from '../lib/supabase';
-import { performLogout, getValidSession, onLoginSuccess } from '../lib/authSession';
+import { performLogout, getValidSession, resumeAutoRefresh } from '../lib/authSession';
 import type { User, UserRole } from '../types';
 
 interface AuthState {
@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
         await setDataSession(data.session.access_token, data.session.refresh_token);
       }
 
-      onLoginSuccess(); // limpa o stamp de logout anterior
+      resumeAutoRefresh(); // religa o timer desligado pelo performLogout()
       set({ currentUser: metaToUser(data.user) });
       return null;
     } catch (e) {

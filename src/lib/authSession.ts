@@ -4,13 +4,21 @@
  * Toda a lógica de login/logout/validação de sessão fica AQUI.
  * O authStore apenas chama as funções deste arquivo.
  *
- * Regra: nunca importe supabaseAuth.auth fora deste arquivo e do authStore.
+ * Princípios (aprendidos com bugs em produção):
+ * - NUNCA apagar a sessão por erro transitório (rede, timeout, refresh
+ *   rotacionado por outra aba). Só destruir a sessão quando o servidor
+ *   disser explicitamente que ela é inválida (401/403).
+ * - NUNCA comparar relógio do cliente com iat do JWT (relógio do servidor)
+ *   — desvio de relógio derruba sessões válidas em loop.
+ * - No logout, signOut PRIMEIRO (limpa a sessão em memória e para o
+ *   auto-refresh), storage depois.
  */
 
 import { supabaseAuth } from './supabase';
 
-// ─── Chave usada para marcar o timestamp do último logout ────────────────────
-const LOGOUT_AT_KEY = 'aclive_lo_at';
+// Migração: remove a marca de logout de versões anteriores. Ela comparava o
+// relógio do cliente com o iat do JWT e derrubava sessões válidas.
+try { localStorage.removeItem('aclive_lo_at'); } catch { /* SSR/test */ }
 
 // ─── Limpeza defensiva do storage ───────────────────────────────────────────
 
@@ -29,112 +37,83 @@ function wipeSbStorage(): void {
   } catch { /* ambiente sem localStorage (SSR, test) */ }
 }
 
-// ─── Marca de logout ────────────────────────────────────────────────────────
-
-/** Salva o timestamp do logout para bloquear tokens emitidos antes dele. */
-function stampLogout(): void {
-  try { localStorage.setItem(LOGOUT_AT_KEY, Date.now().toString()); } catch {}
-}
-
-/** Remove a marca de logout ao fazer login com sucesso. */
-function clearLogoutStamp(): void {
-  try { localStorage.removeItem(LOGOUT_AT_KEY); } catch {}
-}
-
-/**
- * Verifica se um access token JWT foi emitido APÓS o último logout.
- *
- * Isso blinda contra a condição de corrida onde o autoRefreshToken do Supabase
- * grava um novo token no localStorage APÓS o logout ter limpado o storage —
- * porque o novo token tem iat (issued-at) posterior ao timestamp do logout,
- * e PORTANTO seria indevidamente aceito. Mas esse token foi gerado a partir de
- * um refresh_token que já foi revogado pelo nosso logout, então rejeitamos
- * qualquer token cujo iat seja anterior ao stamp de logout.
- *
- * Retorna true  → token emitido após o logout (válido)
- * Retorna false → token emitido antes ou durante o logout (inválido)
- */
-export function isTokenIssuedAfterLogout(accessToken: string): boolean {
-  try {
-    const logoutAt = parseInt(localStorage.getItem(LOGOUT_AT_KEY) || '0', 10);
-    if (!logoutAt) return true; // nunca houve logout registrado
-    const payload = JSON.parse(atob(accessToken.split('.')[1]));
-    const issuedAtMs = (payload.iat as number) * 1000;
-    return issuedAtMs > logoutAt;
-  } catch {
-    return true; // em caso de erro de parsing, não bloqueie
-  }
-}
-
 // ─── API pública ─────────────────────────────────────────────────────────────
 
 /**
- * Executa logout de forma segura e definitiva.
+ * Executa logout de forma segura e que nunca trava a UI.
  *
- * Sequência defensiva:
- * 1. Stampa o logout (timestamp) — qualquer token emitido antes disso será
- *    rejeitado pelo initSession mesmo que o Supabase o recupere do storage.
- * 2. Limpa o storage ANTES do signOut — impede o autoRefreshToken de usar
- *    um refresh_token que ainda estava no storage.
- * 3. Chama signOut({ scope:'local' }) — dispara SIGNED_OUT (limpa stores/state).
- * 4. Limpa o storage NOVAMENTE — garante que qualquer token que o
- *    autoRefreshToken tenha gravado durante os passos anteriores seja removido.
+ * Ordem importa:
+ * 1. stopAutoRefresh — impede o timer de gravar um token novo durante o logout.
+ * 2. signOut({ scope:'local' }) — limpa a sessão EM MEMÓRIA do client e
+ *    dispara SIGNED_OUT. Com timeout de 2.5s: se a rede estiver lenta ou
+ *    offline, o logout local prossegue mesmo assim.
+ * 3. wipeSbStorage por último — remove qualquer resíduo do localStorage,
+ *    inclusive algo gravado durante os passos anteriores.
  */
 export async function performLogout(): Promise<void> {
-  stampLogout();
-  wipeSbStorage();
   try {
-    // Tenta parar o timer de auto-refresh se a versão do Supabase suportar
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabaseAuth.auth as any).stopAutoRefresh?.();
-  } catch {}
-  await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
-  wipeSbStorage(); // última barreira contra corrida de autoRefreshToken
+  } catch { /* versão sem stopAutoRefresh */ }
+
+  await Promise.race([
+    supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {}),
+    new Promise<void>(resolve => setTimeout(resolve, 2500)),
+  ]);
+
+  wipeSbStorage();
 }
 
 /**
- * Obtém o usuário da sessão atual com claims frescos do servidor.
+ * Religa o timer de auto-refresh após um novo login.
+ * Necessário porque performLogout() chama stopAutoRefresh() — sem isso,
+ * um login feito na mesma aba (sem reload) ficaria com o timer desligado.
+ */
+export function resumeAutoRefresh(): void {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabaseAuth.auth as any).startAutoRefresh?.();
+  } catch { /* versão sem startAutoRefresh */ }
+}
+
+/**
+ * Obtém o usuário da sessão atual, validando no servidor quando possível.
  *
- * Retorna null se:
- * - Não há sessão salva no localStorage
- * - O token foi emitido antes do último logout (sessão fantasma)
- * - O refresh_token foi revogado no servidor
- * - (Offline) Retorna o usuário em cache como fallback
+ * - Sem sessão no storage → null.
+ * - getUser() valida o JWT no servidor e retorna metadata fresco
+ *   (company_id, role) SEM consumir o refresh token — portanto sem risco
+ *   de corrida de rotação com outras abas ou com o autoRefreshToken.
+ * - 401/403 do servidor → sessão realmente inválida → limpa e retorna null.
+ * - Erro de rede/timeout → retorna o usuário em cache (o autoRefreshToken
+ *   do SDK renova o token em segundo plano quando a rede voltar).
  */
 export async function getValidSession() {
   const { data: { session } } = await supabaseAuth.auth.getSession();
   if (!session?.user) return null;
 
-  // Rejeita sessão emitida antes do logout — bloqueia tokens "zumbis"
-  // que o autoRefreshToken pode ter salvo durante a corrida com o logout.
-  if (!isTokenIssuedAfterLogout(session.access_token)) {
-    wipeSbStorage();
-    await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
-    return null;
-  }
-
-  // Força refresh para obter claims atualizados (company_id, role, etc.)
-  // getSession() retorna o JWT em cache que pode estar desatualizado.
   try {
-    const { data: refreshed, error: refreshErr } = await supabaseAuth.auth.refreshSession();
-    if (refreshErr) {
-      // Token revogado no servidor — limpa e rejeita
-      wipeSbStorage();
-      stampLogout(); // atualiza o stamp para bloquear qualquer token anterior
-      await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
-      return null;
+    const result = await Promise.race([
+      supabaseAuth.auth.getUser(),
+      new Promise<null>(resolve => setTimeout(() => resolve(null), 4000)),
+    ]);
+
+    // Timeout — servidor lento; segue com o usuário em cache.
+    if (!result) return session.user;
+
+    const { data, error } = result;
+    if (error) {
+      if (error.status === 401 || error.status === 403) {
+        // Sessão revogada/expirada de verdade — única situação destrutiva.
+        await supabaseAuth.auth.signOut({ scope: 'local' }).catch(() => {});
+        wipeSbStorage();
+        return null;
+      }
+      // Erro transitório (rede, 5xx) — mantém a sessão em cache.
+      return session.user;
     }
-    return refreshed.session?.user ?? session.user;
+    return data.user ?? session.user;
   } catch {
-    // Erro de rede (offline) — usa o usuário em cache
+    // Offline — usa o usuário em cache.
     return session.user;
   }
-}
-
-/**
- * Chama após login bem-sucedido para limpar qualquer stamp de logout anterior.
- * Isso garante que um re-login após logout funcione corretamente.
- */
-export function onLoginSuccess(): void {
-  clearLogoutStamp();
 }

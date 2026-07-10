@@ -10,7 +10,7 @@ import { useLeadsStore } from './store/leadsStore';
 import { useCalendarStore } from './store/calendarStore';
 import { useCompaniesStore } from './store/companiesStore';
 import { useSocialStore } from './store/socialStore';
-import { useCompanySettingsStore } from './store/companySettingsStore';
+import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES } from './store/companySettingsStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -101,7 +101,13 @@ function App() {
       useCalendarStore.setState({ events: [] });
       useSocialStore.setState({ accounts: [], posts: [] });
       useAuthStore.setState({ users: [] });
-      useCompanySettingsStore.setState({ googleClientId: '', googleAccessToken: null, googleTokenExpiry: null });
+      useCompanySettingsStore.setState({
+        googleClientId: '', googleAccessToken: null, googleTokenExpiry: null,
+        whatsappProvider: 'zapi',
+        metaAccessToken: '', metaPhoneNumberId: '', metaTemplateName: 'nova_demanda',
+        metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '',
+        kanbanStages: DEFAULT_KANBAN_STAGES,
+      });
     };
 
     const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
@@ -128,8 +134,12 @@ function App() {
       }
       if (event === 'TOKEN_REFRESHED') {
         // Only sync the new token — stores are already loaded, no need to reinitialize.
-        if (session?.user) useAuthStore.getState().syncSession(session.user);
-        if (session) await setDataSession(session.access_token, session.refresh_token);
+        // Skip when no user is logged in: a late refresh racing with logout must
+        // not resurrect the session.
+        if (session?.user && useAuthStore.getState().currentUser) {
+          useAuthStore.getState().syncSession(session.user);
+          await setDataSession(session.access_token, session.refresh_token);
+        }
       }
       if (event === 'SIGNED_OUT') {
         storesLoaded = false;

@@ -18,9 +18,9 @@
  *   - DELETEs: .match({ id, company_id: cid }) (via companyDelete())
  *
  * Camada 3 — JWT (authSession.ts):
- *   company_id vem do JWT do usuário, sempre atualizado pelo refreshSession()
- *   no initAuth(). Tokens emitidos antes do logout são rejeitados pelo
- *   stampLogout(), prevenindo o uso de um company_id antigo ou inválido.
+ *   company_id vem do JWT do usuário, validado no servidor via getUser()
+ *   no initAuth(). Sessões revogadas (401/403) são destruídas; erros
+ *   transitórios de rede nunca derrubam a sessão.
  *
  * ════════════════════════════════════════════════════════════════
  *  REGRA PARA NOVAS FUNCIONALIDADES

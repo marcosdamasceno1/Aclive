@@ -8,7 +8,7 @@ import { getZApiConfig, saveZApiConfig, clearZApiConfig } from '../utils/whatsap
 import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
 import type { UserRole, ProfessionType } from '../types';
 import type { WhatsAppProvider } from '../utils/whatsapp';
-import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, Link2, Link2Off, Loader2, MessageCircle, Target, Copy, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, Link2, Link2Off, Loader2, MessageCircle, Target, Copy, RefreshCw, Globe } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -53,6 +53,7 @@ export const Settings = () => {
     saveWhatsappProvider, saveMetaConfig, clearMetaConfig,
     metaLeadsPageId, metaLeadsPageToken, metaLeadsVerifyToken,
     saveMetaLeadsConfig, clearMetaLeadsConfig,
+    siteWebhookToken, generateSiteWebhookToken,
   } = useCompanySettingsStore();
 
   // Z-API config state
@@ -99,6 +100,9 @@ export const Settings = () => {
   const [leadsSaved, setLeadsSaved] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [copiedVerifyToken, setCopiedVerifyToken] = useState(false);
+  const [copiedSiteUrl, setCopiedSiteUrl] = useState(false);
+  const [copiedSiteToken, setCopiedSiteToken] = useState(false);
+  const [generatingSiteToken, setGeneratingSiteToken] = useState(false);
 
   useEffect(() => {
     setLeadsPageId(metaLeadsPageId || '');
@@ -159,7 +163,16 @@ export const Settings = () => {
   const [userForm, setUserForm] = useState(emptyUserForm);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'system' | 'integrations'>('users');
-  const [integrationTab, setIntegrationTab] = useState<'whatsapp' | 'drive' | 'meta-leads'>('whatsapp');
+  const [integrationTab, setIntegrationTab] = useState<'whatsapp' | 'drive' | 'meta-leads' | 'site'>('whatsapp');
+
+  const SITE_WEBHOOK_BASE = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1/site-leads-webhook';
+  const siteWebhookFullUrl = siteWebhookToken ? `${SITE_WEBHOOK_BASE}?token=${siteWebhookToken}` : '';
+
+  const handleGenerateSiteToken = async () => {
+    setGeneratingSiteToken(true);
+    await generateSiteWebhookToken();
+    setGeneratingSiteToken(false);
+  };
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -556,6 +569,13 @@ export const Settings = () => {
                 color: 'blue',
                 configured: !!(metaLeadsPageId && metaLeadsPageToken),
               },
+              {
+                key: 'site',
+                icon: <Globe className="w-4 h-4" />,
+                label: 'Formulário do Site',
+                color: 'purple',
+                configured: !!siteWebhookToken,
+              },
             ] as { key: string; icon: React.ReactNode; label: string; color: string; configured: boolean }[]).map(tab => (
               <button
                 key={tab.key}
@@ -566,7 +586,7 @@ export const Settings = () => {
                     : 'border-white/[0.05] text-slate-500 hover:text-slate-300 hover:border-white/[0.1]'
                 }`}
               >
-                <span className={integrationTab === tab.key ? (tab.color === 'green' ? 'text-green-400' : 'text-blue-400') : 'text-slate-500'}>
+                <span className={integrationTab === tab.key ? (tab.color === 'green' ? 'text-green-400' : tab.color === 'purple' ? 'text-purple-400' : 'text-blue-400') : 'text-slate-500'}>
                   {tab.icon}
                 </span>
                 {tab.label}
@@ -825,6 +845,107 @@ export const Settings = () => {
           )}
 
           {/* ── Meta Lead Ads ── */}
+          {integrationTab === 'site' && (
+            <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-purple-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Globe className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">Formulário do Site — Webhook</h3>
+                  <p className="text-xs text-slate-500">Leads enviados pelo formulário do seu site chegam automaticamente na aba Leads</p>
+                </div>
+              </div>
+
+              {!siteWebhookToken ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-400">Gere um token de acesso exclusivo para conectar o formulário do seu site ao CRM.</p>
+                  <button
+                    onClick={handleGenerateSiteToken}
+                    disabled={generatingSiteToken}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    {generatingSiteToken ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    Gerar token de acesso
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={siteWebhookFullUrl}
+                        className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                      />
+                      <button
+                        onClick={() => copyToClipboard(siteWebhookFullUrl, setCopiedSiteUrl)}
+                        className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                      >
+                        {copiedSiteUrl ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedSiteUrl ? 'Copiado!' : 'Copiar'}
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">Envie um <strong className="text-slate-400">POST</strong> com JSON para esta URL a partir do seu formulário</p>
+                  </div>
+
+                  <div className="rounded-lg bg-[#161b22] border border-white/[0.06] p-4">
+                    <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Campos aceitos no body (JSON)</p>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-left text-slate-500 border-b border-white/[0.05]">
+                          <th className="pb-1.5 font-medium">Campo</th>
+                          <th className="pb-1.5 font-medium">Tipo</th>
+                          <th className="pb-1.5 font-medium">Obrigatório</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-slate-300 divide-y divide-white/[0.03]">
+                        <tr><td className="py-1 font-mono text-purple-300">name</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-red-400">sim</td></tr>
+                        <tr><td className="py-1 font-mono text-purple-300">email</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                        <tr><td className="py-1 font-mono text-purple-300">phone</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                        <tr><td className="py-1 font-mono text-purple-300">notes</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                        <tr><td className="py-1 font-mono text-purple-300">message</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não (alias de notes)</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="rounded-lg bg-[#0d1117] border border-white/[0.06] p-4 overflow-x-auto">
+                    <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Exemplo — fetch JavaScript</p>
+                    <pre className="text-xs text-slate-300 whitespace-pre font-mono leading-relaxed">{`fetch("${siteWebhookFullUrl}", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    name: formData.name,
+    email: formData.email,
+    phone: formData.phone,
+    notes: formData.message,
+  }),
+});`}</pre>
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-1">
+                    <button
+                      onClick={handleGenerateSiteToken}
+                      disabled={generatingSiteToken}
+                      className="flex items-center gap-2 text-xs text-slate-500 hover:text-orange-400 transition-colors"
+                    >
+                      {generatingSiteToken ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      Regenerar token (invalida o anterior)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
+                <p>• O lead entra com status <strong className="text-slate-400">Novo</strong> e source <strong className="text-slate-400">Site</strong></p>
+                <p>• O token é secreto — não o exponha no código frontend de sites públicos. Prefira uma rota server-side</p>
+                <p>• Se o token vazar, clique em "Regenerar token" para invalidar o anterior</p>
+              </div>
+            </div>
+          )}
+
           {integrationTab === 'meta-leads' && (
             <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
               <div className="flex items-center gap-3">

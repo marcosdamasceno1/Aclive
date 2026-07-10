@@ -134,7 +134,7 @@ export interface Lead {
   category?: string;
   status: LeadStatus;
   notes?: string;
-  source: 'apify' | 'manual' | 'meta';
+  source: 'apify' | 'manual' | 'meta' | 'website';
   createdAt: string;
   convertedClientId?: string;
 }

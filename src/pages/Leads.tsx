@@ -127,6 +127,11 @@ const DraggableLeadCard = ({
               Meta
             </span>
           )}
+          {lead.source === 'website' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 flex-shrink-0 font-medium">
+              Site
+            </span>
+          )}
         </div>
         {lead.category && (
           <p className="text-xs text-slate-500 mt-0.5 truncate">{lead.category}</p>

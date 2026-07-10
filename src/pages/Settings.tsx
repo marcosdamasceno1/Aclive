@@ -53,7 +53,6 @@ export const Settings = () => {
     saveWhatsappProvider, saveMetaConfig, clearMetaConfig,
     metaLeadsPageId, metaLeadsPageToken, metaLeadsVerifyToken,
     saveMetaLeadsConfig, clearMetaLeadsConfig,
-    siteWebhookToken, generateSiteWebhookToken,
   } = useCompanySettingsStore();
 
   // Z-API config state
@@ -101,9 +100,6 @@ export const Settings = () => {
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [copiedVerifyToken, setCopiedVerifyToken] = useState(false);
   const [copiedSiteUrl, setCopiedSiteUrl] = useState(false);
-  const [copiedSiteToken, setCopiedSiteToken] = useState(false);
-  const [generatingSiteToken, setGeneratingSiteToken] = useState(false);
-  const [siteTokenError, setSiteTokenError] = useState('');
 
   useEffect(() => {
     setLeadsPageId(metaLeadsPageId || '');
@@ -167,22 +163,8 @@ export const Settings = () => {
   const [integrationTab, setIntegrationTab] = useState<'whatsapp' | 'drive' | 'meta-leads' | 'site'>('whatsapp');
 
   const SITE_WEBHOOK_BASE = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1/site-leads-webhook';
-  const siteWebhookFullUrl = siteWebhookToken ? `${SITE_WEBHOOK_BASE}?token=${siteWebhookToken}` : '';
-
-  const handleGenerateSiteToken = async () => {
-    setGeneratingSiteToken(true);
-    setSiteTokenError('');
-    try {
-      await generateSiteWebhookToken();
-    } catch (e) {
-      setSiteTokenError(
-        'Erro ao salvar token no banco de dados. Execute a migração SQL necessária antes de gerar o token:\n' +
-        'ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS site_webhook_token TEXT;'
-      );
-    } finally {
-      setGeneratingSiteToken(false);
-    }
-  };
+  const siteCompanyId = currentUser?.companyId ?? '';
+  const siteWebhookFullUrl = siteCompanyId ? `${SITE_WEBHOOK_BASE}?company_id=${siteCompanyId}` : '';
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -584,7 +566,7 @@ export const Settings = () => {
                 icon: <Globe className="w-4 h-4" />,
                 label: 'Formulário do Site',
                 color: 'purple',
-                configured: !!siteWebhookToken,
+                configured: !!siteCompanyId,
               },
             ] as { key: string; icon: React.ReactNode; label: string; color: string; configured: boolean }[]).map(tab => (
               <button
@@ -867,76 +849,50 @@ export const Settings = () => {
                 </div>
               </div>
 
-              {!siteWebhookToken ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-slate-400">Gere um token de acesso exclusivo para conectar o formulário do seu site ao CRM.</p>
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 text-xs text-amber-300 space-y-1">
-                    <p className="font-semibold">Antes de gerar, rode este SQL no Supabase (SQL Editor):</p>
-                    <code className="block font-mono text-amber-200 bg-black/20 rounded px-2 py-1 mt-1">
-                      ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS site_webhook_token TEXT;
-                    </code>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={siteWebhookFullUrl}
+                      className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                    />
+                    <button
+                      onClick={() => copyToClipboard(siteWebhookFullUrl, setCopiedSiteUrl)}
+                      className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      {copiedSiteUrl ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedSiteUrl ? 'Copiado!' : 'Copiar'}
+                    </button>
                   </div>
-                  <button
-                    onClick={handleGenerateSiteToken}
-                    disabled={generatingSiteToken}
-                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                  >
-                    {generatingSiteToken ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    Gerar token de acesso
-                  </button>
-                  {siteTokenError && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-400">
-                      <p className="font-semibold mb-1 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Migração SQL necessária</p>
-                      <code className="block font-mono bg-black/20 rounded px-2 py-1 text-red-300 whitespace-pre-wrap">ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS site_webhook_token TEXT;</code>
-                      <p className="mt-1.5">Execute este comando no <strong>SQL Editor</strong> do Supabase e tente novamente.</p>
-                    </div>
-                  )}
+                  <p className="text-xs text-slate-500 mt-1">Envie um <strong className="text-slate-400">POST</strong> com JSON para esta URL a partir do formulário do seu site</p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value={siteWebhookFullUrl}
-                        className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
-                      />
-                      <button
-                        onClick={() => copyToClipboard(siteWebhookFullUrl, setCopiedSiteUrl)}
-                        className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
-                      >
-                        {copiedSiteUrl ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copiedSiteUrl ? 'Copiado!' : 'Copiar'}
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">Envie um <strong className="text-slate-400">POST</strong> com JSON para esta URL a partir do seu formulário</p>
-                  </div>
 
-                  <div className="rounded-lg bg-[#161b22] border border-white/[0.06] p-4">
-                    <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Campos aceitos no body (JSON)</p>
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="text-left text-slate-500 border-b border-white/[0.05]">
-                          <th className="pb-1.5 font-medium">Campo</th>
-                          <th className="pb-1.5 font-medium">Tipo</th>
-                          <th className="pb-1.5 font-medium">Obrigatório</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-slate-300 divide-y divide-white/[0.03]">
-                        <tr><td className="py-1 font-mono text-purple-300">name</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-red-400">sim</td></tr>
-                        <tr><td className="py-1 font-mono text-purple-300">email</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
-                        <tr><td className="py-1 font-mono text-purple-300">phone</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
-                        <tr><td className="py-1 font-mono text-purple-300">notes</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
-                        <tr><td className="py-1 font-mono text-purple-300">message</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não (alias de notes)</td></tr>
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="rounded-lg bg-[#161b22] border border-white/[0.06] p-4">
+                  <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Campos aceitos no body (JSON)</p>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-slate-500 border-b border-white/[0.05]">
+                        <th className="pb-1.5 font-medium">Campo</th>
+                        <th className="pb-1.5 font-medium">Tipo</th>
+                        <th className="pb-1.5 font-medium">Obrigatório</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-slate-300 divide-y divide-white/[0.03]">
+                      <tr><td className="py-1 font-mono text-purple-300">name</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-red-400">sim</td></tr>
+                      <tr><td className="py-1 font-mono text-purple-300">email</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                      <tr><td className="py-1 font-mono text-purple-300">phone</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                      <tr><td className="py-1 font-mono text-purple-300">notes</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                      <tr><td className="py-1 font-mono text-purple-300">message</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não (alias de notes)</td></tr>
+                    </tbody>
+                  </table>
+                </div>
 
-                  <div className="rounded-lg bg-[#0d1117] border border-white/[0.06] p-4 overflow-x-auto">
-                    <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Exemplo — fetch JavaScript</p>
-                    <pre className="text-xs text-slate-300 whitespace-pre font-mono leading-relaxed">{`fetch("${siteWebhookFullUrl}", {
+                <div className="rounded-lg bg-[#0d1117] border border-white/[0.06] p-4 overflow-x-auto">
+                  <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Exemplo — fetch JavaScript</p>
+                  <pre className="text-xs text-slate-300 whitespace-pre font-mono leading-relaxed">{`fetch("${siteWebhookFullUrl}", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -946,25 +902,12 @@ export const Settings = () => {
     notes: formData.message,
   }),
 });`}</pre>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-1">
-                    <button
-                      onClick={handleGenerateSiteToken}
-                      disabled={generatingSiteToken}
-                      className="flex items-center gap-2 text-xs text-slate-500 hover:text-orange-400 transition-colors"
-                    >
-                      {generatingSiteToken ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                      Regenerar token (invalida o anterior)
-                    </button>
-                  </div>
                 </div>
-              )}
+              </div>
 
               <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                <p>• O lead entra com status <strong className="text-slate-400">Novo</strong> e source <strong className="text-slate-400">Site</strong></p>
-                <p>• O token é secreto — não o exponha no código frontend de sites públicos. Prefira uma rota server-side</p>
-                <p>• Se o token vazar, clique em "Regenerar token" para invalidar o anterior</p>
+                <p>• O lead entra com status <strong className="text-slate-400">Novo</strong> e badge <strong className="text-slate-400">Site</strong></p>
+                <p>• A URL já está pronta — não precisa de configuração adicional</p>
               </div>
             </div>
           )}

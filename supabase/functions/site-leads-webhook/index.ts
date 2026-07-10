@@ -11,36 +11,37 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: CORS });
 
-  // ── Resolve token ─────────────────────────────────────────────────────────
-  const url   = new URL(req.url);
-  const token = url.searchParams.get('token')
-    ?? req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
+  const url = new URL(req.url);
+
+  // ── Resolve company_id ────────────────────────────────────────────────────
+  const companyId = url.searchParams.get('company_id')
+    ?? url.searchParams.get('company')
     ?? null;
 
-  if (!token) {
-    return new Response(JSON.stringify({ error: 'Token ausente' }), {
-      status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
+  if (!companyId || !UUID_RE.test(companyId)) {
+    return new Response(JSON.stringify({ error: 'company_id inválido ou ausente' }), {
+      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
 
-  // ── Encontra empresa pelo token ───────────────────────────────────────────
-  const { data: settings } = await supabase
-    .from('company_settings')
-    .select('company_id')
-    .eq('site_webhook_token', token)
+  // ── Verifica se a empresa existe ──────────────────────────────────────────
+  const { data: company } = await supabase
+    .from('companies')
+    .select('id')
+    .eq('id', companyId)
     .maybeSingle();
 
-  if (!settings) {
-    return new Response(JSON.stringify({ error: 'Token inválido' }), {
-      status: 403, headers: { ...CORS, 'Content-Type': 'application/json' },
+  if (!company) {
+    return new Response(JSON.stringify({ error: 'Empresa não encontrada' }), {
+      status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
-
-  const companyId = settings.company_id as string;
 
   // ── Parse body ────────────────────────────────────────────────────────────
   let body: Record<string, unknown>;
@@ -78,7 +79,7 @@ Deno.serve(async (req: Request) => {
 
   if (error) {
     console.error('[site-leads-webhook] insert error:', error);
-    return new Response(JSON.stringify({ error: 'Erro interno' }), {
+    return new Response(JSON.stringify({ error: 'Erro ao salvar lead' }), {
       status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }

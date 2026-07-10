@@ -103,6 +103,7 @@ export const Settings = () => {
   const [copiedSiteUrl, setCopiedSiteUrl] = useState(false);
   const [copiedSiteToken, setCopiedSiteToken] = useState(false);
   const [generatingSiteToken, setGeneratingSiteToken] = useState(false);
+  const [siteTokenError, setSiteTokenError] = useState('');
 
   useEffect(() => {
     setLeadsPageId(metaLeadsPageId || '');
@@ -170,8 +171,17 @@ export const Settings = () => {
 
   const handleGenerateSiteToken = async () => {
     setGeneratingSiteToken(true);
-    await generateSiteWebhookToken();
-    setGeneratingSiteToken(false);
+    setSiteTokenError('');
+    try {
+      await generateSiteWebhookToken();
+    } catch (e) {
+      setSiteTokenError(
+        'Erro ao salvar token no banco de dados. Execute a migração SQL necessária antes de gerar o token:\n' +
+        'ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS site_webhook_token TEXT;'
+      );
+    } finally {
+      setGeneratingSiteToken(false);
+    }
   };
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -860,6 +870,12 @@ export const Settings = () => {
               {!siteWebhookToken ? (
                 <div className="space-y-3">
                   <p className="text-sm text-slate-400">Gere um token de acesso exclusivo para conectar o formulário do seu site ao CRM.</p>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 text-xs text-amber-300 space-y-1">
+                    <p className="font-semibold">Antes de gerar, rode este SQL no Supabase (SQL Editor):</p>
+                    <code className="block font-mono text-amber-200 bg-black/20 rounded px-2 py-1 mt-1">
+                      ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS site_webhook_token TEXT;
+                    </code>
+                  </div>
                   <button
                     onClick={handleGenerateSiteToken}
                     disabled={generatingSiteToken}
@@ -868,6 +884,13 @@ export const Settings = () => {
                     {generatingSiteToken ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                     Gerar token de acesso
                   </button>
+                  {siteTokenError && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-400">
+                      <p className="font-semibold mb-1 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Migração SQL necessária</p>
+                      <code className="block font-mono bg-black/20 rounded px-2 py-1 text-red-300 whitespace-pre-wrap">ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS site_webhook_token TEXT;</code>
+                      <p className="mt-1.5">Execute este comando no <strong>SQL Editor</strong> do Supabase e tente novamente.</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">

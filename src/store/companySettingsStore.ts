@@ -209,8 +209,9 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
 
   generateSiteWebhookToken: async () => {
     const token = crypto.randomUUID();
+    const { error } = await upsert({ site_webhook_token: token });
+    if (error) throw new Error(error.message);
     set({ siteWebhookToken: token });
-    await upsert({ site_webhook_token: token });
     return token;
   },
 }));

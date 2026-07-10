@@ -92,15 +92,16 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
     const cid = companyId();
     if (!cid) return;
     set({ loading: true });
-    const { data } = await supabaseData
+    const { data, error } = await supabaseData
       .from('company_settings')
-      .select(
-        'google_client_id, google_access_token, google_token_expiry, ' +
-        'whatsapp_provider, meta_access_token, meta_phone_number_id, meta_template_name, ' +
-        'meta_leads_page_id, meta_leads_page_token, meta_leads_verify_token, kanban_stages, site_webhook_token',
-      )
+      .select('*')
       .eq('company_id', cid)
       .maybeSingle();
+    if (error) {
+      console.error('[company-settings.init]', error);
+      set({ loading: false });
+      return;
+    }
     const row = data as Record<string, unknown> | null;
     set({
       googleClientId:       (row?.google_client_id       as string) || '',

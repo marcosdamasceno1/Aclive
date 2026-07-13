@@ -537,9 +537,12 @@ export const Kanban = () => {
   const saveStages = async () => {
     if (stageEditId) saveStageEdit();
     setStageSaving(true);
-    await saveKanbanStages(editingStages);
-    setStageSaving(false);
-    setShowStagesModal(false);
+    try {
+      await saveKanbanStages(editingStages);
+      setShowStagesModal(false);
+    } finally {
+      setStageSaving(false); // nunca trava o botão em "Salvando..."
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────

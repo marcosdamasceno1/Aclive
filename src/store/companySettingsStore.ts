@@ -52,19 +52,41 @@ interface CompanySettingsState {
   clearMetaConfig: () => Promise<void>;
   saveMetaLeadsConfig: (pageId: string, pageToken: string, verifyToken: string) => Promise<void>;
   clearMetaLeadsConfig: () => Promise<void>;
-  saveKanbanStages: (stages: KanbanStage[]) => Promise<void>;
-  saveDemandBoardStages: (stages: KanbanStage[]) => Promise<void>;
+  saveKanbanStages: (stages: KanbanStage[]) => Promise<string | null>;
+  saveDemandBoardStages: (stages: KanbanStage[]) => Promise<string | null>;
 }
 
 const companyId = () => useAuthStore.getState().currentUser?.companyId;
 
-const upsert = (patch: Record<string, unknown>) =>
-  supabaseData
+type UpsertResult = { error: { message: string } | null };
+
+/**
+ * Grava em company_settings de forma que NUNCA trava a UI:
+ * - resolve sempre (converte rejeições de rede em { error })
+ * - tem timeout de 7s — se o banco não responder, devolve erro em vez de
+ *   deixar o await pendente para sempre (causa raiz do "Salvando..." infinito)
+ * - se não houver company_id, não tenta gravar
+ */
+const upsert = (patch: Record<string, unknown>): Promise<UpsertResult> => {
+  const cid = companyId();
+  if (!cid) return Promise.resolve({ error: { message: 'sem company_id' } });
+
+  const query = supabaseData
     .from('company_settings')
     .upsert(
-      { company_id: companyId(), ...patch, updated_at: new Date().toISOString() },
+      { company_id: cid, ...patch, updated_at: new Date().toISOString() },
       { onConflict: 'company_id' },
     );
+
+  return Promise.race<UpsertResult>([
+    Promise.resolve(query)
+      .then(({ error }) => ({ error: error ? { message: error.message } : null }))
+      .catch((e) => ({ error: { message: String(e) } })),
+    new Promise<UpsertResult>((resolve) =>
+      setTimeout(() => resolve({ error: { message: 'timeout ao gravar configurações' } }), 7000),
+    ),
+  ]);
+};
 
 export const useCompanySettingsStore = create<CompanySettingsState>()((set, get) => ({
   googleClientId: '',
@@ -187,12 +209,16 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   },
 
   saveKanbanStages: async (stages) => {
-    set({ kanbanStages: stages });
-    await upsert({ kanban_stages: stages });
+    set({ kanbanStages: stages }); // otimista — a tela reflete na hora
+    const { error } = await upsert({ kanban_stages: stages });
+    if (error) console.error('[company-settings.saveKanbanStages]', error.message);
+    return error?.message ?? null;
   },
 
   saveDemandBoardStages: async (stages) => {
-    set({ demandBoardStages: stages });
-    await upsert({ demand_board_stages: stages });
+    set({ demandBoardStages: stages }); // otimista — a tela reflete na hora
+    const { error } = await upsert({ demand_board_stages: stages });
+    if (error) console.error('[company-settings.saveDemandBoardStages]', error.message);
+    return error?.message ?? null;
   },
 }));

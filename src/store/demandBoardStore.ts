@@ -27,14 +27,20 @@ export const useDemandBoardStore = create<DemandBoardState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ cards: [], loading: false }); return; }
     set({ loading: true });
-    const { data, error } = await companySelect('demand_cards', cid).order('created_at');
-    if (error) {
-      console.error('[demand_board.init]', error.message);
-      set({ loading: false, dbError: error.message });
-      return;
+    try {
+      const { data, error } = await companySelect('demand_cards', cid).order('created_at');
+      if (error) {
+        console.error('[demand_board.init]', error.message);
+        set({ loading: false, dbError: error.message });
+        return;
+      }
+      const records = (data || []).map(r => fromDb<DemandCard>(r as Record<string, unknown>));
+      set({ cards: assertCompanyData(records, cid, 'demand_cards'), loading: false, dbError: null });
+    } catch (e) {
+      // Nunca propaga — evita derrubar o carregamento dos demais stores.
+      console.error('[demand_board.init] exceção', e);
+      set({ loading: false, dbError: String(e) });
     }
-    const records = (data || []).map(r => fromDb<DemandCard>(r as Record<string, unknown>));
-    set({ cards: assertCompanyData(records, cid, 'demand_cards'), loading: false, dbError: null });
   },
 
   addCard: (data) => {

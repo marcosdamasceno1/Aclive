@@ -70,9 +70,15 @@ function App() {
       // Super admin only needs the companies store — they have no company_id so
       // data stores would fail RLS and show error banners unnecessarily.
       if (me?.isSuperAdmin) {
-        await initCompanies();
+        await initCompanies().catch(e => console.error('[init.companies]', e));
       } else {
-        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar(), initDemandBoard(), initCompanySettings()]);
+        // allSettled: a falha de um store (ex: tabela nova ainda sem migração)
+        // NUNCA impede os demais de carregar. Antes, um init com erro derrubava
+        // todo o carregamento e a tela ficava sem dados.
+        await Promise.allSettled([
+          initProfessionals(), initClients(), initDemands(), initFinancial(),
+          initLeads(), initCalendar(), initDemandBoard(), initCompanySettings(),
+        ]);
       }
       useAuthStore.getState().loadUsers();
     };

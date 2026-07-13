@@ -196,6 +196,7 @@ export const Demandas = () => {
   const [newStageForm, setNewStageForm]   = useState({ label: '', icon: '📌', color: 'text-blue-400' });
   const [stageSaving, setStageSaving]     = useState(false);
   const [stageDeleteWarn, setStageDeleteWarn] = useState<string | null>(null);
+  const [stageError, setStageError]       = useState<string | null>(null);
 
   const cardsByColumn = useMemo(() => {
     const byCol: Record<string, DemandCard[]> = {};
@@ -297,6 +298,7 @@ export const Demandas = () => {
     setEditingStages(columns.map(s => ({ ...s })));
     setStageEditId(null);
     setStageDeleteWarn(null);
+    setStageError(null);
     setNewStageForm({ label: '', icon: '📌', color: 'text-blue-400' });
     setShowStagesModal(true);
   };
@@ -346,11 +348,30 @@ export const Demandas = () => {
   };
 
   const saveStages = async () => {
-    if (stageEditId) saveStageEdit();
+    // Aplica uma edição em andamento sem depender do setState assíncrono
+    let finalStages = editingStages;
+    if (stageEditId && stageForm.label.trim()) {
+      finalStages = editingStages.map(s =>
+        s.id === stageEditId
+          ? { ...s, label: stageForm.label.trim(), icon: stageForm.icon || s.icon, color: stageForm.color }
+          : s,
+      );
+      setEditingStages(finalStages);
+      setStageEditId(null);
+    }
+    setStageError(null);
     setStageSaving(true);
-    await saveDemandBoardStages(editingStages);
-    setStageSaving(false);
-    setShowStagesModal(false);
+    try {
+      const err = await saveDemandBoardStages(finalStages);
+      if (err) {
+        // As colunas já foram aplicadas na tela (otimista); só não persistiram.
+        setStageError('Colunas aplicadas nesta sessão, mas não foi possível salvá-las no banco. Rode a migração SQL para que persistam ao recarregar.');
+        return;
+      }
+      setShowStagesModal(false);
+    } finally {
+      setStageSaving(false); // NUNCA deixa o botão travado em "Salvando..."
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -674,8 +695,14 @@ export const Demandas = () => {
                 </button>
               </div>
             </div>
+            {stageError && (
+              <div className="mx-6 mb-1 flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-300">{stageError}</p>
+              </div>
+            )}
             <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05] sticky bottom-0 bg-[#21262d]">
-              <button onClick={() => setShowStagesModal(false)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">Cancelar</button>
+              <button onClick={() => setShowStagesModal(false)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">Fechar</button>
               <button onClick={saveStages} disabled={stageSaving} className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors">
                 {stageSaving ? 'Salvando...' : 'Salvar colunas'}
               </button>

@@ -139,6 +139,20 @@ export interface Lead {
   convertedClientId?: string;
 }
 
+// Cartão do quadro de Demandas (gargalos) — quadro colaborativo, visível a
+// todos os profissionais da agência. Independente da Esteira de Produção.
+export interface DemandCard {
+  id: string;
+  columnId: string;         // id da coluna/etapa personalizável
+  title: string;
+  description?: string;
+  assignedTo?: string;      // professional id (responsável, opcional)
+  priority: Priority;
+  createdBy: string;        // user id de quem criou
+  createdByName: string;
+  createdAt: string;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;

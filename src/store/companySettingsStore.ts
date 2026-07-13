@@ -16,6 +16,15 @@ export const DEFAULT_KANBAN_STAGES: KanbanStage[] = [
   { id: 'paid',        label: 'Pago',      icon: '💰', color: 'text-slate-500', isTerminal: true },
 ];
 
+// Colunas padrão do quadro de Demandas (organização de gargalos).
+export const DEFAULT_BOARD_STAGES: KanbanStage[] = [
+  { id: 'backlog',  label: 'Backlog',      icon: '📥', color: 'text-slate-300' },
+  { id: 'todo',     label: 'A Fazer',      icon: '📌', color: 'text-blue-400' },
+  { id: 'doing',    label: 'Em Andamento', icon: '⚡', color: 'text-indigo-400' },
+  { id: 'blocked',  label: 'Bloqueado',    icon: '🚧', color: 'text-red-400' },
+  { id: 'done',     label: 'Concluído',    icon: '✅', color: 'text-green-400' },
+];
+
 interface CompanySettingsState {
   googleClientId: string;
   googleAccessToken: string | null;
@@ -28,6 +37,7 @@ interface CompanySettingsState {
   metaLeadsPageToken: string;
   metaLeadsVerifyToken: string;
   kanbanStages: KanbanStage[];
+  demandBoardStages: KanbanStage[];
   loading: boolean;
 
   init: () => Promise<void>;
@@ -43,6 +53,7 @@ interface CompanySettingsState {
   saveMetaLeadsConfig: (pageId: string, pageToken: string, verifyToken: string) => Promise<void>;
   clearMetaLeadsConfig: () => Promise<void>;
   saveKanbanStages: (stages: KanbanStage[]) => Promise<void>;
+  saveDemandBoardStages: (stages: KanbanStage[]) => Promise<void>;
 }
 
 const companyId = () => useAuthStore.getState().currentUser?.companyId;
@@ -67,6 +78,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaLeadsPageToken: '',
   metaLeadsVerifyToken: '',
   kanbanStages: DEFAULT_KANBAN_STAGES,
+  demandBoardStages: DEFAULT_BOARD_STAGES,
   loading: false,
 
   init: async () => {
@@ -97,6 +109,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       metaLeadsPageToken:   (row?.meta_leads_page_token   as string) || '',
       metaLeadsVerifyToken: (row?.meta_leads_verify_token as string) || '',
       kanbanStages:         (row?.kanban_stages           as KanbanStage[]) || DEFAULT_KANBAN_STAGES,
+      demandBoardStages:    (row?.demand_board_stages     as KanbanStage[]) || DEFAULT_BOARD_STAGES,
       loading: false,
     });
   },
@@ -176,5 +189,10 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   saveKanbanStages: async (stages) => {
     set({ kanbanStages: stages });
     await upsert({ kanban_stages: stages });
+  },
+
+  saveDemandBoardStages: async (stages) => {
+    set({ demandBoardStages: stages });
+    await upsert({ demand_board_stages: stages });
   },
 }));

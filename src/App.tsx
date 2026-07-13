@@ -9,8 +9,8 @@ import { useFinancialStore } from './store/financialStore';
 import { useLeadsStore } from './store/leadsStore';
 import { useCalendarStore } from './store/calendarStore';
 import { useCompaniesStore } from './store/companiesStore';
-import { useSocialStore } from './store/socialStore';
-import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES } from './store/companySettingsStore';
+import { useDemandBoardStore } from './store/demandBoardStore';
+import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES, DEFAULT_BOARD_STAGES } from './store/companySettingsStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -24,7 +24,7 @@ import { Settings } from './pages/Settings';
 import { Leads } from './pages/Leads';
 import { Calendar } from './pages/Calendar';
 import { Master } from './pages/Master';
-import { Social } from './pages/Social';
+import { Demandas } from './pages/Demandas';
 import { Drive } from './pages/Drive';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -56,7 +56,7 @@ function App() {
   const { init: initLeads } = useLeadsStore();
   const { init: initCalendar } = useCalendarStore();
   const { init: initCompanies } = useCompaniesStore();
-  const { init: initSocial } = useSocialStore();
+  const { init: initDemandBoard } = useDemandBoardStore();
   const { init: initCompanySettings } = useCompanySettingsStore();
 
   useEffect(() => {
@@ -72,7 +72,7 @@ function App() {
       if (me?.isSuperAdmin) {
         await initCompanies();
       } else {
-        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar(), initSocial(), initCompanySettings()]);
+        await Promise.all([initProfessionals(), initClients(), initDemands(), initFinancial(), initLeads(), initCalendar(), initDemandBoard(), initCompanySettings()]);
       }
       useAuthStore.getState().loadUsers();
     };
@@ -99,7 +99,7 @@ function App() {
       useDemandsStore.setState({ demands: [] });
       useFinancialStore.setState({ movements: [] });
       useCalendarStore.setState({ events: [] });
-      useSocialStore.setState({ accounts: [], posts: [] });
+      useDemandBoardStore.setState({ cards: [], dbError: null });
       useAuthStore.setState({ users: [] });
       useCompanySettingsStore.setState({
         googleClientId: '', googleAccessToken: null, googleTokenExpiry: null,
@@ -107,6 +107,7 @@ function App() {
         metaAccessToken: '', metaPhoneNumberId: '', metaTemplateName: 'nova_demanda',
         metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '',
         kanbanStages: DEFAULT_KANBAN_STAGES,
+        demandBoardStages: DEFAULT_BOARD_STAGES,
       });
     };
 
@@ -174,12 +175,12 @@ function App() {
           <Route path="dashboard"    element={<AgencyRoute><Dashboard /></AgencyRoute>} />
           <Route path="clients"      element={<AgencyRoute><Clients /></AgencyRoute>} />
           <Route path="professionals" element={<AgencyRoute><Professionals /></AgencyRoute>} />
-          <Route path="demands"      element={<Navigate to="/kanban" replace />} />
+          <Route path="demands"      element={<AgencyRoute><Demandas /></AgencyRoute>} />
           <Route path="kanban"       element={<AgencyRoute><Kanban /></AgencyRoute>} />
           <Route path="financial"    element={<AgencyRoute><Financial /></AgencyRoute>} />
           <Route path="leads"        element={<AgencyRoute><Leads /></AgencyRoute>} />
           <Route path="calendar"     element={<AgencyRoute><Calendar /></AgencyRoute>} />
-          <Route path="social"       element={<AgencyRoute><Social /></AgencyRoute>} />
+          <Route path="social"       element={<Navigate to="/demands" replace />} />
           <Route path="drive"        element={<AgencyRoute><Drive /></AgencyRoute>} />
           <Route path="reports"      element={<AgencyRoute><Reports /></AgencyRoute>} />
           <Route path="settings"     element={<AgencyRoute><Settings /></AgencyRoute>} />

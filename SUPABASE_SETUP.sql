@@ -264,3 +264,35 @@ DROP POLICY IF EXISTS "company_isolation" ON company_settings;
 CREATE POLICY "company_isolation" ON company_settings
   USING (company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid))
   WITH CHECK (company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid));
+
+-- Colunas adicionais de configuração (etapas personalizáveis dos quadros,
+-- WhatsApp, Meta Lead Ads). IF NOT EXISTS torna a migração idempotente.
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS whatsapp_provider       TEXT;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS meta_access_token       TEXT;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS meta_phone_number_id    TEXT;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS meta_template_name      TEXT;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS meta_leads_page_id      TEXT;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS meta_leads_page_token   TEXT;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS meta_leads_verify_token TEXT;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS kanban_stages           JSONB;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS demand_board_stages     JSONB;
+
+
+-- ---- DEMAND CARDS (quadro de Demandas / gargalos, colaborativo por agência) ----
+CREATE TABLE IF NOT EXISTS demand_cards (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id      UUID NOT NULL,
+  column_id       TEXT NOT NULL DEFAULT 'backlog',
+  title           TEXT NOT NULL,
+  description     TEXT,
+  assigned_to     UUID,
+  priority        TEXT NOT NULL DEFAULT 'medium',
+  created_by      UUID,
+  created_by_name TEXT,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE demand_cards ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "company_isolation" ON demand_cards;
+CREATE POLICY "company_isolation" ON demand_cards
+  USING (company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid))
+  WITH CHECK (company_id = ((auth.jwt()->'user_metadata'->>'company_id')::uuid));

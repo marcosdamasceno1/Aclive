@@ -108,6 +108,7 @@ export const Login = () => {
             </button>
           </form>
 
+          <p className="text-[10px] text-slate-700 mt-8 text-center select-all">build {__BUILD_ID__}</p>
         </div>
       </div>
     </div>

@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Growth Expert — Operações para agências de marketing</title>
+<meta name="description" content="Prospecção de clientes pelo Google Maps, funil de leads, Kanban de produção com etapas próprias, financeiro lançado a cada entrega e aviso no WhatsApp de quem executa. O painel de operações para agências de marketing." />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="%232563EB"/><stop offset="1" stop-color="%2338BDF8"/></linearGradient></defs><g transform="translate(4,8) scale(0.86)" fill="none"><path d="M74 34 A32 32 0 1 0 74 66 L74 51 L60 51" stroke="url(%23g)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M50 64 L50 40" stroke="%231D4ED8" stroke-width="8" stroke-linecap="round"/><path d="M39 50 L50 39 L61 50" stroke="%231D4ED8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g></svg>' />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════ Base ═══════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: rgba(255,255,255,.08);
+    --border-soft: rgba(255,255,255,.05);
+    --txt: #e6edf3;
+    --txt-2: #94a3b8;
+    --txt-3: #64748b;
+    --accent: #2563eb;
+    --accent-strong: #1d4ed8;
+  }
+  html { scroll-behavior: smooth; overflow-x: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.65;
+    font-size: 16px;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  img, svg { max-width: 100%; display: block; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 88px 0; }
+
+  h1, h2, .serif {
+    font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    line-height: 1.12;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 24px; border-radius: 10px;
+    font-weight: 600; font-size: 15px; cursor: pointer; border: none;
+    font-family: 'Inter', sans-serif;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-strong); }
+  .btn-ghost { background: transparent; color: var(--txt-2); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--txt); border-color: rgba(255,255,255,.22); }
+
+  .kicker {
+    font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--txt-3); margin-bottom: 16px;
+  }
+  .kicker b { color: var(--accent); font-weight: 700; }
+  h2.title { font-size: clamp(28px, 4vw, 38px); }
+  .sub { color: var(--txt-2); font-size: 16.5px; max-width: 620px; margin-top: 14px; }
+
+  /* ═══════════ Nav ═══════════ */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(13,17,23,.88); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .nav-in { display: flex; align-items: center; gap: 28px; height: 66px; }
+  .nav-links { display: flex; gap: 24px; margin-left: auto; }
+  .nav-links a { font-size: 14px; font-weight: 500; color: var(--txt-2); transition: color .15s; }
+  .nav-links a:hover { color: var(--txt); }
+  .nav-cta { padding: 9px 18px; font-size: 14px; }
+  @media (max-width: 820px) { .nav-links { display: none; } .nav-cta { margin-left: auto; } }
+
+  /* ═══════════ Hero ═══════════ */
+  .hero { padding: 88px 0 72px; border-bottom: 1px solid var(--border-soft); }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+  @media (max-width: 920px) { .hero-grid { grid-template-columns: 1fr; } }
+
+  .aud {
+    display: inline-block; font-size: 12px; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--txt-3); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 6px; margin-bottom: 26px;
+  }
+  .hero h1 { font-size: clamp(36px, 5vw, 54px); }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p.lead { color: var(--txt-2); font-size: 17.5px; margin: 22px 0 30px; max-width: 540px; }
+  .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-note { margin-top: 16px; font-size: 13px; color: var(--txt-3); }
+
+  /* Mockup base */
+  .mock {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.45);
+    overflow: hidden;
+  }
+  .mock-bar { display: flex; align-items: center; gap: 6px; padding: 11px 16px; border-bottom: 1px solid var(--border-soft); }
+  .mock-bar i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.12); }
+  .mock-bar span { margin-left: 10px; font-size: 11px; color: var(--txt-3); font-weight: 600; }
+  .mock-kb { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px; min-height: 290px; }
+  .mock-col { background: rgba(255,255,255,.02); border: 1px solid var(--border-soft); border-radius: 10px; padding: 10px; }
+  .mock-col h5 { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+  .mock-col h5 .n { margin-left: auto; background: rgba(255,255,255,.06); color: var(--txt-3); border-radius: 999px; padding: 1px 7px; font-size: 10px; font-weight: 600; }
+  @media (max-width: 480px) {
+    .mock-kb { gap: 6px; padding: 10px; }
+    .mock-col { padding: 7px; }
+    .mock-col h5 { letter-spacing: .06em; font-size: 9px; }
+  }
+  .c-blue{color:#60a5fa}.c-ind{color:#818cf8}.c-green{color:#4ade80}
+  .mcard {
+    background: #0f141b; border: 1px solid var(--border-soft); border-radius: 9px;
+    padding: 9px 10px; margin-bottom: 8px;
+  }
+  .mcard .t { font-size: 11px; font-weight: 600; display: flex; gap: 6px; align-items: flex-start; }
+  .mcard .t i { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .mcard .m { font-size: 10px; color: var(--txt-3); margin-top: 4px; padding-left: 12px; }
+  .mcard.enter { animation: cardIn .45s ease; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+  .p-red{background:#ef4444}.p-org{background:#fb923c}.p-yel{background:#facc15}.p-gray{background:#64748b}
+
+  .mock-foot { display: flex; gap: 18px; padding: 11px 16px; border-top: 1px solid var(--border-soft); font-size: 11px; color: var(--txt-3); flex-wrap: wrap; }
+  .mock-foot b { color: #4ade80; font-weight: 600; }
+
+  /* ═══════════ Linha de módulos ═══════════ */
+  .strip { padding: 20px 0; border-bottom: 1px solid var(--border-soft); }
+  .strip p { text-align: center; font-size: 13px; color: var(--txt-3); letter-spacing: .02em; }
+  .strip p span { color: var(--txt-2); font-weight: 500; }
+
+  /* ═══════════ Módulos (seções profundas) ═══════════ */
+  .mod { padding: 76px 0; border-bottom: 1px solid var(--border-soft); }
+  .mod-grid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 52px; align-items: center; }
+  .mod-grid.flip .mod-copy { order: 2; }
+  @media (max-width: 920px) {
+    .mod-grid, .mod-grid.flip { grid-template-columns: 1fr; }
+    .mod-grid.flip .mod-copy { order: 0; }
+  }
+  .mod h3 { font-family: 'Source Serif 4', Georgia, serif; font-size: clamp(24px, 3vw, 30px); font-weight: 600; margin-bottom: 14px; line-height: 1.15; }
+  .mod-copy > p { color: var(--txt-2); font-size: 15.5px; }
+  .mod ul { margin-top: 20px; display: grid; gap: 11px; list-style: none; }
+  .mod li { position: relative; padding-left: 22px; font-size: 14.5px; color: var(--txt-2); }
+  .mod li::before { content: ''; position: absolute; left: 0; top: 9px; width: 10px; height: 2px; background: var(--accent); }
+  .mod li b { color: var(--txt); font-weight: 600; }
+
+  /* mockups internos */
+  .fmock { background: var(--panel); border: 1px solid var(--border); border-radius: 13px; padding: 16px; }
+  .fmock .cap { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--txt-3); margin: 2px 2px 12px; }
+  .frow { display: flex; align-items: center; gap: 12px; background: #0f141b; border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .frow:last-child { margin-bottom: 0; }
+  .frow .av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .frow .fx { flex: 1; min-width: 0; }
+  .frow .fx b { display: block; font-size: 13px; font-weight: 600; }
+  .frow .fx span { font-size: 11.5px; color: var(--txt-3); }
+  .frow .fx .stars { color: #fbbf24; font-weight: 600; }
+  .chip { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 999px; flex-shrink: 0; }
+  .ch-green { background: rgba(74,222,128,.12); color: #4ade80; }
+  .ch-blue  { background: rgba(96,165,250,.12); color: #60a5fa; }
+  .ch-amber { background: rgba(251,191,36,.12); color: #fbbf24; }
+  .ch-red   { background: rgba(239,68,68,.12); color: #f87171; }
+  .ch-gray  { background: rgba(148,163,184,.1); color: #94a3b8; }
+
+  .fnum { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 10px; }
+  .fnum div { background: #0f141b; border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px; }
+  .fnum b { font-size: 19px; font-weight: 700; display: block; letter-spacing: -.02em; color: var(--txt); }
+  .fnum b.hi { color: var(--accent); }
+  .fnum span { font-size: 10px; color: var(--txt-3); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+
+  /* busca de prospecção */
+  .search-sim { display: flex; gap: 8px; margin-bottom: 12px; }
+  .search-sim .inp {
+    flex: 1; background: #0f141b; border: 1px solid var(--border); border-radius: 9px;
+    padding: 10px 12px; font-size: 12.5px; color: var(--txt);
+  }
+  .search-sim .inp span { color: var(--txt-3); }
+  .search-sim .go { background: var(--accent); color: #fff; border-radius: 9px; padding: 10px 16px; font-size: 12.5px; font-weight: 600; display: flex; align-items: center; }
+  .import-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(37,99,235,.08); border: 1px solid rgba(37,99,235,.3); border-radius: 10px; font-size: 12px; }
+  .import-bar b { color: var(--txt); }
+  .import-bar .go { background: var(--accent); color: #fff; border-radius: 8px; padding: 7px 14px; font-size: 11.5px; font-weight: 600; }
+
+  /* mini funil */
+  .funnel { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+  .fun-col { background: rgba(255,255,255,.02); border: 1px solid var(--border-soft); border-radius: 10px; padding: 8px; min-height: 150px; }
+  .fun-col h6 { font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .fun-col h6 .n { background: rgba(255,255,255,.06); color: var(--txt-3); border-radius: 999px; padding: 0 6px; font-size: 9px; }
+  .lead-card { background: #0f141b; border: 1px solid var(--border-soft); border-radius: 8px; padding: 7px 8px; margin-bottom: 6px; }
+  .lead-card b { font-size: 10px; font-weight: 600; display: block; line-height: 1.3; }
+  .lead-card span { font-size: 9px; color: var(--txt-3); display: block; margin-top: 2px; }
+  .lead-card .src { display: inline-block; margin-top: 4px; font-size: 8.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
+  .s-site { background: rgba(168,85,247,.14); color: #c084fc; }
+  .s-meta { background: rgba(96,165,250,.14); color: #60a5fa; }
+  .s-goog { background: rgba(251,191,36,.14); color: #fbbf24; }
+
+  /* demanda expandida + editor de etapas */
+  .dcard { background: #0f141b; border: 1px solid var(--border-soft); border-radius: 11px; padding: 14px; }
+  .dcard .dt { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .dcard .dt b { font-size: 14px; font-weight: 600; }
+  .dmeta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin: 12px 0; }
+  .dmeta div { font-size: 11px; color: var(--txt-3); }
+  .dmeta div b { display: block; font-size: 12.5px; color: var(--txt); font-weight: 600; margin-top: 1px; }
+  .dcom { border-top: 1px solid var(--border-soft); padding-top: 10px; margin-top: 4px; }
+  .dcom p { font-size: 11px; color: var(--txt-2); padding: 6px 0 0; }
+  .dcom p b { color: var(--txt); font-weight: 600; }
+  .stage-strip { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .stage-pill { display: inline-flex; align-items: center; gap: 6px; background: #0f141b; border: 1px solid var(--border-soft); border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 600; color: var(--txt-2); }
+  .stage-pill i { width: 7px; height: 7px; border-radius: 50%; }
+  .stage-pill.add { border-style: dashed; color: var(--txt-3); }
+
+  .wamsg { background: #0b141a; border: 1px solid rgba(74,222,128,.18); border-radius: 14px 14px 14px 4px; padding: 13px 15px; font-size: 12.5px; color: #d1e8d6; max-width: 330px; line-height: 1.55; }
+  .wamsg b { color: #fff; }
+  .wamsg .wt { color: #4ade80; font-weight: 700; font-size: 11px; margin-bottom: 6px; display: block; }
+  .wamsg .hr { color: #86efac99; font-size: 10px; text-align: right; margin-top: 6px; }
+
+  /* ═══════════ Primeira semana (timeline) ═══════════ */
+  .week { background: rgba(255,255,255,.012); }
+  .week-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 56px; }
+  @media (max-width: 860px) { .week-grid { grid-template-columns: 1fr; gap: 36px; } }
+  .tl { list-style: none; border-left: 1px solid var(--border); }
+  .tl li { position: relative; padding: 0 0 34px 30px; }
+  .tl li:last-child { padding-bottom: 0; }
+  .tl li::before {
+    content: ''; position: absolute; left: -5px; top: 7px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--accent);
+  }
+  .tl .d { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; }
+  .tl h4 { font-size: 16.5px; font-weight: 600; margin-bottom: 5px; font-family: 'Inter', sans-serif; }
+  .tl p { font-size: 14.5px; color: var(--txt-2); max-width: 480px; }
+
+  /* ═══════════ Incluído (tabela) ═══════════ */
+  .inc table { width: 100%; border-collapse: collapse; margin-top: 36px; }
+  .inc th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--txt-3); padding: 0 16px 12px; }
+  .inc td { padding: 16px; border-top: 1px solid var(--border-soft); font-size: 14.5px; vertical-align: top; }
+  .inc td:first-child { font-weight: 600; color: var(--txt); white-space: nowrap; width: 200px; }
+  .inc td:last-child { color: var(--txt-2); }
+  @media (max-width: 640px) {
+    .inc td:first-child { width: auto; white-space: normal; }
+    .inc td { padding: 14px 10px; font-size: 13.5px; }
+    .inc th { padding: 0 10px 10px; }
+  }
+
+  /* ═══════════ FAQ ═══════════ */
+  .faq-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 56px; margin-top: 8px; }
+  @media (max-width: 860px) { .faq-grid { grid-template-columns: 1fr; gap: 28px; } }
+  .faq { display: grid; gap: 10px; }
+  .q { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; overflow: hidden; }
+  .q button {
+    width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    background: none; border: none; color: var(--txt); font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 600; padding: 17px 20px; cursor: pointer; text-align: left;
+  }
+  .q button .pm { color: var(--txt-3); font-size: 19px; font-weight: 400; transition: transform .2s; flex-shrink: 0; }
+  .q .a { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+  .q .a p { padding: 0 20px 18px; font-size: 14px; color: var(--txt-2); }
+  .q.open .pm { transform: rotate(45deg); }
+
+  /* ═══════════ Fechamento ═══════════ */
+  .cta-final { border-top: 1px solid var(--border-soft); }
+  .cta-in { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+  .cta-in h2 { font-size: clamp(26px, 3.6vw, 36px); max-width: 520px; }
+  .cta-side { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .cta-side .btn { font-size: 15.5px; padding: 15px 28px; }
+  .cta-side small { font-size: 13px; color: var(--txt-3); }
+
+  footer { border-top: 1px solid var(--border-soft); padding: 32px 0; }
+  .foot { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .foot p { font-size: 13px; color: var(--txt-3); margin-left: auto; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ NAV ═══════════ -->
+<nav>
+  <div class="wrap nav-in">
+    <a href="#" aria-label="Growth Expert">
+      <svg width="164" viewBox="0 0 490 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Growth Expert">
+        <defs><linearGradient id="ge" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2563EB"/><stop offset="1" stop-color="#38BDF8"/></linearGradient></defs>
+        <g transform="translate(4,8) scale(0.86)" fill="none">
+          <path d="M74 34 A32 32 0 1 0 74 66 L74 51 L60 51" stroke="url(#ge)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M50 64 L50 40" stroke="#1D4ED8" stroke-width="8" stroke-linecap="round"/>
+          <path d="M39 50 L50 39 L61 50" stroke="#1D4ED8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        <text x="100" y="66" font-family="Inter,system-ui,sans-serif" font-size="46" font-weight="700" fill="white">Growth</text>
+        <text x="320" y="66" font-family="Inter,system-ui,sans-serif" font-size="46" font-weight="600" fill="#2563EB">Expert</text>
+      </svg>
+    </a>
+    <div class="nav-links">
+      <a href="#prospeccao">Prospecção</a>
+      <a href="#leads">Leads</a>
+      <a href="#producao">Produção</a>
+      <a href="#financeiro">Financeiro</a>
+      <a href="#faq">Perguntas</a>
+    </div>
+    <a class="btn btn-primary nav-cta" href="/login">Entrar no painel</a>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="aud">Para agências de marketing</span>
+      <h1>Demanda criada.<br>Equipe avisada.<br><em>Freela pago.</em></h1>
+      <p class="lead">
+        O Growth Expert cobre a operação da agência de ponta a ponta: prospecção de clientes
+        direto do Google Maps, funil de leads, Kanban de produção com as suas etapas,
+        financeiro lançado sozinho a cada entrega e aviso no WhatsApp de quem executa.
+      </p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="/login">Entrar no painel</a>
+        <a class="btn btn-ghost" href="#prospeccao">Conhecer módulo a módulo</a>
+      </div>
+      <p class="hero-note">Roda no navegador — nada para instalar.</p>
+    </div>
+
+    <!-- demonstração: cards movem entre etapas como no produto -->
+    <div class="mock" aria-hidden="true">
+      <div class="mock-bar"><i></i><i></i><i></i><span>Esteira de Produção — Growth Expert</span></div>
+      <div class="mock-kb" id="heroKb">
+        <div class="mock-col">
+          <h5 class="c-blue">📋 Briefing <span class="n" data-n>2</span></h5>
+          <div data-col="0"></div>
+        </div>
+        <div class="mock-col">
+          <h5 class="c-ind">⚡ Produção <span class="n" data-n>2</span></h5>
+          <div data-col="1"></div>
+        </div>
+        <div class="mock-col">
+          <h5 class="c-green">✅ Aprovado <span class="n" data-n>1</span></h5>
+          <div data-col="2"></div>
+        </div>
+      </div>
+      <div class="mock-foot">
+        <span>Financeiro: <b>lançado automaticamente</b></span>
+        <span>WhatsApp: <b>equipe notificada</b></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ LINHA DE MÓDULOS ═══════════ -->
+<div class="strip">
+  <div class="wrap">
+    <p><span>Prospecção no Google</span> · <span>Funil de leads</span> · <span>Kanban de produção</span> · <span>Demandas &amp; gargalos</span> · <span>Financeiro</span> · <span>WhatsApp</span> · <span>Calendário</span> · <span>Drive</span> · <span>Relatórios</span></p>
+  </div>
+</div>
+
+<!-- ═══════════ 01 · PROSPECÇÃO ═══════════ -->
+<section class="mod" id="prospeccao" style="padding-top:88px">
+  <div class="wrap">
+    <p class="kicker"><b>01</b> · Prospecção integrada</p>
+    <div class="mod-grid">
+      <div class="mod-copy">
+        <h3>Digite o nicho e a cidade. A lista de clientes em potencial chega pronta.</h3>
+        <p>A busca varre o Google Maps e devolve as empresas do segmento com telefone, endereço, site, nota e número de avaliações — direto na aba de Leads, sem planilha e sem copiar-colar.</p>
+        <ul>
+          <li><b>Filtro "sem site"</b>: encontre exatamente quem precisa de você — negócios bem avaliados que ainda não têm presença digital.</li>
+          <li><b>Nota e avaliações à vista</b>: priorize por reputação e tamanho do negócio antes do primeiro contato.</li>
+          <li><b>Importação seletiva</b>: marque só os que interessam e mande para o funil com um clique, já com origem "Google".</li>
+        </ul>
+      </div>
+      <div class="fmock" aria-hidden="true">
+        <p class="cap">Leads → Buscar no Google</p>
+        <div class="search-sim">
+          <div class="inp"><span>Nicho:</span> clínicas odontológicas</div>
+          <div class="inp"><span>Cidade:</span> Campinas</div>
+          <div class="go">Buscar</div>
+        </div>
+        <div class="frow"><div class="av" style="background:#2563eb">O</div><div class="fx"><b>Odonto Prime</b><span><span class="stars">★ 4.9</span> (327 avaliações) · Cambuí · (19) 3255-…</span></div><span class="chip ch-amber">sem site</span></div>
+        <div class="frow"><div class="av" style="background:#0e7490">S</div><div class="fx"><b>Clínica Sorriso Livre</b><span><span class="stars">★ 4.7</span> (198 avaliações) · sorrisolivre.com.br</span></div><span class="chip ch-gray">tem site</span></div>
+        <div class="frow"><div class="av" style="background:#475569">V</div><div class="fx"><b>Studio Dental Vila Nova</b><span><span class="stars">★ 4.5</span> (89 avaliações) · (19) 99812-…</span></div><span class="chip ch-amber">sem site</span></div>
+        <div class="import-bar"><span><b>2 selecionados</b> de 25 encontrados</span><span class="go">Importar para o funil</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 02 · FUNIL DE LEADS ═══════════ -->
+<section class="mod" id="leads">
+  <div class="wrap">
+    <p class="kicker"><b>02</b> · Funil de leads</p>
+    <div class="mod-grid flip">
+      <div class="mod-copy">
+        <h3>Três origens, um funil: Google, formulário do site e Meta Lead Ads</h3>
+        <p>Todo lead — prospectado, vindo do seu site ou de anúncio — entra no mesmo quadro e é arrastado pelo funil: novo, contatado, proposta, cliente. Cada card carrega a origem, a cidade e a reputação.</p>
+        <ul>
+          <li><b>Webhook do site</b>: a sua agência tem um endereço exclusivo; o formulário envia e o lead aparece na hora.</li>
+          <li><b>Meta Lead Ads</b>: captação de Facebook e Instagram sincronizada automaticamente a cada 5 minutos.</li>
+          <li><b>Virou cliente?</b> A conversão cria o cliente no sistema — pronto para receber demandas na esteira.</li>
+          <li>Busca por nome, notas por lead e histórico de onde cada um veio.</li>
+        </ul>
+      </div>
+      <div class="fmock" aria-hidden="true">
+        <p class="cap">Leads → Funil</p>
+        <div class="fnum">
+          <div><b class="hi" data-count="47">47</b><span>novos no mês</span></div>
+          <div><b data-count="19">19</b><span>em proposta</span></div>
+          <div><b data-count="8">8</b><span>convertidos</span></div>
+        </div>
+        <div class="funnel">
+          <div class="fun-col">
+            <h6>Novo <span class="n">8</span></h6>
+            <div class="lead-card"><b>Odonto Prime</b><span>★ 4.9 · Campinas</span><span class="src s-goog">Google</span></div>
+            <div class="lead-card"><b>Clínica Sorriso</b><span>form. do site</span><span class="src s-site">Site</span></div>
+          </div>
+          <div class="fun-col">
+            <h6>Contatado <span class="n">5</span></h6>
+            <div class="lead-card"><b>Pousada Mar Azul</b><span>anúncio Instagram</span><span class="src s-meta">Meta</span></div>
+          </div>
+          <div class="fun-col">
+            <h6>Proposta <span class="n">3</span></h6>
+            <div class="lead-card"><b>Barbearia do Léo</b><span>enviada há 2 dias</span><span class="src s-goog">Google</span></div>
+          </div>
+          <div class="fun-col">
+            <h6>Cliente <span class="n">2</span></h6>
+            <div class="lead-card" style="border-color:rgba(74,222,128,.3)"><b>Academia Corpus</b><span>convertido — no CRM</span><span class="src" style="background:rgba(74,222,128,.14);color:#4ade80">Cliente</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 03 · PRODUÇÃO ═══════════ -->
+<section class="mod" id="producao">
+  <div class="wrap">
+    <p class="kicker"><b>03</b> · Esteira de produção</p>
+    <div class="mod-grid">
+      <div class="mod-copy">
+        <h3>Cada entrega nasce com dono, prazo, prioridade e valor</h3>
+        <p>A demanda reúne tudo o que o profissional precisa para executar — e tudo o que você precisa para cobrar e pagar. O quadro é o processo da sua agência, não um modelo fixo.</p>
+        <ul>
+          <li><b>Etapas configuráveis</b>: nome, ordem, cor e ícone de cada coluna; você define qual etapa dispara o financeiro.</li>
+          <li><b>Valor sugerido por tipo de tarefa</b>: cada profissional tem a sua tabela (vídeo, arte, copy, tráfego…) e o valor se preenche sozinho ao criar a demanda.</li>
+          <li><b>Comentários no card</b>: o alinhamento fica na demanda, com autor e hora — não no grupo.</li>
+          <li>Atrasos sinalizados, filtro por cliente e permissão por papel: quem produz vê as próprias demandas.</li>
+        </ul>
+      </div>
+      <div class="fmock" aria-hidden="true">
+        <p class="cap">Demanda aberta</p>
+        <div class="dcard">
+          <div class="dt"><b>Kit de artes — lançamento de julho</b><span class="chip ch-amber">Revisão</span></div>
+          <div class="dmeta">
+            <div>Cliente<b>Cliente Alfa</b></div>
+            <div>Tipo<b>Arte</b></div>
+            <div>Responsável<b>Mariana</b></div>
+            <div>Prazo<b>18/07 · prioridade alta</b></div>
+            <div>Valor combinado<b>R$ 450,00</b></div>
+            <div>Financeiro<b style="color:#4ade80">lança ao concluir</b></div>
+          </div>
+          <div class="dcom">
+            <p><b>Rafael:</b> cliente pediu a versão quadrada também, sobe as duas?</p>
+            <p><b>Mariana:</b> fechado — mando as duas até quinta.</p>
+          </div>
+        </div>
+        <p class="cap" style="margin-top:14px">Etapas do quadro (configuráveis)</p>
+        <div class="stage-strip">
+          <span class="stage-pill"><i style="background:#94a3b8"></i>Nova</span>
+          <span class="stage-pill"><i style="background:#60a5fa"></i>Briefing</span>
+          <span class="stage-pill"><i style="background:#818cf8"></i>Produção</span>
+          <span class="stage-pill"><i style="background:#c084fc"></i>Revisão</span>
+          <span class="stage-pill"><i style="background:#4ade80"></i>Aprovado</span>
+          <span class="stage-pill"><i style="background:#34d399"></i>Concluído · gera financeiro</span>
+          <span class="stage-pill add">+ nova etapa</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 04 · DEMANDAS & GARGALOS ═══════════ -->
+<section class="mod" id="gargalos">
+  <div class="wrap">
+    <p class="kicker"><b>04</b> · Demandas &amp; gargalos</p>
+    <div class="mod-grid flip">
+      <div class="mod-copy">
+        <h3>Um segundo quadro, onde a equipe inteira vê tudo</h3>
+        <p>A esteira cuida dos entregáveis. Este quadro cuida do que trava a operação: aprovações pendentes, acessos faltando, decisões sem dono. Aqui não há filtro por pessoa — transparência é o propósito.</p>
+        <ul>
+          <li><b>Visível para todos os papéis</b>: o bloqueio aparece na frente da equipe inteira, não morre numa conversa.</li>
+          <li><b>Colunas próprias</b>, separadas das etapas da esteira — Backlog, Bloqueado, ou o fluxo que fizer sentido.</li>
+          <li>Cartões com responsável opcional e prioridade; quem criou (ou o gestor) pode excluir.</li>
+        </ul>
+      </div>
+      <div class="fmock" aria-hidden="true">
+        <p class="cap">Quadro de demandas — toda a equipe</p>
+        <div class="frow"><div class="av" style="background:#ef4444">!</div><div class="fx"><b>Aguardando aprovação do cliente Beta</b><span>bloqueado há 3 dias · visível para todos</span></div><span class="chip ch-red">Bloqueado</span></div>
+        <div class="frow"><div class="av" style="background:#2563eb">R</div><div class="fx"><b>Definir pauta do próximo mês</b><span>Rafael · prioridade alta</span></div><span class="chip ch-blue">Em andamento</span></div>
+        <div class="frow"><div class="av" style="background:#475569">?</div><div class="fx"><b>Renovação de contrato — Cliente Gama</b><span>sem responsável · quem assume?</span></div><span class="chip ch-amber">Backlog</span></div>
+        <div class="frow" style="border-color:rgba(74,222,128,.25)"><div class="av" style="background:#16a34a">M</div><div class="fx"><b>Acesso ao Business Manager liberado</b><span>resolvido pela Mari</span></div><span class="chip ch-green">Concluído</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 05 · FINANCEIRO ═══════════ -->
+<section class="mod" id="financeiro">
+  <div class="wrap">
+    <p class="kicker"><b>05</b> · Financeiro</p>
+    <div class="mod-grid">
+      <div class="mod-copy">
+        <h3>Entregou, lançou. No fim do mês, é só conferir e pagar.</h3>
+        <p>O financeiro nasce da produção: quando a demanda chega na etapa de conclusão, o valor combinado vira lançamento a pagar — com título, cliente e profissional. E o resto do caixa da agência mora no mesmo lugar.</p>
+        <ul>
+          <li><b>A pagar por profissional</b>: o saldo de cada um, entrega por entrega, com a chave PIX na tela na hora de pagar.</li>
+          <li><b>Receitas e despesas</b> com categoria, vencimento e status — mensalidades de clientes, assinaturas, custos fixos.</li>
+          <li><b>"Meu Financeiro"</b>: cada profissional acompanha o que tem a receber e o que já foi pago, sem perguntar.</li>
+          <li>Correção de valores com registro, histórico de pagamentos e resumo do mês nos Relatórios.</li>
+        </ul>
+      </div>
+      <div class="fmock" aria-hidden="true">
+        <p class="cap">Financeiro do mês</p>
+        <div class="fnum">
+          <div><b style="color:#4ade80">R$ 12,4k</b><span>a receber</span></div>
+          <div><b style="color:#fbbf24">R$ 3,1k</b><span>a pagar</span></div>
+          <div><b class="hi">R$ 9,3k</b><span>margem</span></div>
+        </div>
+        <div class="frow"><div class="av" style="background:#16a34a">↑</div><div class="fx"><b>Mensalidade — Cliente Alfa</b><span>receita · social media · vence 05/08</span></div><span class="chip ch-green">R$ 2.500</span></div>
+        <div class="frow"><div class="av" style="background:#2563eb">R</div><div class="fx"><b>Rafael — 4 entregas concluídas</b><span>PIX: rafael@email.com</span></div><span class="chip ch-amber">R$ 1.800</span></div>
+        <div class="frow"><div class="av" style="background:#0e7490">M</div><div class="fx"><b>Mariana — 3 entregas concluídas</b><span>PIX: (11) 9 8888-7777</span></div><span class="chip ch-amber">R$ 1.300</span></div>
+        <div class="frow" style="border-color:rgba(74,222,128,.25)"><div class="av" style="background:#16a34a">✓</div><div class="fx"><b>Daniel — pago hoje</b><span>2 entregas · registrado no histórico</span></div><span class="chip ch-green">Pago</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 06 · WHATSAPP ═══════════ -->
+<section class="mod" id="whatsapp" style="border-bottom:none">
+  <div class="wrap">
+    <p class="kicker"><b>06</b> · Avisos no WhatsApp</p>
+    <div class="mod-grid flip">
+      <div class="mod-copy">
+        <h3>Quem executa fica sabendo na hora — sem você cobrar</h3>
+        <p>Ao criar a demanda, o profissional recebe no WhatsApp o resumo do briefing: tarefa, cliente, prazo, prioridade e valor. Ao lado, a mensagem real que o sistema envia.</p>
+        <ul>
+          <li><b>Dois provedores à escolha</b>: servidor próprio (WAHA) ou API oficial da Meta — configurado no painel, sem código.</li>
+          <li><b>Lembrete de postagem</b>: conteúdo agendado dispara aviso no celular de quem publica, na hora certa.</li>
+        </ul>
+      </div>
+      <div class="fmock" style="display:flex;justify-content:center;padding:30px 18px" aria-hidden="true">
+        <div class="wamsg">
+          <span class="wt">Growth Expert</span>
+          Olá, <b>Mariana</b>! 👋<br><br>
+          Você recebeu uma nova demanda:<br><br>
+          <b>Kit de artes — lançamento</b><br>
+          📋 Tipo: Arte<br>
+          🏢 Cliente: Cliente Alfa<br>
+          📅 Prazo: 18/07<br>
+          🎯 Prioridade: Alta<br>
+          💰 Valor: R$ 450,00
+          <div class="hr">14:32 ✓✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PRIMEIRA SEMANA ═══════════ -->
+<section id="primeira-semana" class="week" style="border-block:1px solid var(--border-soft)">
+  <div class="wrap week-grid">
+    <div>
+      <p class="kicker">Implantação</p>
+      <h2 class="title">A primeira semana, dia a dia</h2>
+      <p class="sub">Não existe projeto de implantação. Existe cadastrar a equipe e começar a criar demandas.</p>
+    </div>
+    <ol class="tl">
+      <li>
+        <p class="d">Dia 1</p>
+        <h4>Cadastre a equipe e os clientes</h4>
+        <p>Cada usuário entra com um papel — admin, gestor, produção ou financeiro — e enxerga só o próprio escopo. Quem produz não vê o financeiro.</p>
+      </li>
+      <li>
+        <p class="d">Dia 2</p>
+        <h4>Monte as etapas do Kanban e a tabela de valores</h4>
+        <p>Reproduza o processo que a agência já usa e defina os valores padrão por tipo de tarefa de cada profissional — o resto se preenche sozinho.</p>
+      </li>
+      <li>
+        <p class="d">Dia 3 em diante</p>
+        <h4>Crie demandas e prospecte pelo próprio painel</h4>
+        <p>O profissional é avisado no WhatsApp, a entrega concluída lança o pagamento, os leads do site entram sozinhos — e a busca no Google alimenta o funil de novos clientes.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═══════════ INCLUÍDO ═══════════ -->
+<section id="incluido" class="inc">
+  <div class="wrap">
+    <p class="kicker">Além dos módulos principais</p>
+    <h2 class="title">O que mais vem junto</h2>
+    <table>
+      <thead>
+        <tr><th>Módulo</th><th>O que resolve</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Dashboard</td><td>Demandas abertas, atrasadas e concluídas do mês, por status e por profissional — a leitura do dia em uma tela.</td></tr>
+        <tr><td>Relatórios</td><td>Ranking de produtividade da equipe, custo operacional por cliente e resumo financeiro — com exportação em CSV.</td></tr>
+        <tr><td>Calendário</td><td>Prazos, reuniões e eventos da equipe com responsável e prioridade — visão semanal e mensal.</td></tr>
+        <tr><td>Drive</td><td>Conecta o Google Drive da agência para acessar os arquivos dos clientes sem sair do painel.</td></tr>
+        <tr><td>Permissões por papel</td><td>Produção não vê valores; financeiro não mexe no Kanban. Cada papel com o seu recorte.</td></tr>
+        <tr><td>Isolamento por agência</td><td>Arquitetura multiempresa: os dados de cada agência ficam separados em três camadas independentes.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════ FAQ ═══════════ -->
+<section id="faq" style="border-top:1px solid var(--border-soft)">
+  <div class="wrap faq-grid">
+    <div>
+      <p class="kicker">Antes de decidir</p>
+      <h2 class="title">Perguntas de quem está avaliando</h2>
+    </div>
+    <div class="faq">
+      <div class="q"><button>Como funciona a busca de clientes no Google?<span class="pm">+</span></button><div class="a"><p>Você informa o segmento e a cidade; a busca varre o Google Maps e devolve as empresas com telefone, endereço, site, nota e avaliações. Dá para filtrar só quem não tem site e importar os selecionados direto para o funil de leads. A busca usa um conector externo (Apify) configurado uma única vez com o seu token.</p></div></div>
+      <div class="q"><button>Preciso instalar alguma coisa?<span class="pm">+</span></button><div class="a"><p>Não. O Growth Expert roda no navegador — computador, tablet ou celular. A equipe precisa do link e do login, só.</p></div></div>
+      <div class="q"><button>Como os leads do meu site entram no sistema?<span class="pm">+</span></button><div class="a"><p>A sua agência recebe um endereço de webhook exclusivo. Você aponta o formulário do site para ele e cada envio vira um lead no CRM, identificado com a origem "Site". A URL fica em Configurações → Integrações.</p></div></div>
+      <div class="q"><button>O WhatsApp é pela API oficial?<span class="pm">+</span></button><div class="a"><p>Você escolhe: API oficial da Meta (WhatsApp Business) ou um servidor WAHA próprio. A troca é uma configuração no painel, sem mexer em código.</p></div></div>
+      <div class="q"><button>Consigo reproduzir o processo que minha agência já usa?<span class="pm">+</span></button><div class="a"><p>Sim. Tanto a Esteira de Produção quanto o quadro de Demandas têm colunas configuráveis: nome, ordem, cor e qual etapa dispara o financeiro. O fluxo é o seu.</p></div></div>
+      <div class="q"><button>Meus dados ficam separados de outras agências?<span class="pm">+</span></button><div class="a"><p>Sim. O isolamento acontece em três camadas independentes — no banco de dados, na aplicação e na sessão. Nenhuma agência acessa nada de outra.</p></div></div>
+      <div class="q"><button>Como funciona o lançamento financeiro automático?<span class="pm">+</span></button><div class="a"><p>Cada demanda tem um valor combinado com o profissional. Quando o card chega na etapa marcada como conclusão, o sistema gera o lançamento "a pagar". Você confere, marca como pago e o histórico fica registrado.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FECHAMENTO ═══════════ -->
+<section class="cta-final">
+  <div class="wrap cta-in">
+    <h2>Sua próxima demanda já pode nascer com dono, prazo e pagamento encaminhado.</h2>
+    <div class="cta-side">
+      <a class="btn btn-primary" href="/login">Entrar e montar meu Kanban</a>
+      <small>Cadastrar a equipe leva menos de 10 minutos.</small>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <svg width="136" viewBox="0 0 490 100" xmlns="http://www.w3.org/2000/svg" aria-label="Growth Expert">
+      <defs><linearGradient id="gef" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2563EB"/><stop offset="1" stop-color="#38BDF8"/></linearGradient></defs>
+      <g transform="translate(4,8) scale(0.86)" fill="none">
+        <path d="M74 34 A32 32 0 1 0 74 66 L74 51 L60 51" stroke="url(#gef)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M50 64 L50 40" stroke="#1D4ED8" stroke-width="8" stroke-linecap="round"/>
+        <path d="M39 50 L50 39 L61 50" stroke="#1D4ED8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <text x="100" y="66" font-family="Inter,system-ui,sans-serif" font-size="46" font-weight="700" fill="white">Growth</text>
+      <text x="320" y="66" font-family="Inter,system-ui,sans-serif" font-size="46" font-weight="600" fill="#2563EB">Expert</text>
+    </svg>
+    <p>© <span id="yy"></span> Growth Expert — Operações para agências de marketing.</p>
+  </div>
+</footer>
+
+<script>
+  // ─── Ano do rodapé ───
+  document.getElementById('yy').textContent = new Date().getFullYear();
+
+  // ─── FAQ ───
+  document.querySelectorAll('.q button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const q = btn.parentElement, a = q.querySelector('.a'), open = q.classList.contains('open');
+      document.querySelectorAll('.q.open').forEach(o => { o.classList.remove('open'); o.querySelector('.a').style.maxHeight = '0'; });
+      if (!open) { q.classList.add('open'); a.style.maxHeight = a.scrollHeight + 'px'; }
+    });
+  });
+
+  // ─── Demonstração do hero: cards fluem entre as etapas, como no produto ───
+  const CARDS = [
+    { t: 'Reels — Cliente Alfa',      m: 'Rafa · sexta',   p: 'p-red'  },
+    { t: 'Kit de artes — lançamento', m: 'Mari · urgente', p: 'p-org'  },
+    { t: 'Copy da campanha de julho', m: 'Dani · quinta',  p: 'p-yel'  },
+    { t: 'Gestão de tráfego — Beta',  m: 'Leo · contínuo', p: 'p-gray' },
+    { t: 'Landing page do evento',    m: 'Dani · seg',     p: 'p-org'  },
+  ];
+  const cols = [...document.querySelectorAll('#heroKb [data-col]')];
+  const ns = [...document.querySelectorAll('#heroKb [data-n]')];
+  let placement = [[0, 1], [2, 3], [4]];
+
+  function cardEl(i, enter) {
+    const c = CARDS[i];
+    const d = document.createElement('div');
+    d.className = 'mcard' + (enter ? ' enter' : '');
+    d.innerHTML = `<div class="t"><i class="${c.p}"></i>${c.t}</div><div class="m">${c.m}</div>`;
+    return d;
+  }
+  function render(enterIdx) {
+    cols.forEach((col, ci) => {
+      col.innerHTML = '';
+      placement[ci].forEach(i => col.appendChild(cardEl(i, i === enterIdx)));
+      ns[ci].textContent = placement[ci].length;
+    });
+  }
+  render(-1);
+
+  setInterval(() => {
+    let from = placement[0].length ? 0 : placement[1].length ? 1 : 2;
+    const to = (from + 1) % 3;
+    const moved = placement[from].shift();
+    placement[to].push(moved);
+    render(moved);
+  }, 3400);
+</script>
+</body>
+</html>

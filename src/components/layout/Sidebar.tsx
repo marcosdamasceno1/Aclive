@@ -3,8 +3,9 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users,
   Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
-  ChevronLeft, ChevronRight, CalendarDays, X, ClipboardList, Loader2, HardDrive,
+  ChevronLeft, ChevronRight, CalendarDays, X, ClipboardList, Loader2, HardDrive, MessageCircle,
 } from 'lucide-react';
+import { useWaInboxStore } from '../../store/waInboxStore';
 import { useAuthStore } from '../../store/authStore';
 import { hasPageAccess } from '../../utils/permissions';
 import type { PageKey } from '../../utils/permissions';
@@ -39,10 +40,12 @@ interface NavItemDef {
   icon: React.ElementType;
   label: string;
   pageKey: string;
+  badge?: number;
 }
 
 export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) => {
   const { currentUser, logout } = useAuthStore();
+  const waUnread = useWaInboxStore(s => s.chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0));
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -59,6 +62,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
     { to: '/kanban',    icon: Kanban,          label: 'Esteira de Produção',  pageKey: 'kanban' },
     { to: '/calendar',  icon: CalendarDays,    label: 'Calendário',           pageKey: 'calendar' },
     { to: '/leads',     icon: Target,          label: 'Leads',                pageKey: 'leads' },
+    { to: '/atendimento', icon: MessageCircle, label: 'Atendimento',          pageKey: 'atendimento', badge: waUnread },
     { to: '/drive',    icon: HardDrive,    label: 'Drive',                pageKey: 'drive' },
   ].filter(i => access(i.pageKey));
 
@@ -70,7 +74,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
     { to: '/settings',      icon: Settings,   label: 'Configurações',   pageKey: 'settings' },
   ].filter(i => access(i.pageKey));
 
-  const NavItem = ({ to, icon: Icon, label }: NavItemDef) => (
+  const NavItem = ({ to, icon: Icon, label, badge }: NavItemDef) => (
     <NavLink
       to={to}
       title={collapsed ? label : undefined}
@@ -87,6 +91,11 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
     >
       <Icon className="w-4 h-4 flex-shrink-0" />
       <span className={collapsed ? 'lg:hidden' : ''}>{label}</span>
+      {(badge ?? 0) > 0 && (
+        <span className={`ml-auto bg-green-500 text-black text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ${collapsed ? 'lg:hidden' : ''}`}>
+          {badge! > 99 ? '99+' : badge}
+        </span>
+      )}
     </NavLink>
   );
 

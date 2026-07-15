@@ -11,6 +11,7 @@ import { useLeadsStore } from './store/leadsStore';
 import { useCalendarStore } from './store/calendarStore';
 import { useCompaniesStore } from './store/companiesStore';
 import { useDemandBoardStore } from './store/demandBoardStore';
+import { useWaInboxStore } from './store/waInboxStore';
 import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES, DEFAULT_BOARD_STAGES } from './store/companySettingsStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
@@ -26,6 +27,7 @@ import { Leads } from './pages/Leads';
 import { Calendar } from './pages/Calendar';
 import { Master } from './pages/Master';
 import { Demandas } from './pages/Demandas';
+import { Atendimento } from './pages/Atendimento';
 import { Drive } from './pages/Drive';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -58,6 +60,7 @@ function App() {
   const { init: initCalendar } = useCalendarStore();
   const { init: initCompanies } = useCompaniesStore();
   const { init: initDemandBoard } = useDemandBoardStore();
+  const { init: initWaInbox } = useWaInboxStore();
   const { init: initCompanySettings } = useCompanySettingsStore();
 
   useEffect(() => {
@@ -78,7 +81,7 @@ function App() {
         // todo o carregamento e a tela ficava sem dados.
         await Promise.allSettled([
           initProfessionals(), initClients(), initDemands(), initFinancial(),
-          initLeads(), initCalendar(), initDemandBoard(), initCompanySettings(),
+          initLeads(), initCalendar(), initDemandBoard(), initWaInbox(), initCompanySettings(),
         ]);
       }
       useAuthStore.getState().loadUsers();
@@ -107,6 +110,8 @@ function App() {
       useFinancialStore.setState({ movements: [] });
       useCalendarStore.setState({ events: [] });
       useDemandBoardStore.setState({ cards: [], dbError: null });
+      useWaInboxStore.getState().teardown();
+      useWaInboxStore.setState({ chats: [], messages: [], dbError: null });
       useAuthStore.setState({ users: [] });
       useCompanySettingsStore.setState({
         googleClientId: '', googleAccessToken: null, googleTokenExpiry: null,
@@ -196,6 +201,7 @@ function App() {
           <Route path="kanban"       element={<AgencyRoute><Kanban /></AgencyRoute>} />
           <Route path="financial"    element={<AgencyRoute><Financial /></AgencyRoute>} />
           <Route path="leads"        element={<AgencyRoute><Leads /></AgencyRoute>} />
+          <Route path="atendimento"  element={<AgencyRoute><Atendimento /></AgencyRoute>} />
           <Route path="calendar"     element={<AgencyRoute><Calendar /></AgencyRoute>} />
           <Route path="social"       element={<Navigate to="/demands" replace />} />
           <Route path="drive"        element={<AgencyRoute><Drive /></AgencyRoute>} />

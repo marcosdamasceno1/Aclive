@@ -1,7 +1,35 @@
-# Roadmap — Atendimento WhatsApp na plataforma (inbox)
+# Atendimento WhatsApp na plataforma (inbox)
 
-> Estudo de viabilidade. NÃO implementado. Provider segue a escolha já existente
-> em Configurações (WAHA ou Meta oficial).
+> **v1 IMPLEMENTADA.** Provider segue a escolha em Configurações (WAHA ou Meta).
+> Fases 2 e 3 (mídia, templates, atribuição de atendente) permanecem no roadmap.
+
+## Checklist de deploy da v1
+
+1. **SQL**: rodar `supabase/migrations/wa_inbox.sql` inteiro no SQL Editor
+   (tabelas wa_chats/wa_messages, dedup, RLS, função wa_touch_chat, Realtime).
+2. **Edge Functions** (Dashboard → Edge Functions → colar código → Deploy):
+   - `waha-webhook`  ← `supabase/functions/waha-webhook/index.ts`
+   - `meta-wa-webhook` ← `supabase/functions/meta-wa-webhook/index.ts`
+3. **Painel**: Configurações → Integrações → WhatsApp → "Ativar recepção de
+   mensagens" (gera o segredo e mostra as URLs prontas).
+4. **WAHA** (se for o provider): no container, definir
+   `WHATSAPP_HOOK_URL=<URL mostrada no painel>` e `WHATSAPP_HOOK_EVENTS=message`
+   (somente `message`; `message.any` duplicaria as enviadas). Reiniciar.
+5. **Meta** (se for o provider): developers.facebook.com → app → WhatsApp →
+   Configuration → Webhook: colar Callback URL + Verify token do painel e
+   assinar o campo `messages`.
+6. Testar: enviar mensagem de um celular para o número → deve aparecer na aba
+   Atendimento em segundos (Realtime) e o badge verde no menu deve subir.
+
+## Decisões tomadas na v1
+
+- Somente conversas individuais (grupos ignorados pelo webhook).
+- Um número por agência.
+- Notificação por badge verde na sidebar (sem som).
+- Mensagens de mídia aparecem como "[mídia — abra no celular]" (corpo/caption
+  quando existir) — thread nunca fica com buraco silencioso.
+- Mensagens enviadas são gravadas pelo painel (webhook ignora fromMe) —
+  elimina a corrida de duplicação do eco.
 
 ## Veredito
 

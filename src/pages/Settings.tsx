@@ -53,6 +53,7 @@ export const Settings = () => {
     saveWhatsappProvider, saveMetaConfig, clearMetaConfig,
     metaLeadsPageId, metaLeadsPageToken, metaLeadsVerifyToken,
     saveMetaLeadsConfig, clearMetaLeadsConfig,
+    waWebhookSecret, generateWaWebhookSecret,
   } = useCompanySettingsStore();
 
   // WAHA config state
@@ -107,6 +108,21 @@ export const Settings = () => {
   }, [metaLeadsPageId, metaLeadsPageToken]);
 
   const WEBHOOK_URL = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1/meta-leads-webhook';
+
+  // Atendimento (inbox) — webhooks de recepção
+  const FN_BASE = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1';
+  const inboxCompanyId = currentUser?.companyId ?? '';
+  const wahaHookUrl = inboxCompanyId && waWebhookSecret
+    ? `${FN_BASE}/waha-webhook?company_id=${inboxCompanyId}&token=${waWebhookSecret}` : '';
+  const metaHookUrl = inboxCompanyId
+    ? `${FN_BASE}/meta-wa-webhook?company_id=${inboxCompanyId}` : '';
+  const [copiedWaHook, setCopiedWaHook] = useState(false);
+  const [copiedWaSecret, setCopiedWaSecret] = useState(false);
+  const [generatingWaSecret, setGeneratingWaSecret] = useState(false);
+  const handleGenerateWaSecret = async () => {
+    setGeneratingWaSecret(true);
+    try { await generateWaWebhookSecret(); } finally { setGeneratingWaSecret(false); }
+  };
 
   const copyToClipboard = (text: string, setCopied: (v: boolean) => void) => {
     navigator.clipboard.writeText(text);
@@ -762,6 +778,65 @@ export const Settings = () => {
                   </div>
                 </div>
               )}
+
+              {/* ── Atendimento (inbox) — webhook de recepção ── */}
+              <div className="border-t border-white/[0.08] pt-5 space-y-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-100">Atendimento (receber mensagens no painel)</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Para as mensagens dos clientes aparecerem na aba Atendimento, configure o webhook do provedor ativo.
+                  </p>
+                </div>
+                {!waWebhookSecret ? (
+                  <button
+                    onClick={handleGenerateWaSecret}
+                    disabled={generatingWaSecret}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    {generatingWaSecret ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    Ativar recepção de mensagens
+                  </button>
+                ) : whatsappProvider === 'waha' ? (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">URL do webhook (configure no WAHA)</label>
+                    <div className="flex gap-2">
+                      <input readOnly value={wahaHookUrl} className="flex-1 border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-300 bg-[#161b22] font-mono" />
+                      <button onClick={() => copyToClipboard(wahaHookUrl, setCopiedWaHook)} className="flex items-center gap-1.5 border border-white/[0.08] text-slate-300 hover:border-white/20 px-3 rounded-lg text-xs font-semibold">
+                        {copiedWaHook ? <CheckCircle className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedWaHook ? 'Copiado' : 'Copiar'}
+                      </button>
+                    </div>
+                    <div className="text-xs text-slate-500 space-y-1 pt-1">
+                      <p>• No container do WAHA, defina: <strong className="text-slate-400">WHATSAPP_HOOK_URL</strong> = a URL acima</p>
+                      <p>• E <strong className="text-slate-400">WHATSAPP_HOOK_EVENTS=message</strong> (somente "message" — não use "message.any")</p>
+                      <p>• Reinicie o container do WAHA após alterar as variáveis</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Callback URL (configure no app da Meta)</label>
+                    <div className="flex gap-2">
+                      <input readOnly value={metaHookUrl} className="flex-1 border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-300 bg-[#161b22] font-mono" />
+                      <button onClick={() => copyToClipboard(metaHookUrl, setCopiedWaHook)} className="flex items-center gap-1.5 border border-white/[0.08] text-slate-300 hover:border-white/20 px-3 rounded-lg text-xs font-semibold">
+                        {copiedWaHook ? <CheckCircle className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedWaHook ? 'Copiado' : 'Copiar'}
+                      </button>
+                    </div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide pt-1">Verify token</label>
+                    <div className="flex gap-2">
+                      <input readOnly value={waWebhookSecret} className="flex-1 border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-300 bg-[#161b22] font-mono" />
+                      <button onClick={() => copyToClipboard(waWebhookSecret, setCopiedWaSecret)} className="flex items-center gap-1.5 border border-white/[0.08] text-slate-300 hover:border-white/20 px-3 rounded-lg text-xs font-semibold">
+                        {copiedWaSecret ? <CheckCircle className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedWaSecret ? 'Copiado' : 'Copiar'}
+                      </button>
+                    </div>
+                    <div className="text-xs text-slate-500 space-y-1 pt-1">
+                      <p>• Em <strong className="text-slate-400">developers.facebook.com</strong> → seu app → WhatsApp → Configuration → Webhook</p>
+                      <p>• Cole a Callback URL e o Verify token acima, e assine o campo <strong className="text-slate-400">messages</strong></p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

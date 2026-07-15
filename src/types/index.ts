@@ -153,6 +153,32 @@ export interface DemandCard {
   createdAt: string;
 }
 
+// Atendimento WhatsApp (inbox)
+export interface WaChat {
+  id: string;
+  chatKey: string;           // telefone só dígitos
+  name?: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+  lastDirection?: 'in' | 'out';
+  lastInboundAt?: string;    // controla a janela de 24h da Meta
+  unreadCount: number;
+  createdAt: string;
+}
+
+export interface WaMessage {
+  id: string;
+  chatKey: string;
+  direction: 'in' | 'out';
+  body?: string;
+  msgType: string;           // text | other
+  status: string;            // received | sending | sent | delivered | read | error
+  provider?: 'waha' | 'meta';
+  providerMessageId?: string;
+  sentAt: string;
+  createdAt?: string;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;

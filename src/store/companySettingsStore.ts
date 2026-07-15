@@ -37,6 +37,7 @@ interface CompanySettingsState {
   metaLeadsPageId: string;
   metaLeadsPageToken: string;
   metaLeadsVerifyToken: string;
+  waWebhookSecret: string;
   kanbanStages: KanbanStage[];
   demandBoardStages: KanbanStage[];
   loading: boolean;
@@ -55,6 +56,7 @@ interface CompanySettingsState {
   clearMetaLeadsConfig: () => Promise<void>;
   saveKanbanStages: (stages: KanbanStage[]) => Promise<string | null>;
   saveDemandBoardStages: (stages: KanbanStage[]) => Promise<string | null>;
+  generateWaWebhookSecret: () => Promise<string | null>;
 }
 
 const companyId = () => useAuthStore.getState().currentUser?.companyId;
@@ -100,6 +102,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaLeadsPageId: '',
   metaLeadsPageToken: '',
   metaLeadsVerifyToken: '',
+  waWebhookSecret: '',
   kanbanStages: DEFAULT_KANBAN_STAGES,
   demandBoardStages: DEFAULT_BOARD_STAGES,
   loading: false,
@@ -133,6 +136,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       metaLeadsPageId:      (row?.meta_leads_page_id      as string) || '',
       metaLeadsPageToken:   (row?.meta_leads_page_token   as string) || '',
       metaLeadsVerifyToken: (row?.meta_leads_verify_token as string) || '',
+      waWebhookSecret:      (row?.wa_webhook_secret       as string) || '',
       kanbanStages:         (row?.kanban_stages           as KanbanStage[]) || DEFAULT_KANBAN_STAGES,
       demandBoardStages:    (row?.demand_board_stages     as KanbanStage[]) || DEFAULT_BOARD_STAGES,
       loading: false,
@@ -223,5 +227,20 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
     const { error } = await upsert({ demand_board_stages: stages });
     if (error) console.error('[company-settings.saveDemandBoardStages]', error.message);
     return error?.message ?? null;
+  },
+
+  // Gera (uma única vez) o segredo que autentica os webhooks do Atendimento.
+  // Se já existe, apenas retorna — trocar o segredo quebraria webhooks ativos.
+  generateWaWebhookSecret: async () => {
+    const existing = get().waWebhookSecret;
+    if (existing) return existing;
+    const secret = crypto.randomUUID().replace(/-/g, '');
+    const { error } = await upsert({ wa_webhook_secret: secret });
+    if (error) {
+      console.error('[company-settings.waSecret]', error.message);
+      return null;
+    }
+    set({ waWebhookSecret: secret });
+    return secret;
   },
 }));

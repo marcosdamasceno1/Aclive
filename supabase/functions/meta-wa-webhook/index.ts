@@ -31,25 +31,33 @@ Deno.serve(async (req: Request) => {
   const companyId = url.searchParams.get('company_id') ?? '';
   if (!UUID_RE.test(companyId)) return new Response('Bad Request', { status: 400 });
 
-  const { data: cfg } = await supabase
+  // select('*'): tolerante a colunas ausentes — uma coluna que não existe no
+  // banco NÃO pode derrubar a verificação (lição aprendida no company_settings).
+  const { data: cfgRow, error: cfgErr } = await supabase
     .from('company_settings')
-    .select('wa_webhook_secret, meta_phone_number_id')
+    .select('*')
     .eq('company_id', companyId)
     .maybeSingle();
+  const cfg = (cfgRow ?? {}) as Record<string, unknown>;
+  const secret = typeof cfg.wa_webhook_secret === 'string' ? cfg.wa_webhook_secret : '';
+  const metaPhoneId = typeof cfg.meta_phone_number_id === 'string' ? cfg.meta_phone_number_id : '';
 
   // ── GET: verificação do webhook pela Meta ─────────────────────────────────
+  // As respostas de erro são AUTOEXPLICATIVAS para diagnóstico no navegador.
   if (req.method === 'GET') {
     const mode = url.searchParams.get('hub.mode');
     const verify = url.searchParams.get('hub.verify_token');
     const challenge = url.searchParams.get('hub.challenge') ?? '';
-    if (mode === 'subscribe' && cfg?.wa_webhook_secret && verify === cfg.wa_webhook_secret) {
-      return ok(challenge);
-    }
-    return new Response('Forbidden', { status: 403 });
+    if (cfgErr) return new Response(`config_error: ${cfgErr.message}`, { status: 500 });
+    if (!cfgRow) return new Response('company_not_found: confira o company_id da URL', { status: 403 });
+    if (!secret) return new Response('secret_not_set: clique em "Ativar recepção de mensagens" em Configuracoes → Integracoes → WhatsApp (e rode a migracao wa_inbox.sql se ainda nao rodou)', { status: 403 });
+    if (mode !== 'subscribe') return new Response('missing_hub_params: use esta URL apenas na verificacao da Meta', { status: 403 });
+    if (verify !== secret) return new Response('token_mismatch: o Verify token colado na Meta nao e igual ao segredo do painel', { status: 403 });
+    return ok(challenge);
   }
 
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  if (!cfg?.wa_webhook_secret) return ok({ ignored: 'unconfigured' });
+  if (!secret) return ok({ ignored: 'unconfigured' });
 
   let payload: Record<string, unknown>;
   try { payload = await req.json(); } catch { return ok({ ignored: 'json' }); }
@@ -65,7 +73,7 @@ Deno.serve(async (req: Request) => {
 
       // Autenticidade: o número do evento precisa ser o número configurado.
       const phoneId = String((value.metadata as Record<string, unknown> | undefined)?.phone_number_id ?? '');
-      if (!cfg.meta_phone_number_id || phoneId !== cfg.meta_phone_number_id) continue;
+      if (!metaPhoneId || phoneId !== metaPhoneId) continue;
 
       // Nome do contato (quando a Meta envia)
       const contacts = Array.isArray(value.contacts) ? value.contacts as Record<string, unknown>[] : [];

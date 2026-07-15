@@ -31,12 +31,16 @@ Deno.serve(async (req: Request) => {
   if (!UUID_RE.test(companyId) || !token) return new Response('Unauthorized', { status: 401 });
 
   // Autentica: o token da URL precisa bater com o segredo da agência.
-  const { data: cfg } = await supabase
+  // select('*'): tolerante a colunas ausentes no banco.
+  const { data: cfgRow, error: cfgErr } = await supabase
     .from('company_settings')
-    .select('wa_webhook_secret')
+    .select('*')
     .eq('company_id', companyId)
     .maybeSingle();
-  if (!cfg?.wa_webhook_secret || cfg.wa_webhook_secret !== token) {
+  if (cfgErr) return new Response(`config_error: ${cfgErr.message}`, { status: 500 });
+  const secret = typeof (cfgRow as Record<string, unknown> | null)?.wa_webhook_secret === 'string'
+    ? String((cfgRow as Record<string, unknown>).wa_webhook_secret) : '';
+  if (!secret || secret !== token) {
     return new Response('Unauthorized', { status: 401 });
   }
 

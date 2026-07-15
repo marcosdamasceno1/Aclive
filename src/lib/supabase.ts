@@ -4,10 +4,23 @@ const SUPABASE_URL = 'https://nkxyecdxgaxpnezfjkap.supabase.co';
 // Public anon key — safe to hardcode in client-side code (Supabase design intent)
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reHllY2R4Z2F4cG5lemZqa2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NzgzMTEsImV4cCI6MjA5NTI1NDMxMX0.norNo8ksplzq99jXD27iOYrbVcZuaCJ2XCpEIO2TIr0';
 
+// Lock LOCAL à aba (fila de promises) no lugar do navigator.locks.
+// O navigator.locks cross-tab pode ficar preso indefinidamente (aba zumbi,
+// deadlock em callback) e aí TODA query de dados pendura antes do fetch —
+// era a causa da tela "logada porém zerada" após atualizações. Este mutex
+// serializa as operações de auth dentro da aba e é imune a travamento
+// externo: se uma operação falha, a fila segue.
+let authOpChain: Promise<unknown> = Promise.resolve();
+const inTabLock = async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+  const run = authOpChain.then(fn);
+  authOpChain = run.catch(() => {});
+  return await run;
+};
+
 // Single client for auth + data — session JWT is automatically included in all
 // PostgREST requests, so RLS policies receive the correct auth.jwt() claims.
 export const supabaseAuth = createClient(SUPABASE_URL, ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'sb-auth' },
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'sb-auth', lock: inTabLock },
 });
 
 // Alias — all data stores import this; using the same client means no manual

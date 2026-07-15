@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Lead, LeadStatus } from '../types';
-import { getCompanyId, companyRow, companyUpdate, companyDelete, assertCompanyData } from '../lib/companyIsolation';
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companyFetchAll, assertCompanyData } from '../lib/companyIsolation';
+import { scheduleInitRetry } from '../lib/initRetry';
 
 interface LeadsState {
   leads: Lead[];
@@ -36,19 +37,14 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ leads: [], loading: false, dbError: null }); return; }
     set({ loading: true, dbError: null });
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('company_id', cid)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('[leads.init]', error);
-      set({ loading: false, dbError: `Tabela não encontrada ou inacessível: ${error.message}` });
+    const { rows, error } = await companyFetchAll('leads', cid, 'created_at', false);
+    if (rows === null) {
+      // Falha mesmo após retries — MANTÉM os leads atuais e tenta de novo em 30s.
+      set({ loading: false, dbError: `Não foi possível carregar os leads: ${error}` });
+      scheduleInitRetry('leads', () => useLeadsStore.getState().init());
       return;
     }
-
-    const records = (data || []).map(r => fromDb<Lead>(r as Record<string, unknown>));
+    const records = rows.map(r => fromDb<Lead>(r));
     set({ leads: assertCompanyData(records, cid, 'leads'), loading: false, dbError: null });
   },
 

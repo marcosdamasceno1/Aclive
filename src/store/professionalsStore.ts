@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Professional } from '../types';
-import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companyFetchAll, assertCompanyData } from '../lib/companyIsolation';
+import { scheduleInitRetry } from '../lib/initRetry';
 
 interface ProfessionalsState {
   professionals: Professional[];
@@ -23,8 +24,14 @@ export const useProfessionalsStore = create<ProfessionalsState>()((set, get) => 
     const cid = getCompanyId();
     if (!cid) { set({ professionals: [], loading: false }); return; }
     set({ loading: true });
-    const { data } = await companySelect('professionals', cid).order('created_at');
-    const records = (data || []).map(r => fromDb<Professional>(r as Record<string, unknown>));
+    const { rows } = await companyFetchAll('professionals', cid);
+    if (rows === null) {
+      // Falha mesmo após retries — MANTÉM os dados atuais e tenta de novo em 30s.
+      set({ loading: false });
+      scheduleInitRetry('professionals', () => useProfessionalsStore.getState().init());
+      return;
+    }
+    const records = rows.map(r => fromDb<Professional>(r));
     set({ professionals: assertCompanyData(records, cid, 'professionals'), loading: false });
   },
 

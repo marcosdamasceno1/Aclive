@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Client } from '../types';
-import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companyFetchAll, assertCompanyData } from '../lib/companyIsolation';
+import { scheduleInitRetry } from '../lib/initRetry';
 
 interface ClientsState {
   clients: Client[];
@@ -23,8 +24,14 @@ export const useClientsStore = create<ClientsState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ clients: [], loading: false }); return; }
     set({ loading: true });
-    const { data } = await companySelect('clients', cid).order('created_at');
-    const records = (data || []).map(r => fromDb<Client>(r as Record<string, unknown>));
+    const { rows } = await companyFetchAll('clients', cid);
+    if (rows === null) {
+      // Falha mesmo após retries — MANTÉM os dados atuais e tenta de novo em 30s.
+      set({ loading: false });
+      scheduleInitRetry('clients', () => useClientsStore.getState().init());
+      return;
+    }
+    const records = rows.map(r => fromDb<Client>(r));
     set({ clients: assertCompanyData(records, cid, 'clients'), loading: false });
   },
 

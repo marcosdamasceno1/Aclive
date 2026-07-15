@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabaseAuth, setDataSession, clearDataSession } from './lib/supabase';
+import { cancelInitRetries } from './lib/initRetry';
 import { useAuthStore } from './store/authStore';
 import { useProfessionalsStore } from './store/professionalsStore';
 import { useClientsStore } from './store/clientsStore';
@@ -117,7 +118,7 @@ function App() {
       });
     };
 
-    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
+    const handleAuthEvent = async (event: string, session: import('@supabase/supabase-js').Session | null) => {
       if (event === 'SIGNED_IN') {
         // Ignore events with no session (malformed / teardown edge cases).
         if (!session?.user) return;
@@ -150,10 +151,20 @@ function App() {
       }
       if (event === 'SIGNED_OUT') {
         storesLoaded = false;
+        cancelInitRetries();
         await clearDataSession();
         clearAllStores();
         useAuthStore.setState({ currentUser: null });
       }
+    };
+
+    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange((event, session) => {
+      // REGRA CRÍTICA: nada de await direto aqui. O callback do
+      // onAuthStateChange roda DENTRO do lock de auth do supabase-js;
+      // aguardar uma query (que precisa do mesmo lock) causava deadlock —
+      // o sistema ficava logado porém com tudo zerado após atualizações.
+      // setTimeout(0) tira o trabalho de dentro do lock.
+      setTimeout(() => { void handleAuthEvent(event, session); }, 0);
     });
     return () => {
       subscription.unsubscribe();

@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { Demand, KanbanStatus, Comment } from '../types';
-import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companyFetchAll, assertCompanyData } from '../lib/companyIsolation';
+import { scheduleInitRetry } from '../lib/initRetry';
 
 interface DemandsState {
   demands: Demand[];
@@ -25,8 +26,14 @@ export const useDemandsStore = create<DemandsState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ demands: [], loading: false }); return; }
     set({ loading: true });
-    const { data } = await companySelect('demands', cid).order('created_at');
-    const records = (data || []).map(r => fromDb<Demand>(r as Record<string, unknown>));
+    const { rows } = await companyFetchAll('demands', cid);
+    if (rows === null) {
+      // Falha mesmo após retries — MANTÉM os dados atuais e tenta de novo em 30s.
+      set({ loading: false });
+      scheduleInitRetry('demands', () => useDemandsStore.getState().init());
+      return;
+    }
+    const records = rows.map(r => fromDb<Demand>(r));
     set({ demands: assertCompanyData(records, cid, 'demands'), loading: false });
   },
 

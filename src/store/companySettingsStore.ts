@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabaseData } from '../lib/supabase';
 import { useAuthStore } from './authStore';
+import { scheduleInitRetry } from '../lib/initRetry';
 import { requestGoogleTokenSilent } from '../lib/googleDrive';
 import type { WhatsAppProvider } from '../utils/whatsapp';
 import type { KanbanStage } from '../types';
@@ -113,8 +114,10 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       .eq('company_id', cid)
       .maybeSingle();
     if (error) {
+      // Falha — MANTÉM as configurações atuais e tenta de novo em 30s.
       console.error('[company-settings.init]', error.message);
       set({ loading: false });
+      scheduleInitRetry('company_settings', () => useCompanySettingsStore.getState().init());
       return;
     }
     const row = data as Record<string, unknown> | null;

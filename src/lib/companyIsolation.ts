@@ -119,6 +119,66 @@ export const companySelect = (table: string, companyId: string) =>
     .select('*')
     .eq('company_id', companyId);
 
+// ─── Leitura blindada (retry + distinção erro × vazio) ───────────────────────
+
+const FETCH_RETRY_DELAYS = [1000, 2000, 4000, 8000];
+const FETCH_ATTEMPT_TIMEOUT = 12_000;
+
+// Nenhuma tentativa pode pendurar para sempre (ex: lock de auth preso) —
+// estoura em 12s, conta como falha e o ciclo de retry segue.
+const withAttemptTimeout = <T>(p: PromiseLike<T>): Promise<T> =>
+  Promise.race([
+    Promise.resolve(p),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`timeout de ${FETCH_ATTEMPT_TIMEOUT / 1000}s na consulta`)), FETCH_ATTEMPT_TIMEOUT),
+    ),
+  ]);
+
+/**
+ * SELECT com retry automático — a ÚNICA forma correta de carregar listas
+ * nos inits dos stores.
+ *
+ * REGRA INEGOCIÁVEL: `rows === null` significa FALHA (rede, token em
+ * renovação, 5xx). O store deve MANTER os dados atuais e agendar retry.
+ * Jamais grave lista vazia a partir de uma falha — foi exatamente esse
+ * padrão (`const { data } = await ...` ignorando o erro) que fazia o
+ * sistema "zerar" a cada atualização: um 401 transitório durante a
+ * renovação do token virava tela vazia permanente.
+ *
+ * `rows === []` significa sucesso com zero registros (conta nova) —
+ * aí sim pode gravar vazio.
+ */
+export async function companyFetchAll(
+  table: string,
+  companyId: string,
+  orderBy: string = 'created_at',
+  ascending: boolean = true,
+): Promise<{ rows: Record<string, unknown>[] | null; error: string | null }> {
+  let lastError = 'erro desconhecido';
+  for (let attempt = 0; attempt <= FETCH_RETRY_DELAYS.length; attempt++) {
+    try {
+      const { data, error } = await withAttemptTimeout(
+        supabase
+          .from(table)
+          .select('*')
+          .eq('company_id', companyId)
+          .order(orderBy, { ascending }),
+      );
+      if (!error) return { rows: data ?? [], error: null };
+      lastError = error.message;
+      // Erro de schema (tabela/coluna inexistente) não se resolve com retry
+      if (/does not exist|42P01/i.test(lastError)) break;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+    if (attempt < FETCH_RETRY_DELAYS.length) {
+      await new Promise(r => setTimeout(r, FETCH_RETRY_DELAYS[attempt]));
+    }
+  }
+  console.error(`[companyFetchAll:${table}] falha após retries:`, lastError);
+  return { rows: null, error: lastError };
+}
+
 // ─── Validação pós-carregamento ──────────────────────────────────────────────
 
 /**

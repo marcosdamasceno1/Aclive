@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { FinancialMovement, AuditLog } from '../types';
-import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companyFetchAll, assertCompanyData } from '../lib/companyIsolation';
+import { scheduleInitRetry } from '../lib/initRetry';
 
 const CATEGORY_KEY = 'financial_custom_categories';
 
@@ -60,11 +61,17 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
     if (!cid) { set({ movements: [], auditLog: [], loading: false }); return; }
     set({ loading: true });
     const [movementsResult, auditResult] = await Promise.all([
-      companySelect('financial_movements', cid).order('created_at'),
-      companySelect('audit_logs', cid).order('created_at'),
+      companyFetchAll('financial_movements', cid),
+      companyFetchAll('audit_logs', cid),
     ]);
-    const movements = (movementsResult.data || []).map(r => fromDb<FinancialMovement>(r as Record<string, unknown>));
-    const auditLog = (auditResult.data || []).map(r => fromDb<AuditLog>(r as Record<string, unknown>));
+    if (movementsResult.rows === null || auditResult.rows === null) {
+      // Falha mesmo após retries — MANTÉM os dados atuais e tenta de novo em 30s.
+      set({ loading: false });
+      scheduleInitRetry('financial', () => useFinancialStore.getState().init());
+      return;
+    }
+    const movements = movementsResult.rows.map(r => fromDb<FinancialMovement>(r));
+    const auditLog = auditResult.rows.map(r => fromDb<AuditLog>(r));
     set({
       movements: assertCompanyData(movements, cid, 'financial_movements'),
       auditLog: assertCompanyData(auditLog, cid, 'audit_logs'),

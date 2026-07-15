@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabaseAuth, supabaseData, setDataSession, adminApi } from '../lib/supabase';
 import { performLogout, getValidSession, resumeAutoRefresh } from '../lib/authSession';
+import { scheduleInitRetry } from '../lib/initRetry';
 import type { User, UserRole } from '../types';
 
 interface AuthState {
@@ -100,7 +101,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
       .order('created_at');
 
     if (error) {
+      // Falha — MANTÉM a lista atual de usuários e tenta de novo em 30s.
       set({ usersError: error.message });
+      scheduleInitRetry('users', () => useAuthStore.getState().loadUsers());
       return;
     }
 

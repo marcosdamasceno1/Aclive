@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { CalendarEvent, Priority } from '../types';
-import { getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData } from '../lib/companyIsolation';
+import { getCompanyId, companyRow, companyUpdate, companyDelete, companyFetchAll, assertCompanyData } from '../lib/companyIsolation';
+import { scheduleInitRetry } from '../lib/initRetry';
 
 interface CalendarState {
   events: CalendarEvent[];
@@ -23,9 +24,14 @@ export const useCalendarStore = create<CalendarState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ events: [], loading: false }); return; }
     set({ loading: true });
-    const { data, error } = await companySelect('calendar_events', cid).order('date');
-    if (error) console.error('[calendar.init]', error);
-    const records = (data || []).map(r => fromDb<CalendarEvent>(r as Record<string, unknown>));
+    const { rows } = await companyFetchAll('calendar_events', cid, 'date');
+    if (rows === null) {
+      // Falha mesmo após retries — MANTÉM os dados atuais e tenta de novo em 30s.
+      set({ loading: false });
+      scheduleInitRetry('calendar', () => useCalendarStore.getState().init());
+      return;
+    }
+    const records = rows.map(r => fromDb<CalendarEvent>(r));
     set({ events: assertCompanyData(records, cid, 'calendar_events'), loading: false });
   },
 

@@ -4,8 +4,9 @@ import { supabaseData as supabase } from '../lib/supabase';
 import { fromDb, toDb } from '../lib/dbMapper';
 import type { DemandCard } from '../types';
 import {
-  getCompanyId, companyRow, companyUpdate, companyDelete, companySelect, assertCompanyData,
+  getCompanyId, companyRow, companyUpdate, companyDelete, companyFetchAll, assertCompanyData,
 } from '../lib/companyIsolation';
+import { scheduleInitRetry } from '../lib/initRetry';
 
 interface DemandBoardState {
   cards: DemandCard[];
@@ -27,20 +28,15 @@ export const useDemandBoardStore = create<DemandBoardState>()((set, get) => ({
     const cid = getCompanyId();
     if (!cid) { set({ cards: [], loading: false }); return; }
     set({ loading: true });
-    try {
-      const { data, error } = await companySelect('demand_cards', cid).order('created_at');
-      if (error) {
-        console.error('[demand_board.init]', error.message);
-        set({ loading: false, dbError: error.message });
-        return;
-      }
-      const records = (data || []).map(r => fromDb<DemandCard>(r as Record<string, unknown>));
-      set({ cards: assertCompanyData(records, cid, 'demand_cards'), loading: false, dbError: null });
-    } catch (e) {
-      // Nunca propaga — evita derrubar o carregamento dos demais stores.
-      console.error('[demand_board.init] exceção', e);
-      set({ loading: false, dbError: String(e) });
+    const { rows, error } = await companyFetchAll('demand_cards', cid);
+    if (rows === null) {
+      // Falha mesmo após retries — MANTÉM os cards atuais e tenta de novo em 30s.
+      set({ loading: false, dbError: error });
+      scheduleInitRetry('demand_board', () => useDemandBoardStore.getState().init());
+      return;
     }
+    const records = rows.map(r => fromDb<DemandCard>(r));
+    set({ cards: assertCompanyData(records, cid, 'demand_cards'), loading: false, dbError: null });
   },
 
   addCard: (data) => {

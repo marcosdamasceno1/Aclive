@@ -46,8 +46,10 @@ Frontend ──(JWT do usuário)──► Edge Function wa-gateway ──(chave-
 
 ### Deploy da v1.1
 
-1. **Servidor WAHA Plus** rodando (multi-sessão exige Plus; use engine NOWEB para
-   escalar leve). Defina `WHATSAPP_API_KEY` no container.
+1. **Servidor WAHA** (imagem `devlikeapro/waha:latest`) — ver
+   `deploy/waha/` (docker-compose + README com HTTPS e configs de estabilidade).
+   A antiga separação Core/Plus não se aplica mais: multi-sessão e webhook por
+   sessão estão na versão atual.
 2. **SQL**: a migração `wa_inbox.sql` já cobre tudo (usa `wa_webhook_secret`).
    Nenhuma tabela nova.
 3. **Edge Functions** (Dashboard → colar → Deploy):
@@ -57,12 +59,13 @@ Frontend ──(JWT do usuário)──► Edge Function wa-gateway ──(chave-
 4. Cliente: Configurações → Integrações → WhatsApp → **Conectar WhatsApp** →
    escaneia o QR. Pronto — recebe e envia pela aba Atendimento.
 
-### Riscos de escala (documentados)
+### Estabilidade e escala (documentado)
 
-- WAHA Plus é licença paga; sem ela, multi-sessão não roda.
-- Cada sessão consome RAM (NOWEB « WEBJS). Dimensionar o servidor.
+- `WHATSAPP_RESTART_ALL_SESSIONS=true` + volume persistente: sessões voltam após
+  restart do container SEM re-escanear (embutido no compose).
+- Engine NOWEB para baixo consumo de RAM por sessão.
 - Ponto único de falha: servidor cai → todas as agências param (banimento é
-  isolado por sessão). Monitorar + backup.
+  isolado por sessão). Monitorar + backup do volume de sessões.
 
 ## Decisões tomadas na v1
 

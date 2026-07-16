@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  WAHA — servidor central de WhatsApp para o Growth Expert (multi-agência)
+#  Suba num servidor/VPS com Docker. Cada agência vira uma sessão isolada;
+#  o gateway (Edge Function wa-gateway) cria/gerencia as sessões automaticamente.
+#
+#  Passos:
+#    1. cp .env.example .env  e preencha WAHA_API_KEY (crie uma chave forte)
+#    2. docker compose up -d
+#    3. Coloque atrás de HTTPS (Caddy/Nginx) — ver README.md
+#    4. Nos secrets da Edge Function wa-gateway:
+#         WAHA_BASE_URL = https://seu-waha.dominio.com
+#         WAHA_API_KEY  = a mesma chave do .env
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  waha:
+    image: devlikeapro/waha:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Autenticação da API (o gateway envia em X-Api-Key). NUNCA deixe vazio.
+      WHATSAPP_API_KEY: ${WAHA_API_KEY}
+
+      # Engine leve (recomendado p/ muitas sessões). Alternativas: WEBJS, GOWS.
+      WHATSAPP_DEFAULT_ENGINE: NOWEB
+
+      # ESTABILIDADE — o que impede o cliente de re-escanear:
+      # persiste as sessões em disco e as reinicia sozinho ao subir o container.
+      WHATSAPP_RESTART_ALL_SESSIONS: "true"
+      WHATSAPP_FILES_LIFETIME: "0"
+
+      # Não imprime QR no log (o QR vai pro painel via gateway).
+      WAHA_PRINT_QR: "false"
+
+      # Dashboard do WAHA protegido (opcional, mas recomendado).
+      WAHA_DASHBOARD_ENABLED: "true"
+      WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USER:-admin}
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASS:-change-me}
+    volumes:
+      # Persistência das sessões (sobrevive a restart do container).
+      - waha-sessions:/app/.sessions
+      - waha-store:/app/store
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  waha-sessions:
+  waha-store:

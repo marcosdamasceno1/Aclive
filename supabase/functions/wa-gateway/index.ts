@@ -42,6 +42,32 @@ const wahaFetch = (path: string, init: RequestInit = {}): Promise<Response> => {
   }).finally(() => clearTimeout(t));
 };
 
+// Busca o QR tolerando variações entre versões/engines do WAHA:
+// - endpoint pode ser /api/{session}/auth/qr ou /api/sessions/{session}/auth/qr
+// - resposta pode ser imagem binária OU JSON ({data,mimetype} ou {value})
+async function fetchQr(session: string): Promise<string | null> {
+  const paths = [`/api/${session}/auth/qr?format=image`, `/api/sessions/${session}/auth/qr?format=image`];
+  for (const path of paths) {
+    try {
+      const res = await wahaFetch(path);
+      if (!res.ok) continue;
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        const j = await res.json().catch(() => ({})) as Record<string, unknown>;
+        if (typeof j.data === 'string') return `data:${(j.mimetype as string) || 'image/png'};base64,${j.data}`;
+        if (typeof j.value === 'string' && j.value.startsWith('data:')) return j.value;
+        continue;
+      }
+      const buf = new Uint8Array(await res.arrayBuffer());
+      if (buf.length === 0) continue;
+      let bin = '';
+      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      return `data:image/png;base64,${btoa(bin)}`;
+    } catch { /* tenta o próximo caminho */ }
+  }
+  return null;
+}
+
 async function statusAndQr(session: string): Promise<Response> {
   let status = 'UNKNOWN';
   try {
@@ -53,17 +79,10 @@ async function statusAndQr(session: string): Promise<Response> {
     return json({ status: 'UNREACHABLE', error: 'waha_unreachable' });
   }
 
+  // Alguns engines reportam SCAN_QR_CODE, outros STARTING enquanto o QR já existe.
   let qr: string | null = null;
-  if (status === 'SCAN_QR_CODE') {
-    try {
-      const qrRes = await wahaFetch(`/api/${session}/auth/qr?format=image`);
-      if (qrRes.ok) {
-        const buf = new Uint8Array(await qrRes.arrayBuffer());
-        let bin = '';
-        for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-        qr = `data:image/png;base64,${btoa(bin)}`;
-      }
-    } catch { /* QR indisponível neste tick — o front tenta de novo */ }
+  if (status === 'SCAN_QR_CODE' || status === 'STARTING') {
+    qr = await fetchQr(session);
   }
   return json({ status, qr });
 }

@@ -73,7 +73,11 @@ Deno.serve(async (req: Request) => {
 
       // Autenticidade: o número do evento precisa ser o número configurado.
       const phoneId = String((value.metadata as Record<string, unknown> | undefined)?.phone_number_id ?? '');
-      if (!metaPhoneId || phoneId !== metaPhoneId) continue;
+      if (!metaPhoneId || phoneId !== metaPhoneId) {
+        // Diagnóstico visível em Edge Functions → Logs
+        console.warn(`[meta-wa-webhook] evento descartado: phone_number_id do evento="${phoneId}" vs configurado="${metaPhoneId || '(vazio — salve o Phone Number ID no painel)'}"`);
+        continue;
+      }
 
       // Nome do contato (quando a Meta envia)
       const contacts = Array.isArray(value.contacts) ? value.contacts as Record<string, unknown>[] : [];

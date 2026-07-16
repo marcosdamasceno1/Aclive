@@ -1,0 +1,7 @@
+# Caddyfile — HTTPS automático para o WAHA.
+# Troque waha.seudominio.com pelo subdomínio real (registro A → IP do VPS).
+# O Caddy emite e renova o certificado Let's Encrypt sozinho.
+
+waha.seudominio.com {
+    reverse_proxy localhost:3000
+}

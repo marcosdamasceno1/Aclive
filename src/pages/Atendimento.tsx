@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useWaInboxStore } from '../store/waInboxStore';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
-import { getWahaSessionStatus, isMetaWindowOpen } from '../lib/waInboxProvider';
+import { waStatus as waGatewayStatus } from '../lib/waGateway';
 import type { WaChat } from '../types';
 import {
-  MessageCircle, Search, Send, Plus, X, AlertTriangle, ChevronLeft, RefreshCw, Clock,
+  MessageCircle, Search, Send, Plus, X, AlertTriangle, ChevronLeft, RefreshCw,
 } from 'lucide-react';
 
 const fmtTime = (iso?: string): string => {
@@ -26,7 +27,8 @@ const fmtPhone = (digits: string): string => {
 
 export const Atendimento = () => {
   const { chats, messages, dbError, realtimeUp, init, sendText, markChatRead, startChat } = useWaInboxStore();
-  const { whatsappProvider } = useCompanySettingsStore();
+  const waStatus = useCompanySettingsStore(s => s.waStatus);
+  const setWaStatus = useCompanySettingsStore(s => s.setWaStatus);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -36,21 +38,21 @@ export const Atendimento = () => {
   const [showNew, setShowNew] = useState(false);
   const [newPhone, setNewPhone] = useState('');
   const [newName, setNewName] = useState('');
-  const [wahaStatus, setWahaStatus] = useState<string>('WORKING');
   const threadRef = useRef<HTMLDivElement>(null);
 
-  // Saúde da sessão WAHA (banner quando não está WORKING)
+  // Saúde da sessão WAHA via gateway (banner quando não está conectado)
   useEffect(() => {
-    if (whatsappProvider !== 'waha') return;
     let alive = true;
     const check = async () => {
-      const { status } = await getWahaSessionStatus();
-      if (alive) setWahaStatus(status);
+      const { status } = await waGatewayStatus();
+      if (alive && status) setWaStatus(status);
     };
     check();
     const id = setInterval(check, 60_000);
     return () => { alive = false; clearInterval(id); };
-  }, [whatsappProvider]);
+  }, [setWaStatus]);
+
+  const connected = waStatus === 'WORKING';
 
   // Fallback do Realtime: se o canal cair, ressincroniza a cada 60s
   useEffect(() => {
@@ -80,9 +82,6 @@ export const Atendimento = () => {
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [thread.length, selectedKey]);
-
-  // Janela de 24h (só relevante na Meta)
-  const metaWindowOpen = whatsappProvider !== 'meta' || isMetaWindowOpen(selectedChat?.lastInboundAt);
 
   const openChat = (c: WaChat) => {
     setSelectedKey(c.chatKey);
@@ -122,7 +121,7 @@ export const Atendimento = () => {
         <div>
           <h1 className="text-base font-bold text-slate-100 leading-none">Atendimento</h1>
           <p className="text-xs text-slate-600 mt-0.5">
-            WhatsApp via {whatsappProvider === 'meta' ? 'Meta (API oficial)' : 'WAHA'} · {chats.length} conversa(s)
+            {connected ? 'WhatsApp conectado' : 'WhatsApp desconectado'} · {chats.length} conversa(s)
           </p>
         </div>
         <div className="flex-1" />
@@ -143,19 +142,12 @@ export const Atendimento = () => {
           </p>
         </div>
       )}
-      {whatsappProvider === 'waha' && wahaStatus !== 'WORKING' && wahaStatus !== 'NOT_CONFIGURED' && (
-        <div className="mx-6 mt-3 flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5 flex-shrink-0">
-          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-red-300">
-            Sessão do WAHA fora do ar (status: {wahaStatus}). Novas mensagens não chegam até reconectar — abra o painel do WAHA e escaneie o QR Code se necessário.
-          </p>
-        </div>
-      )}
-      {whatsappProvider === 'waha' && wahaStatus === 'NOT_CONFIGURED' && (
+      {!connected && waStatus !== 'UNKNOWN' && (
         <div className="mx-6 mt-3 flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 flex-shrink-0">
           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-amber-300">
-            WAHA não configurado. Configure em Configurações → Integrações → WhatsApp (URL do servidor + webhook do atendimento).
+            WhatsApp desconectado — mensagens novas não chegam e o envio falha.{' '}
+            <Link to="/settings" className="underline font-semibold hover:text-amber-200">Conectar em Configurações → Integrações → WhatsApp</Link>.
           </p>
         </div>
       )}
@@ -279,33 +271,23 @@ export const Atendimento = () => {
                     <AlertTriangle className="w-3.5 h-3.5" /> {sendError}
                   </p>
                 )}
-                {!metaWindowOpen ? (
-                  <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5">
-                    <Clock className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-300">
-                      Janela de 24h da Meta expirada: só é possível enviar texto livre até 24h após a última mensagem do cliente.
-                      Para iniciar contato, use um template aprovado pelo WhatsApp Manager.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex items-end gap-2">
-                    <textarea
-                      value={draft}
-                      onChange={e => setDraft(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                      rows={1}
-                      placeholder="Escreva uma mensagem…"
-                      className="flex-1 bg-[#161b22] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 resize-none max-h-32"
-                    />
-                    <button
-                      onClick={handleSend}
-                      disabled={!draft.trim() || sending}
-                      className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white p-2.5 rounded-xl transition-colors flex-shrink-0"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-end gap-2">
+                  <textarea
+                    value={draft}
+                    onChange={e => setDraft(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                    rows={1}
+                    placeholder="Escreva uma mensagem…"
+                    className="flex-1 bg-[#161b22] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 resize-none max-h-32"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!draft.trim() || sending}
+                    className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white p-2.5 rounded-xl transition-colors flex-shrink-0"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -343,11 +325,6 @@ export const Atendimento = () => {
                   placeholder="Nome do contato"
                 />
               </div>
-              {whatsappProvider === 'meta' && (
-                <p className="text-[11px] text-amber-400/90">
-                  Na API oficial, iniciar conversa exige template aprovado — texto livre só depois que o contato responder.
-                </p>
-              )}
               <button
                 onClick={handleStartChat}
                 disabled={newPhone.replace(/\D/g, '').length < 8}

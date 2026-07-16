@@ -24,7 +24,7 @@ import {
   Plus, X, Edit2, Trash2, MessageSquare, Send, MessageCircle, CheckCircle,
   Settings2, ChevronUp, Pencil, Save, GripVertical,
 } from 'lucide-react';
-import { sendWhatsAppNotification, getWahaConfig } from '../utils/whatsapp';
+import { sendWhatsAppNotification } from '../utils/whatsapp';
 
 // ─── Stage color presets ───────────────────────────────────────────────────────
 
@@ -246,10 +246,10 @@ export const Kanban = () => {
   const [commentText, setCommentText]       = useState('');
   const [whatsappStatus, setWhatsappStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
   const [whatsappMsg, setWhatsappMsg]       = useState('');
-  const { whatsappProvider, metaAccessToken, metaPhoneNumberId } = useCompanySettingsStore();
-  const whatsappConfigured = whatsappProvider === 'meta'
-    ? !!(metaAccessToken && metaPhoneNumberId)
-    : !!getWahaConfig();
+  const waStatus = useCompanySettingsStore(s => s.waStatus);
+  // WhatsApp central: "configurado" = sessão conectada. Enquanto desconhecido,
+  // assume ok (o envio reporta erro tratado se não estiver conectado).
+  const whatsappConfigured = waStatus === 'WORKING' || waStatus === 'UNKNOWN';
 
   // Stage management state
   const [editingStages, setEditingStages]   = useState<KanbanStage[]>([]);

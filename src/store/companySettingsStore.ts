@@ -38,6 +38,7 @@ interface CompanySettingsState {
   metaLeadsPageToken: string;
   metaLeadsVerifyToken: string;
   waWebhookSecret: string;
+  waStatus: string; // runtime: status da sessão WAHA central (WORKING, SCAN_QR_CODE...)
   kanbanStages: KanbanStage[];
   demandBoardStages: KanbanStage[];
   loading: boolean;
@@ -57,6 +58,7 @@ interface CompanySettingsState {
   saveKanbanStages: (stages: KanbanStage[]) => Promise<string | null>;
   saveDemandBoardStages: (stages: KanbanStage[]) => Promise<string | null>;
   generateWaWebhookSecret: () => Promise<string | null>;
+  setWaStatus: (status: string) => void;
 }
 
 const companyId = () => useAuthStore.getState().currentUser?.companyId;
@@ -103,6 +105,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaLeadsPageToken: '',
   metaLeadsVerifyToken: '',
   waWebhookSecret: '',
+  waStatus: 'UNKNOWN',
   kanbanStages: DEFAULT_KANBAN_STAGES,
   demandBoardStages: DEFAULT_BOARD_STAGES,
   loading: false,
@@ -243,4 +246,6 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
     set({ waWebhookSecret: secret });
     return secret;
   },
+
+  setWaStatus: (status) => set({ waStatus: status }),
 }));

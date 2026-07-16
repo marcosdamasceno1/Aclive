@@ -6,7 +6,7 @@ import { fromDb } from '../lib/dbMapper';
 import type { WaChat, WaMessage } from '../types';
 import { getCompanyId, companyRow, companyUpdate, companyFetchAll, assertCompanyData } from '../lib/companyIsolation';
 import { scheduleInitRetry } from '../lib/initRetry';
-import { sendInboxText } from '../lib/waInboxProvider';
+import { waSend } from '../lib/waGateway';
 
 interface WaInboxState {
   chats: WaChat[];
@@ -129,17 +129,16 @@ export const useWaInboxStore = create<WaInboxState>()((set, get) => ({
       }, cid).then(({ error }) => { if (error) console.error('[wa_inbox.chat]', error.message); });
     }
 
-    // Envia pelo provider ativo
-    const { providerMessageId, error } = await sendInboxText(chatKey, trimmed);
-    const provider = (await import('./companySettingsStore')).useCompanySettingsStore.getState().whatsappProvider;
+    // Envia pelo gateway central do WAHA (isolado por company_id no servidor)
+    const { providerMessageId, error } = await waSend(chatKey, trimmed);
     const newStatus = error ? 'error' : 'sent';
 
     set(state => ({
       messages: state.messages.map(m =>
-        m.id === msg.id ? { ...m, status: newStatus, provider, providerMessageId: providerMessageId ?? undefined } : m),
+        m.id === msg.id ? { ...m, status: newStatus, provider: 'waha', providerMessageId: providerMessageId ?? undefined } : m),
     }));
     companyUpdate('wa_messages', msg.id, {
-      status: newStatus, provider, provider_message_id: providerMessageId,
+      status: newStatus, provider: 'waha', provider_message_id: providerMessageId,
     }, cid).then(({ error: e }) => { if (e) console.error('[wa_inbox.update]', e.message); });
 
     return error;

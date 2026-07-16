@@ -21,6 +21,49 @@
 6. Testar: enviar mensagem de um celular para o número → deve aparecer na aba
    Atendimento em segundos (Realtime) e o badge verde no menu deve subir.
 
+## v1.1 — WAHA centralizado (um servidor seu, cliente só escaneia QR)
+
+Meta oficial **desativada** por ora (`WA_META_ENABLED = false` em utils/whatsapp.ts;
+o código da Meta permanece para reativação futura). O provider é sempre WAHA
+central. O cliente não digita servidor nem chave — só escaneia o QR.
+
+### Arquitetura de segurança (fronteira única)
+
+```
+Frontend ──(JWT do usuário)──► Edge Function wa-gateway ──(chave-mestra)──► SEU WAHA
+                                        │ deriva session = c_<company_id> do JWT
+                                        ▼
+                          company_settings.wa_webhook_secret
+```
+
+- O navegador NUNCA fala com o WAHA direto — a chave-mestra vive só nos secrets
+  da função. Uma agência não consegue endereçar a sessão de outra: o nome da
+  sessão vem do `company_id` do JWT verificado no servidor, nunca do cliente.
+- Ao conectar, o gateway configura o webhook da sessão apontando para
+  waha-webhook com o company_id + secret certos — recebimento isolado.
+- Envio (inbox + notificação de demanda) passa pelo gateway. Timeout de 12s em
+  toda chamada ao WAHA; a função nunca lança para o cliente.
+
+### Deploy da v1.1
+
+1. **Servidor WAHA Plus** rodando (multi-sessão exige Plus; use engine NOWEB para
+   escalar leve). Defina `WHATSAPP_API_KEY` no container.
+2. **SQL**: a migração `wa_inbox.sql` já cobre tudo (usa `wa_webhook_secret`).
+   Nenhuma tabela nova.
+3. **Edge Functions** (Dashboard → colar → Deploy):
+   - `wa-gateway` ← `supabase/functions/wa-gateway/index.ts`
+     - Secrets da função: `WAHA_BASE_URL`, `WAHA_API_KEY`. Verify JWT: **LIGADO**.
+   - `waha-webhook` (já existe) — Verify JWT: **DESLIGADO**.
+4. Cliente: Configurações → Integrações → WhatsApp → **Conectar WhatsApp** →
+   escaneia o QR. Pronto — recebe e envia pela aba Atendimento.
+
+### Riscos de escala (documentados)
+
+- WAHA Plus é licença paga; sem ela, multi-sessão não roda.
+- Cada sessão consome RAM (NOWEB « WEBJS). Dimensionar o servidor.
+- Ponto único de falha: servidor cai → todas as agências param (banimento é
+  isolado por sessão). Monitorar + backup.
+
 ## Decisões tomadas na v1
 
 - Somente conversas individuais (grupos ignorados pelo webhook).

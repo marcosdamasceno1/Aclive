@@ -39,6 +39,11 @@ export const clearWahaConfig = () => {
 
 export type WhatsAppProvider = 'waha' | 'meta';
 
+// Conexão via API oficial da Meta desativada por ora — WAHA central é o padrão.
+// Deixar em false mantém o código da Meta presente (para reativação futura)
+// mas força todo envio pelo gateway WAHA.
+export const WA_META_ENABLED = false;
+
 export interface NotificationPayload {
   phone: string;
   professionalName: string;
@@ -94,34 +99,15 @@ const buildTextMessage = (p: NotificationPayload): string => {
 };
 
 /**
- * Envia texto livre via WAHA (POST /api/sendText).
+ * Envia texto livre via WAHA — agora pelo gateway central (Edge Function),
+ * que guarda a chave-mestra e isola por company_id. O navegador nunca fala
+ * direto com o servidor WAHA.
  * Retorna null em sucesso ou string de erro.
  */
 const sendViaWaha = async (phone: string, text: string): Promise<string | null> => {
-  const cfg = getWahaConfig();
-  if (!cfg) return 'WAHA não configurado. Configure em Configurações → Integrações.';
-
-  try {
-    const res = await fetch(`${cfg.baseUrl}/api/sendText`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(cfg.apiKey ? { 'X-Api-Key': cfg.apiKey } : {}),
-      },
-      body: JSON.stringify({
-        session: cfg.session || 'default',
-        chatId: `${formatPhone(phone)}@c.us`,
-        text,
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      return (body as { message?: string })?.message || `Erro WAHA: ${res.status}`;
-    }
-    return null;
-  } catch (err) {
-    return err instanceof Error ? err.message : 'Erro de rede (WAHA)';
-  }
+  const { waSend } = await import('../lib/waGateway');
+  const { error } = await waSend(formatPhone(phone), text);
+  return error;
 };
 
 // ─── Meta Cloud API sender ────────────────────────────────────────────────────
@@ -241,7 +227,7 @@ export const sendWhatsAppNotification = async (
 ): Promise<string | null> => {
   const { provider, meta } = await getProvider();
 
-  if (provider === 'meta') {
+  if (WA_META_ENABLED && provider === 'meta') {
     if (!meta) return 'Meta API não configurada. Configure em Configurações → Integrações.';
     return sendViaMeta(payload, meta);
   }
@@ -259,7 +245,7 @@ export const sendWhatsAppText = async (
 ): Promise<string | null> => {
   const { provider, meta } = await getProvider();
 
-  if (provider === 'meta') {
+  if (WA_META_ENABLED && provider === 'meta') {
     if (!meta) return 'Meta API não configurada. Configure em Configurações → Integrações.';
     return sendTextViaMeta(phone, message, meta);
   }

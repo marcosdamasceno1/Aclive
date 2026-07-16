@@ -4,7 +4,8 @@ import { useProfessionalsStore } from '../store/professionalsStore';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
 import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
-import { getWahaConfig, saveWahaConfig, clearWahaConfig } from '../utils/whatsapp';
+import { getWahaConfig, saveWahaConfig, clearWahaConfig, WA_META_ENABLED } from '../utils/whatsapp';
+import { WhatsAppConnect } from '../components/WhatsAppConnect';
 import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
 import type { UserRole, ProfessionType } from '../types';
 import type { WhatsAppProvider } from '../utils/whatsapp';
@@ -607,7 +608,10 @@ export const Settings = () => {
 
           {/* ── WhatsApp ── */}
           {integrationTab === 'whatsapp' && (
-            <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+            <div className="space-y-4">
+              <WhatsAppConnect />
+              {WA_META_ENABLED && (
+              <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
                   <MessageCircle className="w-5 h-5 text-green-400" />
@@ -837,6 +841,8 @@ export const Settings = () => {
                   </div>
                 )}
               </div>
+            </div>
+              )}
             </div>
           )}
 

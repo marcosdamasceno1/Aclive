@@ -1,7 +1,7 @@
 // wa-gateway — Gateway central do WAHA (multi-agência num único servidor SEU).
 //
 // Secrets a definir em Supabase → Edge Functions → wa-gateway → Settings → Secrets:
-//   WAHA_BASE_URL = https://seu-waha.dominio.com   (seu servidor WAHA Plus)
+//   WAHA_BASE_URL = https://seu-waha.dominio.com   (seu servidor WAHA, via HTTPS)
 //   WAHA_API_KEY  = valor de WHATSAPP_API_KEY do seu WAHA
 //
 // SEGURANÇA / ISOLAMENTO (inegociável):

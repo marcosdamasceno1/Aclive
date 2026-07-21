@@ -438,20 +438,23 @@ export const Kanban = () => {
         const prof   = professionals.find(p => p.id === form.professionalId);
         const client = clients.find(c => c.id === form.clientId);
         if (prof?.phone) {
+          // Fire-and-forget: a notificação NUNCA bloqueia nem "quebra" a criação
+          // da tarefa. A demanda já foi criada; o WhatsApp é um extra.
           setWhatsappStatus('sending');
-          const err = await sendWhatsAppNotification({
+          sendWhatsAppNotification({
             phone:            prof.phone,
             professionalName: prof.name,
             demandTitle:      newDemand.title,
-            clientName:       client?.companyName || '—',
+            clientName:       client?.companyName || '',
             deadline:         form.deadline,
             priority:         form.priority,
             taskType:         form.taskType,
             value:            form.value,
+          }).then(err => {
+            if (err) { setWhatsappStatus('error'); setWhatsappMsg(`Demanda criada. WhatsApp não enviado: ${err}`); }
+            else     { setWhatsappStatus('ok');    setWhatsappMsg('WhatsApp enviado!'); }
+            setTimeout(() => setWhatsappStatus('idle'), 5000);
           });
-          if (err) { setWhatsappStatus('error'); setWhatsappMsg(err); }
-          else     { setWhatsappStatus('ok');    setWhatsappMsg('WhatsApp enviado!'); }
-          setTimeout(() => setWhatsappStatus('idle'), 4000);
         }
       }
     }

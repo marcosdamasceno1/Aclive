@@ -23,7 +23,14 @@ export interface WaGatewayResult {
 const invoke = async (action: string, extra: Record<string, unknown> = {}): Promise<WaGatewayResult> => {
   try {
     const { data, error } = await supabase.functions.invoke('wa-gateway', { body: { action, ...extra } });
-    if (error) return { error: error.message || 'Falha ao contatar o gateway' };
+    if (error) {
+      // Traduz o erro técnico de invocação para algo compreensível.
+      const raw = error.message || '';
+      const friendly = /Failed to send a request|Failed to fetch|NetworkError|network/i.test(raw)
+        ? 'WhatsApp indisponível (conecte em Configurações → Integrações → WhatsApp).'
+        : raw;
+      return { error: friendly };
+    }
     const d = (data ?? {}) as Record<string, unknown>;
     return {
       status: d.status as string | undefined,

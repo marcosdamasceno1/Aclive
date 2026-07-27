@@ -10,7 +10,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { useLeadsStore } from '../store/leadsStore';
 import { useClientsStore } from '../store/clientsStore';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
+import { apifyQuota, apifyStart, apifyPoll, type Quota } from '../lib/apifySearch';
 import type { Lead, LeadStatus } from '../types';
+
+// Limpeza: remove o token pessoal da Apify de versões anteriores (agora é
+// chave-mestra no backend — o usuário não cadastra mais token).
+try { localStorage.removeItem('apify_token'); } catch { /* SSR/test */ }
 import {
   Plus, Search, Trash2, X, ExternalLink, Phone, MapPin,
   Star, Globe, Target, Loader2, CheckSquare, Square, Key,
@@ -286,17 +291,23 @@ export const Leads = () => {
   const [showDetail, setShowDetail] = useState<Lead | null>(null);
   const [deleteId, setDeleteId]     = useState<string | null>(null);
 
-  // Apify state
-  const [apifyToken, setApifyToken]   = useState(() => localStorage.getItem(LS_KEY) || '');
-  const [showToken, setShowToken]     = useState(!localStorage.getItem(LS_KEY));
+  // Apify state (chave-mestra no backend — sem token do usuário)
   const [segment, setSegment]         = useState('');
   const [city, setCity]               = useState('');
-  const [maxResults, setMaxResults]   = useState(25);
   const [filterNoWebsite, setFilterNoWebsite] = useState(false);
   const [apifyStatus, setApifyStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
   const [apifyMsg, setApifyMsg]       = useState('');
   const [results, setResults]         = useState<ApifyItem[]>([]);
   const [selected, setSelected]       = useState<Set<number>>(new Set());
+  const [quota, setQuota]             = useState<Quota | null>(null);
+
+  // Carrega a cota do mês ao abrir o modal de busca
+  useEffect(() => {
+    if (!showApify) return;
+    apifyQuota().then(q => { if (!('error' in q)) setQuota(q); });
+  }, [showApify]);
+
+  const quotaReached = !!quota && quota.used >= quota.limit;
 
   // Manual form
   const [form, setForm] = useState(emptyForm);
@@ -366,63 +377,48 @@ export const Leads = () => {
 
   // ─── Apify ─────────────────────────────────────────────────────────────────
 
-  const saveToken = () => { localStorage.setItem(LS_KEY, apifyToken); setShowToken(false); };
-
   const runApify = async () => {
-    if (!apifyToken || !segment || !city) return;
+    if (!segment || !city || quotaReached) return;
     setApifyStatus('running');
     setApifyMsg('Iniciando busca no Google Maps…');
     setResults([]);
     setSelected(new Set());
 
-    const authHeader = { Authorization: `Bearer ${apifyToken}` };
-    try {
-      const runRes = await fetch(`https://api.apify.com/v2/acts/${APIFY_ACTOR}/runs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({
-          searchStringsArray: [`${segment} em ${city}`],
-          maxCrawledPlacesPerSearch: maxResults,
-          language: 'pt-BR',
-          maxImages: 0,
-          scrapeDirectories: false,
-        }),
-      });
-      if (!runRes.ok) {
-        const body = await runRes.json().catch(() => ({}));
-        throw new Error(body?.error?.message || `Erro ao iniciar: ${runRes.status}`);
-      }
-      const runData = await runRes.json();
-      const runId: string = runData.data.id;
-      const datasetId: string = runData.data.defaultDatasetId;
-
-      let attempts = 0;
-      while (attempts < 60) {
-        await new Promise(r => setTimeout(r, 3000));
-        attempts++;
-        setApifyMsg(`Coletando dados… (${attempts * 3}s)`);
-        const st = await fetch(`https://api.apify.com/v2/actor-runs/${runId}`, { headers: authHeader });
-        const stData = await st.json();
-        const runStatus: string = stData.data.status;
-        if (runStatus === 'SUCCEEDED') {
-          const itemsRes = await fetch(
-            `https://api.apify.com/v2/datasets/${datasetId}/items?limit=${maxResults}&fields=title,phone,website,address,city,totalScore,reviewsCount,categoryName`,
-            { headers: authHeader }
-          );
-          const items: ApifyItem[] = await itemsRes.json();
-          const valid = items.filter(i => i.title);
-          setResults(valid);
-          setApifyStatus('done');
-          setApifyMsg(`${valid.length} empresas encontradas`);
-          return;
-        }
-        if (runStatus === 'FAILED' || runStatus === 'ABORTED') throw new Error('A busca falhou no Apify.');
-      }
-      throw new Error('Tempo esgotado. Tente novamente.');
-    } catch (err: unknown) {
+    const start = await apifyStart(segment, city);
+    if (start.error) {
       setApifyStatus('error');
-      setApifyMsg(err instanceof Error ? err.message : 'Erro desconhecido');
+      setApifyMsg(start.error);
+      if (typeof start.used === 'number' && typeof start.limit === 'number') {
+        setQuota({ used: start.used, limit: start.limit });
+      }
+      return;
     }
+    if (typeof start.used === 'number' && typeof start.limit === 'number') {
+      setQuota({ used: start.used, limit: start.limit }); // já consumiu 1
+    }
+
+    const runId = start.runId!;
+    const datasetId = start.datasetId!;
+    const usageId = start.usageId ?? null;
+
+    let attempts = 0;
+    while (attempts < 60) {
+      await new Promise(r => setTimeout(r, 3000));
+      attempts++;
+      setApifyMsg(`Coletando dados… (${attempts * 3}s)`);
+      const p = await apifyPoll(runId, datasetId, usageId);
+      if (p.error) { setApifyStatus('error'); setApifyMsg(p.error); return; }
+      if (p.status === 'SUCCEEDED') {
+        const valid = (p.items || []) as ApifyItem[];
+        setResults(valid);
+        setApifyStatus('done');
+        setApifyMsg(`${valid.length} empresas encontradas`);
+        return;
+      }
+      if (p.status === 'FAILED') { setApifyStatus('error'); setApifyMsg(p.message || 'A busca falhou.'); return; }
+    }
+    setApifyStatus('error');
+    setApifyMsg('Tempo esgotado. Tente novamente.');
   };
 
   const toggleSelect = (i: number) =>
@@ -718,37 +714,31 @@ export const Leads = () => {
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 space-y-5">
-              {/* API Key */}
-              <div className="bg-[#161b22] rounded-xl p-4 border border-white/[0.05]">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Key className="w-4 h-4 text-yellow-400" />
-                    <span className="text-sm font-semibold text-slate-200">Apify API Token</span>
+              {/* Cota mensal de buscas */}
+              {(() => {
+                const used = quota?.used ?? 0;
+                const limit = quota?.limit ?? 100;
+                const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+                const near = pct >= 80;
+                const barCls = quotaReached ? 'bg-red-500' : near ? 'bg-amber-500' : 'bg-emerald-500';
+                const txtCls = quotaReached ? 'text-red-400' : near ? 'text-amber-400' : 'text-emerald-400';
+                return (
+                  <div className="bg-[#161b22] rounded-xl p-4 border border-white/[0.05]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-slate-200">Buscas deste mês</span>
+                      <span className={`text-sm font-bold ${txtCls}`}>{used}/{limit}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                      {quotaReached
+                        ? 'Limite atingido. Renova no início do próximo mês.'
+                        : `Restam ${limit - used} buscas · renova todo mês. Cada busca traz até 20 empresas.`}
+                    </p>
                   </div>
-                  {!showToken && (
-                    <button onClick={() => setShowToken(true)} className="text-xs text-blue-400 hover:underline">Alterar token</button>
-                  )}
-                </div>
-                {showToken ? (
-                  <div className="flex gap-2">
-                    <input type="password" value={apifyToken} onChange={e => setApifyToken(e.target.value)}
-                      placeholder="apify_api_xxxxxxxxxxxx"
-                      className="flex-1 border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <button onClick={saveToken} disabled={!apifyToken}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold">
-                      Salvar
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-500">
-                    Token salvo. Acesse{' '}
-                    <a href="https://console.apify.com/account/integrations" target="_blank" rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline inline-flex items-center gap-0.5">
-                      console.apify.com <ExternalLink className="w-3 h-3" />
-                    </a>{' '}para obter o seu.
-                  </p>
-                )}
-              </div>
+                );
+              })()}
 
               {/* Search fields */}
               <div className="grid grid-cols-2 gap-4">
@@ -758,19 +748,10 @@ export const Leads = () => {
                     placeholder="ex: agência de marketing digital"
                     className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-slate-200 mb-1.5">Cidade / Estado</label>
                   <input type="text" value={city} onChange={e => setCity(e.target.value)}
                     placeholder="ex: São Paulo, SP"
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                    Quantidade de empresas
-                    <span className="text-slate-500 font-normal ml-1">(máx. 100)</span>
-                  </label>
-                  <input type="number" min={1} max={100} value={maxResults}
-                    onChange={e => setMaxResults(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
                     className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
@@ -794,10 +775,12 @@ export const Leads = () => {
                 </div>
               </label>
 
-              <button onClick={runApify} disabled={!apifyToken || !segment || !city || apifyStatus === 'running'}
+              <button onClick={runApify} disabled={!segment || !city || apifyStatus === 'running' || quotaReached}
                 className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors">
                 {apifyStatus === 'running'
                   ? <><Loader2 className="w-4 h-4 animate-spin" />{apifyMsg}</>
+                  : quotaReached
+                  ? <><Target className="w-4 h-4" />Limite mensal atingido</>
                   : <><Target className="w-4 h-4" />Buscar no Google Maps</>
                 }
               </button>

@@ -214,6 +214,7 @@ export interface Company {
   plan: string;
   active: boolean;
   createdAt: string;
+  apifyMonthlyLimit?: number | null; // null/undefined = usa o padrão do backend
 }
 
 export interface SocialAccount {

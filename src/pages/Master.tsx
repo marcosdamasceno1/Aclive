@@ -605,6 +605,24 @@ export const Master = () => {
                   <p className="text-xs text-slate-500 font-mono truncate" title={company.id}>{company.id}</p>
                 </div>
 
+                {/* Cota de prospecção (buscas Google/mês) */}
+                <div className="flex items-center justify-between bg-[#0d1117] rounded-lg px-3 py-1.5">
+                  <span className="text-xs text-slate-500">Buscas Google/mês</span>
+                  <input
+                    type="number"
+                    min={0}
+                    defaultValue={company.apifyMonthlyLimit ?? ''}
+                    placeholder="100"
+                    title="Deixe vazio para usar o padrão (100). Preencha para liberar mais a esta agência."
+                    onBlur={e => {
+                      const raw = e.target.value.trim();
+                      const val = raw === '' ? null : Math.max(0, parseInt(raw, 10) || 0);
+                      updateCompany(company.id, { apifyMonthlyLimit: val });
+                    }}
+                    className="w-20 bg-transparent border border-white/10 rounded px-2 py-0.5 text-xs text-right text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
                 {/* Actions */}
                 <div className="flex gap-2 pt-1">
                   <button

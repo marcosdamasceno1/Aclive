@@ -28,7 +28,9 @@ const MAX_RESULTS = 20;    // teto de resultados por busca (controle de custo)
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  // Inclui apikey e x-client-info: o supabase-js os envia, e sem eles o
+  // preflight CORS falha ("Failed to send a request to the Edge Function").
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 const json = (b: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });

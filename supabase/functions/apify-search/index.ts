@@ -66,25 +66,36 @@ const apify = (path: string, init: RequestInit = {}): Promise<Response> => {
 };
 
 Deno.serve(async (req: Request) => {
+  // NUNCA retorna não-2xx: qualquer falha vira 200 com { error, message },
+  // para o app mostrar o motivo real e o log registrar o que aconteceu.
+  try {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
-  if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (req.method !== 'POST') return json({ error: 'method_not_allowed' });
   if (!APIFY_TOKEN) {
-    return json({ error: 'not_configured', message: 'Prospecção indisponível: a chave da Apify não está configurada no servidor.' });
+    console.warn('[apify-search] APIFY_TOKEN ausente nos secrets');
+    return json({ error: 'not_configured', message: 'Prospecção indisponível: a chave da Apify (APIFY_TOKEN) não está nos secrets da função.' });
   }
 
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-  if (!token) return json({ error: 'unauthorized' }, 401);
+  if (!token) {
+    console.warn('[apify-search] sem Authorization header');
+    return json({ error: 'unauthorized', message: 'Sessão não enviada. Recarregue e entre novamente.' });
+  }
   const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: `Bearer ${token}` } } });
-  const { data: { user }, error: uErr } = await userClient.auth.getUser();
-  if (uErr || !user) return json({ error: 'unauthorized' }, 401);
-  const companyId = (user.user_metadata?.company_id as string) || '';
+  const { data: userData, error: uErr } = await userClient.auth.getUser(token);
+  if (uErr || !userData?.user) {
+    console.warn('[apify-search] getUser falhou:', uErr?.message);
+    return json({ error: 'unauthorized', message: `Não foi possível validar o usuário: ${uErr?.message ?? 'sem usuário'}` });
+  }
+  const companyId = (userData.user.user_metadata?.company_id as string) || '';
   if (!companyId) return json({ error: 'no_company', message: 'Usuário sem agência associada.' });
 
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* corpo opcional */ }
   const action = String(body.action ?? '');
+  console.log(`[apify-search] action=${action} company=${companyId}`);
 
-  try {
+  {
     if (action === 'quota') {
       return json(await getQuota(companyId));
     }
@@ -151,7 +162,9 @@ Deno.serve(async (req: Request) => {
     }
 
     return json({ error: 'unknown_action' });
+  }
   } catch (e) {
+    console.error('[apify-search] exceção:', e);
     return json({ error: 'server_error', message: String(e) });
   }
 });

@@ -300,6 +300,7 @@ export const Leads = () => {
   const [results, setResults]         = useState<ApifyItem[]>([]);
   const [selected, setSelected]       = useState<Set<number>>(new Set());
   const [quota, setQuota]             = useState<Quota | null>(null);
+  const [searchCount, setSearchCount] = useState(20); // quantas empresas por busca
 
   // Carrega a cota do mês ao abrir o modal de busca
   useEffect(() => {
@@ -308,6 +309,9 @@ export const Leads = () => {
   }, [showApify]);
 
   const quotaReached = !!quota && quota.used >= quota.limit;
+  const remaining = quota ? Math.max(0, quota.limit - quota.used) : 100;
+  // A busca nunca pode pedir mais do que resta no mês
+  const effectiveCount = Math.min(searchCount, remaining || 1);
 
   // Manual form
   const [form, setForm] = useState(emptyForm);
@@ -384,7 +388,7 @@ export const Leads = () => {
     setResults([]);
     setSelected(new Set());
 
-    const start = await apifyStart(segment, city);
+    const start = await apifyStart(segment, city, effectiveCount);
     if (start.error) {
       setApifyStatus('error');
       setApifyMsg(start.error);
@@ -392,9 +396,6 @@ export const Leads = () => {
         setQuota({ used: start.used, limit: start.limit });
       }
       return;
-    }
-    if (typeof start.used === 'number' && typeof start.limit === 'number') {
-      setQuota({ used: start.used, limit: start.limit }); // já consumiu 1
     }
 
     const runId = start.runId!;
@@ -413,6 +414,9 @@ export const Leads = () => {
         setResults(valid);
         setApifyStatus('done');
         setApifyMsg(`${valid.length} empresas encontradas`);
+        if (typeof p.used === 'number' && typeof p.limit === 'number') {
+          setQuota({ used: p.used, limit: p.limit }); // cota atualizada com o real
+        }
         return;
       }
       if (p.status === 'FAILED') { setApifyStatus('error'); setApifyMsg(p.message || 'A busca falhou.'); return; }
@@ -725,7 +729,7 @@ export const Leads = () => {
                 return (
                   <div className="bg-[#161b22] rounded-xl p-4 border border-white/[0.05]">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-slate-200">Buscas deste mês</span>
+                      <span className="text-sm font-semibold text-slate-200">Empresas deste mês</span>
                       <span className={`text-sm font-bold ${txtCls}`}>{used}/{limit}</span>
                     </div>
                     <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
@@ -734,7 +738,7 @@ export const Leads = () => {
                     <p className="text-xs text-slate-500 mt-2">
                       {quotaReached
                         ? 'Limite atingido. Renova no início do próximo mês.'
-                        : `Restam ${limit - used} buscas · renova todo mês. Cada busca traz até 20 empresas.`}
+                        : `Restam ${limit - used} empresas · renova todo mês. Você escolhe quantas buscar por vez.`}
                     </p>
                   </div>
                 );
@@ -748,11 +752,21 @@ export const Leads = () => {
                     placeholder="ex: agência de marketing digital"
                     className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-slate-200 mb-1.5">Cidade / Estado</label>
                   <input type="text" value={city} onChange={e => setCity(e.target.value)}
                     placeholder="ex: São Paulo, SP"
                     className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                    Empresas nesta busca
+                    <span className="text-slate-500 font-normal ml-1">(máx. {remaining})</span>
+                  </label>
+                  <input type="number" min={1} max={remaining || 1} value={searchCount}
+                    onChange={e => setSearchCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <p className="text-[11px] text-slate-500 mt-1">Consome {effectiveCount} da sua cota mensal.</p>
                 </div>
               </div>
 

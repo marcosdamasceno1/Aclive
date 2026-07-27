@@ -6,11 +6,13 @@ por agência com freios de custo.
 ## Regras
 
 - Chave da Apify vive só na Edge Function `apify-search` (secret `APIFY_TOKEN`).
-- Cota mensal por agência: padrão **100/mês**; override em
-  `companies.apify_monthly_limit` (editável na conta Master).
-- Teto de **20 resultados por busca** fixado no servidor (controle de custo).
-- Cada busca vira 1 linha em `apify_usage` → contagem mensal reseta sozinha ao
-  virar o mês (sem cron). `result_count` gravado ao concluir (auditoria).
+- Cota mensal por agência em EMPRESAS (não buscas — é o que custa na Apify):
+  padrão **100 empresas/mês**; override em `companies.apify_monthly_limit`
+  (editável na conta Master).
+- `used` = SOMA de `result_count` do mês. O usuário digita quantas empresas
+  quer por busca (1..100), limitado no servidor ao saldo restante → nunca
+  estoura o custo. `result_count` é gravado ao concluir cada busca.
+- Contagem mensal reseta sozinha ao virar o mês (sem cron).
 - `company_id` vem do JWT verificado no servidor. Isolamento por agência.
 
 ## Deploy

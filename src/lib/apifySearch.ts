@@ -34,6 +34,8 @@ interface StartResult {
 interface PollResult {
   status?: 'RUNNING' | 'SUCCEEDED' | 'FAILED';
   items?: ApifyPlace[];
+  used?: number;
+  limit?: number;
   error?: string;
   message?: string;
 }
@@ -61,9 +63,9 @@ export const apifyQuota = async (): Promise<Quota | { error: string }> => {
   return { used: Number(r.used ?? 0), limit: Number(r.limit ?? 0) };
 };
 
-/** Dispara a busca. Consome 1 da cota. */
-export const apifyStart = async (segment: string, city: string): Promise<StartResult> => {
-  const r = await invoke('start', { segment, city }) as StartResult;
+/** Dispara a busca por `count` empresas (limitado ao saldo do mês no servidor). */
+export const apifyStart = async (segment: string, city: string, count: number): Promise<StartResult> => {
+  const r = await invoke('start', { segment, city, count }) as StartResult;
   if (r.error) return { error: String(r.message ?? r.error), used: r.used, limit: r.limit };
   return r;
 };

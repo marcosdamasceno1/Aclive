@@ -22,8 +22,8 @@ const ANON_KEY     = Deno.env.get('SUPABASE_ANON_KEY')!;
 const APIFY_TOKEN  = Deno.env.get('APIFY_TOKEN') ?? '';
 
 const ACTOR = 'compass~crawler-google-places';
-const DEFAULT_LIMIT = 100; // cota mensal padrão por agência
-const MAX_RESULTS = 20;    // teto de resultados por busca (controle de custo)
+const DEFAULT_LIMIT = 100; // cota mensal padrão por agência (em EMPRESAS)
+const MAX_PER_SEARCH = 100; // teto de empresas por busca (= cota mensal cheia)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -47,12 +47,15 @@ async function getQuota(companyId: string): Promise<{ used: number; limit: numbe
     .from('companies').select('apify_monthly_limit').eq('id', companyId).maybeSingle();
   const override = (comp as Record<string, unknown> | null)?.apify_monthly_limit;
   const limit = typeof override === 'number' ? override : DEFAULT_LIMIT;
-  const { count } = await admin
+  // used = SOMA de empresas trazidas no mês (não o nº de buscas) — é o que
+  // custa crédito na Apify. result_count é preenchido ao concluir cada busca.
+  const { data: rows } = await admin
     .from('apify_usage')
-    .select('id', { count: 'exact', head: true })
+    .select('result_count')
     .eq('company_id', companyId)
     .gte('created_at', monthStartISO());
-  return { used: count ?? 0, limit };
+  const used = (rows ?? []).reduce((s, r) => s + (Number((r as Record<string, unknown>).result_count) || 0), 0);
+  return { used, limit };
 }
 
 // fetch à Apify com timeout — nada pendura a função
@@ -104,18 +107,24 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'start') {
       const q = await getQuota(companyId);
-      if (q.used >= q.limit) {
-        return json({ error: 'quota_exceeded', message: `Limite mensal de buscas atingido (${q.used}/${q.limit}). Renova no início do próximo mês.`, used: q.used, limit: q.limit });
+      const remaining = q.limit - q.used;
+      if (remaining <= 0) {
+        return json({ error: 'quota_exceeded', message: `Limite mensal de empresas atingido (${q.used}/${q.limit}). Renova no início do próximo mês.`, used: q.used, limit: q.limit });
       }
       const segment = String(body.segment ?? '').trim();
       const city = String(body.city ?? '').trim();
       if (!segment || !city) return json({ error: 'bad_request', message: 'Informe segmento e cidade.' });
 
+      // Quantas empresas o usuário pediu (1..teto), limitado ao que RESTA no mês
+      // → a busca nunca raspa mais que o saldo, então nunca estoura o custo.
+      const requested = Math.max(1, Math.min(MAX_PER_SEARCH, Math.floor(Number(body.count) || MAX_PER_SEARCH)));
+      const effective = Math.min(requested, remaining);
+
       const runRes = await apify(`/acts/${ACTOR}/runs`, {
         method: 'POST',
         body: JSON.stringify({
           searchStringsArray: [`${segment} em ${city}`],
-          maxCrawledPlacesPerSearch: MAX_RESULTS,
+          maxCrawledPlacesPerSearch: effective,
           language: 'pt-BR',
           maxImages: 0,
           scrapeDirectories: false,
@@ -126,17 +135,17 @@ Deno.serve(async (req: Request) => {
         return json({ error: 'apify_error', message: e?.error?.message || `Erro ao iniciar a busca: ${runRes.status}` });
       }
       const rd = await runRes.json();
-      // Registra a busca (conta na cota) — o run já custa, mesmo se falhar depois.
+      // Cria a linha de uso; result_count é preenchido ao concluir (nº real de
+      // empresas) — é o que conta na cota, não a existência da busca.
       const { data: usage } = await admin
         .from('apify_usage')
         .insert({ company_id: companyId, query: `${segment} em ${city}` })
         .select('id').maybeSingle();
-      const after = await getQuota(companyId);
       return json({
         runId: rd.data.id,
         datasetId: rd.data.defaultDatasetId,
         usageId: (usage as Record<string, unknown> | null)?.id ?? null,
-        used: after.used, limit: after.limit,
+        used: q.used, limit: q.limit, requested: effective,
       });
     }
 
@@ -151,11 +160,13 @@ Deno.serve(async (req: Request) => {
       const status = String((st as { data?: { status?: string } })?.data?.status ?? '');
 
       if (status === 'SUCCEEDED') {
-        const itemsRes = await apify(`/datasets/${datasetId}/items?limit=${MAX_RESULTS}&fields=title,phone,website,address,city,totalScore,reviewsCount,categoryName`);
+        const itemsRes = await apify(`/datasets/${datasetId}/items?limit=${MAX_PER_SEARCH}&fields=title,phone,website,address,city,totalScore,reviewsCount,categoryName`);
         const items = await itemsRes.json().catch(() => []);
         const valid = Array.isArray(items) ? items.filter((i: { title?: string }) => i.title) : [];
+        // Conta as empresas de fato trazidas nesta busca (o que gastou crédito).
         if (usageId) await admin.from('apify_usage').update({ result_count: valid.length }).eq('id', usageId);
-        return json({ status: 'SUCCEEDED', items: valid });
+        const after = await getQuota(companyId);
+        return json({ status: 'SUCCEEDED', items: valid, used: after.used, limit: after.limit });
       }
       if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(status)) {
         return json({ status: 'FAILED', message: 'A busca falhou na Apify. Tente novamente.' });

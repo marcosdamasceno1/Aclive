@@ -120,10 +120,15 @@ export const ApprovalPage = () => {
             {/* Vídeo */}
             <section className="space-y-3">
               <h2 className="text-sm font-bold text-slate-200">🎬 Vídeo</h2>
-              <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-black aspect-video">
-                {preview
-                  ? <iframe src={preview} className="w-full h-full" allow="autoplay" allowFullScreen title="Vídeo" />
-                  : <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm">Vídeo indisponível</div>}
+              <div className="flex justify-center">
+                <div
+                  className="relative rounded-xl overflow-hidden border border-white/[0.08] bg-black"
+                  style={{ aspectRatio: '9 / 16', width: 'min(100%, calc(min(70vh, 620px) * 9 / 16))' }}
+                >
+                  {preview
+                    ? <iframe src={preview} className="absolute inset-0 w-full h-full" allow="autoplay" allowFullScreen title="Vídeo" />
+                    : <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm px-4 text-center">Vídeo indisponível. Abra no Drive abaixo.</div>}
+                </div>
               </div>
               {data.videoUrl && (
                 <a href={data.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300">

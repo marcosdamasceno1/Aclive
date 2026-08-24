@@ -179,6 +179,30 @@ export interface WaMessage {
   createdAt?: string;
 }
 
+// Aprovação de vídeo/legenda por link público (cliente aprova sem login)
+export type ApprovalStatus = 'pending' | 'approved' | 'changes';
+
+export interface CaptionOption { id: string; text: string; }
+
+export interface Approval {
+  id: string;
+  demandId?: string;
+  token: string;
+  title: string;
+  agencyName?: string;
+  videoUrl?: string;
+  notifyPhone?: string;
+  videoStatus: ApprovalStatus;
+  videoFeedback?: string;
+  captions: CaptionOption[];
+  captionChoice?: string;       // id da legenda escolhida pelo cliente
+  captionStatus: ApprovalStatus;
+  captionFeedback?: string;
+  createdAt: string;
+  updatedAt?: string;
+  decidedAt?: string;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;

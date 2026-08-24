@@ -38,6 +38,8 @@ interface CompanySettingsState {
   metaLeadsPageToken: string;
   metaLeadsVerifyToken: string;
   waWebhookSecret: string;
+  agencyName: string;             // branding da página pública de aprovação
+  approvalNotifyPhone: string;    // telefone padrão para avisos de aprovação
   waStatus: string; // runtime: status da sessão WAHA central (WORKING, SCAN_QR_CODE...)
   kanbanStages: KanbanStage[];
   demandBoardStages: KanbanStage[];
@@ -59,6 +61,7 @@ interface CompanySettingsState {
   saveDemandBoardStages: (stages: KanbanStage[]) => Promise<string | null>;
   generateWaWebhookSecret: () => Promise<string | null>;
   setWaStatus: (status: string) => void;
+  saveApprovalDefaults: (agencyName: string, notifyPhone: string) => Promise<void>;
 }
 
 const companyId = () => useAuthStore.getState().currentUser?.companyId;
@@ -105,6 +108,8 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaLeadsPageToken: '',
   metaLeadsVerifyToken: '',
   waWebhookSecret: '',
+  agencyName: '',
+  approvalNotifyPhone: '',
   waStatus: 'UNKNOWN',
   kanbanStages: DEFAULT_KANBAN_STAGES,
   demandBoardStages: DEFAULT_BOARD_STAGES,
@@ -140,6 +145,8 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       metaLeadsPageToken:   (row?.meta_leads_page_token   as string) || '',
       metaLeadsVerifyToken: (row?.meta_leads_verify_token as string) || '',
       waWebhookSecret:      (row?.wa_webhook_secret       as string) || '',
+      agencyName:           (row?.agency_name             as string) || '',
+      approvalNotifyPhone:  (row?.approval_notify_phone   as string) || '',
       kanbanStages:         (row?.kanban_stages           as KanbanStage[]) || DEFAULT_KANBAN_STAGES,
       demandBoardStages:    (row?.demand_board_stages     as KanbanStage[]) || DEFAULT_BOARD_STAGES,
       loading: false,
@@ -248,4 +255,9 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   },
 
   setWaStatus: (status) => set({ waStatus: status }),
+
+  saveApprovalDefaults: async (agencyName, notifyPhone) => {
+    set({ agencyName, approvalNotifyPhone: notifyPhone });
+    await upsert({ agency_name: agencyName || null, approval_notify_phone: notifyPhone || null });
+  },
 }));

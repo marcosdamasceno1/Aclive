@@ -25,6 +25,7 @@ import {
   Settings2, ChevronUp, Pencil, Save, GripVertical,
 } from 'lucide-react';
 import { sendWhatsAppNotification } from '../utils/whatsapp';
+import { ApprovalSection } from '../components/ApprovalSection';
 
 // ─── Stage color presets ───────────────────────────────────────────────────────
 
@@ -1128,6 +1129,12 @@ export const Kanban = () => {
                   </div>
                 </div>
               )}
+
+              {/* Aprovação do cliente por link público */}
+              {canEditDemand(viewingDemand) && (
+                <ApprovalSection demandId={viewingDemand.id} demandTitle={viewingDemand.title} />
+              )}
+
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <MessageSquare className="w-4 h-4 text-slate-400" />

@@ -12,6 +12,7 @@ import { useCalendarStore } from './store/calendarStore';
 import { useCompaniesStore } from './store/companiesStore';
 import { useDemandBoardStore } from './store/demandBoardStore';
 import { useWaInboxStore } from './store/waInboxStore';
+import { useApprovalsStore } from './store/approvalsStore';
 import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES, DEFAULT_BOARD_STAGES } from './store/companySettingsStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
@@ -28,6 +29,7 @@ import { Calendar } from './pages/Calendar';
 import { Master } from './pages/Master';
 import { Demandas } from './pages/Demandas';
 import { Atendimento } from './pages/Atendimento';
+import { ApprovalPage } from './pages/ApprovalPage';
 import { Drive } from './pages/Drive';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -61,6 +63,7 @@ function App() {
   const { init: initCompanies } = useCompaniesStore();
   const { init: initDemandBoard } = useDemandBoardStore();
   const { init: initWaInbox } = useWaInboxStore();
+  const { init: initApprovals } = useApprovalsStore();
   const { init: initCompanySettings } = useCompanySettingsStore();
 
   useEffect(() => {
@@ -81,7 +84,7 @@ function App() {
         // todo o carregamento e a tela ficava sem dados.
         await Promise.allSettled([
           initProfessionals(), initClients(), initDemands(), initFinancial(),
-          initLeads(), initCalendar(), initDemandBoard(), initWaInbox(), initCompanySettings(),
+          initLeads(), initCalendar(), initDemandBoard(), initWaInbox(), initApprovals(), initCompanySettings(),
         ]);
       }
       useAuthStore.getState().loadUsers();
@@ -112,6 +115,7 @@ function App() {
       useDemandBoardStore.setState({ cards: [], dbError: null });
       useWaInboxStore.getState().teardown();
       useWaInboxStore.setState({ chats: [], messages: [], dbError: null });
+      useApprovalsStore.setState({ approvals: [] });
       useAuthStore.setState({ users: [] });
       useCompanySettingsStore.setState({
         googleClientId: '', googleAccessToken: null, googleTokenExpiry: null,
@@ -191,6 +195,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Público — aprovação do cliente, sem login */}
+        <Route path="/aprovar/:token" element={<ApprovalPage />} />
         <Route path="/login" element={currentUser ? (currentUser.isSuperAdmin ? <Navigate to="/master" replace /> : <Navigate to="/dashboard" replace />) : <Login />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={currentUser?.isSuperAdmin ? <Navigate to="/master" replace /> : <Navigate to="/dashboard" replace />} />

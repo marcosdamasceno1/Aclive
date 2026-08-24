@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getApproval, submitApproval, type PublicApproval } from '../lib/approvalPublic';
-import { drivePreviewUrl } from '../lib/driveEmbed';
+import { drivePreviewUrl, driveFileId } from '../lib/driveEmbed';
 import type { ApprovalStatus } from '../types';
 import { CheckCircle2, MessageSquareWarning, Loader2, ExternalLink, PartyPopper, Maximize2 } from 'lucide-react';
 
@@ -80,6 +80,21 @@ export const ApprovalPage = () => {
 
   const preview = drivePreviewUrl(data?.videoUrl);
 
+  // Player nativo (controles no rodapé, some sozinho) tentando o arquivo do
+  // Drive direto. Se o Google bloquear aquele arquivo, cai no iframe (fallback).
+  const fileId = driveFileId(data?.videoUrl);
+  const directUrl = fileId ? `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t` : null;
+  const poster = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w800` : undefined;
+  const [videoMode, setVideoMode] = useState<'native' | 'iframe'>('native');
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (!directUrl) { setVideoMode('iframe'); return; }
+    loadedRef.current = false;
+    setVideoMode('native');
+    const t = setTimeout(() => { if (!loadedRef.current) setVideoMode('iframe'); }, 8000);
+    return () => clearTimeout(t);
+  }, [directUrl]);
+
   return (
     <div className="min-h-screen bg-[#0d1117] text-slate-100" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
       <header className="border-b border-white/[0.06] px-5 py-4 flex items-center justify-between">
@@ -125,9 +140,22 @@ export const ApprovalPage = () => {
                   className="relative rounded-xl overflow-hidden border border-white/[0.08] bg-black"
                   style={{ aspectRatio: '9 / 16', width: 'min(100%, calc(min(70vh, 620px) * 9 / 16))' }}
                 >
-                  {preview
-                    ? <iframe src={preview} className="absolute inset-0 w-full h-full" allow="autoplay" allowFullScreen title="Vídeo" />
-                    : <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm px-4 text-center">Vídeo indisponível. Abra no Drive abaixo.</div>}
+                  {directUrl && videoMode === 'native' ? (
+                    <video
+                      src={directUrl}
+                      poster={poster}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="absolute inset-0 w-full h-full object-contain bg-black"
+                      onLoadedMetadata={() => { loadedRef.current = true; }}
+                      onError={() => setVideoMode('iframe')}
+                    />
+                  ) : preview ? (
+                    <iframe src={preview} className="absolute inset-0 w-full h-full" allow="autoplay" allowFullScreen title="Vídeo" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm px-4 text-center">Vídeo indisponível. Abra no Drive abaixo.</div>
+                  )}
                 </div>
               </div>
               <p className="text-xs text-slate-500 flex items-start gap-1.5">

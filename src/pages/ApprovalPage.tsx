@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getApproval, submitApproval, type PublicApproval } from '../lib/approvalPublic';
 import { drivePreviewUrl } from '../lib/driveEmbed';
 import type { ApprovalStatus } from '../types';
-import { CheckCircle2, MessageSquareWarning, Loader2, ExternalLink, PartyPopper } from 'lucide-react';
+import { CheckCircle2, MessageSquareWarning, Loader2, ExternalLink, PartyPopper, Maximize2 } from 'lucide-react';
 
 const Logo = () => (
   <svg width="150" viewBox="0 0 490 100" xmlns="http://www.w3.org/2000/svg" aria-label="Growth Expert">
@@ -130,6 +130,10 @@ export const ApprovalPage = () => {
                     : <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm px-4 text-center">Vídeo indisponível. Abra no Drive abaixo.</div>}
                 </div>
               </div>
+              <p className="text-xs text-slate-500 flex items-start gap-1.5">
+                <Maximize2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                Toque em play e aguarde: os controles somem sozinhos. Para ampliar, toque no ícone de tela cheia no canto do vídeo.
+              </p>
               {data.videoUrl && (
                 <a href={data.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300">
                   <ExternalLink className="w-3 h-3" /> Abrir no Google Drive

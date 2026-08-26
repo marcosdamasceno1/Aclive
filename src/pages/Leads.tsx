@@ -19,7 +19,7 @@ try { localStorage.removeItem('apify_token'); } catch { /* SSR/test */ }
 import {
   Plus, Search, Trash2, X, ExternalLink, Phone, MapPin,
   Star, Globe, Target, Loader2, CheckSquare, Square, Key,
-  Building2, ArrowRight, AlertTriangle, Mail, RefreshCw, CheckCircle,
+  Building2, ArrowRight, AlertTriangle, Mail, RefreshCw, CheckCircle, Download,
 } from 'lucide-react';
 
 // ─── Pipeline config ───────────────────────────────────────────────────────────
@@ -341,6 +341,54 @@ export const Leads = () => {
     );
   }, [leads, search]);
 
+  // ─── Exportar CSV (para disparo de mensagens em outras plataformas) ─────────
+  const exportCSV = () => {
+    const list = filteredBySearch;
+    if (list.length === 0) return;
+
+    const statusLabel: Record<string, string> = {
+      new: 'Novo', contacted: 'Contatado', proposal: 'Proposta', client: 'Cliente', lost: 'Perdido',
+    };
+    const sourceLabel: Record<string, string> = {
+      apify: 'Google Maps', meta: 'Meta Ads', website: 'Site', manual: 'Manual',
+    };
+    // Telefone pronto p/ disparo: só dígitos com DDI 55 (WhatsApp/plataformas)
+    const waPhone = (raw?: string): string => {
+      const d = (raw || '').replace(/\D/g, '');
+      if (!d) return '';
+      if (d.startsWith('55') && d.length >= 12) return d;
+      return '55' + d;
+    };
+
+    const headers = ['Nome', 'WhatsApp (DDI)', 'Telefone', 'Email', 'Cidade', 'Categoria', 'Status', 'Origem', 'Site', 'Observações', 'Criado em'];
+    const rows = list.map(l => [
+      l.name || '',
+      waPhone(l.phone),
+      l.phone || '',
+      l.email || '',
+      l.city || '',
+      l.category || '',
+      statusLabel[l.status] || l.status,
+      sourceLabel[l.source] || l.source,
+      l.website || '',
+      l.notes || '',
+      l.createdAt ? new Date(l.createdAt).toLocaleDateString('pt-BR') : '',
+    ]);
+
+    const esc = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\r\n');
+    // BOM para o Excel abrir com acentos corretos
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const byColumn = useMemo(() =>
     PIPELINE.reduce((acc, p) => {
       acc[p.status] = filteredBySearch.filter(l => l.status === p.status);
@@ -638,6 +686,16 @@ export const Leads = () => {
               </span>
             </div>
           )}
+
+          <button
+            onClick={exportCSV}
+            disabled={filteredBySearch.length === 0}
+            title="Exportar leads em CSV para disparo em outras plataformas"
+            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Exportar CSV{search ? ` (${filteredBySearch.length})` : ''}
+          </button>
 
           <button
             onClick={() => setShowAdd(true)}

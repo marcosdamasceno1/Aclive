@@ -62,8 +62,10 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
     { to: '/kanban',    icon: Kanban,          label: 'Esteira de Produção',  pageKey: 'kanban' },
     { to: '/calendar',  icon: CalendarDays,    label: 'Calendário',           pageKey: 'calendar' },
     { to: '/leads',     icon: Target,          label: 'Leads',                pageKey: 'leads' },
-    { to: '/atendimento', icon: MessageCircle, label: 'Atendimento',          pageKey: 'atendimento', badge: waUnread },
-    { to: '/drive',    icon: HardDrive,    label: 'Drive',                pageKey: 'drive' },
+    // Atendimento e Drive ocultos por ora (inviáveis no momento). Código e
+    // rotas preservados — basta descomentar para reativar.
+    // { to: '/atendimento', icon: MessageCircle, label: 'Atendimento',          pageKey: 'atendimento', badge: waUnread },
+    // { to: '/drive',    icon: HardDrive,    label: 'Drive',                pageKey: 'drive' },
   ].filter(i => access(i.pageKey));
 
   const adminItems: NavItemDef[] = [

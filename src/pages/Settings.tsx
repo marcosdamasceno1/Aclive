@@ -4,7 +4,7 @@ import { useProfessionalsStore } from '../store/professionalsStore';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
 import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
-import { getWahaConfig, saveWahaConfig, clearWahaConfig, WA_META_ENABLED } from '../utils/whatsapp';
+import { getWahaConfig, saveWahaConfig, clearWahaConfig, sendWhatsAppText, WA_META_ENABLED } from '../utils/whatsapp';
 import { WhatsAppConnect } from '../components/WhatsAppConnect';
 import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
 import type { UserRole, ProfessionType } from '../types';
@@ -230,6 +230,8 @@ export const Settings = () => {
   };
 
   const { loadUsers } = useAuthStore();
+  const [userNotifyStatus, setUserNotifyStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
+  const [userNotifyMsg, setUserNotifyMsg] = useState('');
 
   const handleCreateUser = async () => {
     if (!userForm.name.trim() || !userForm.email.trim() || !userForm.password.trim()) return;
@@ -260,6 +262,20 @@ export const Settings = () => {
         // Fire-and-forget: don't block modal close on a second Edge Function call.
         // updateUser syncs professionalId to Auth metadata + user_profiles in the background.
         updateUser(newUser.id, { professionalId: newPro.id });
+      }
+
+      // Notifica o novo usuário com o acesso, se um telefone foi informado.
+      // Fire-and-forget: a criação do usuário nunca falha por causa disso.
+      if (userForm.phone.trim()) {
+        setUserNotifyStatus('sending');
+        sendWhatsAppText(
+          userForm.phone,
+          `Olá, ${userForm.name}! 👋\n\nSeu acesso ao sistema foi criado:\n\n*Usuário:* ${userForm.email}\n*Senha:* ${userForm.password}\n\nRecomendamos alterar a senha após o primeiro login.`,
+        ).then(err => {
+          if (err) { setUserNotifyStatus('error'); setUserNotifyMsg(`Usuário criado. WhatsApp não enviado: ${err}`); }
+          else     { setUserNotifyStatus('ok');    setUserNotifyMsg('Usuário criado e notificado por WhatsApp!'); }
+          setTimeout(() => setUserNotifyStatus('idle'), 5000);
+        });
       }
 
       setUserForm(emptyUserForm);
@@ -365,6 +381,16 @@ export const Settings = () => {
 
       {activeTab === 'users' && (
         <div className="space-y-4">
+          {userNotifyStatus !== 'idle' && userNotifyMsg && (
+            <div className={`flex items-start gap-3 rounded-xl p-4 border ${
+              userNotifyStatus === 'error' ? 'bg-[#161b22] border-red-500/30' : 'bg-[#161b22] border-emerald-500/30'
+            }`}>
+              {userNotifyStatus === 'error'
+                ? <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                : <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />}
+              <p className={`text-sm ${userNotifyStatus === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>{userNotifyMsg}</p>
+            </div>
+          )}
           {usersError && (
             <div className="flex items-start gap-3 bg-[#161b22] border border-red-500/30 rounded-xl p-4">
               <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
@@ -1242,6 +1268,19 @@ export const Settings = () => {
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                  Telefone <span className="text-slate-500 font-normal">(WhatsApp — opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={userForm.phone}
+                  onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
+                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="(11) 99999-9999"
+                />
+                <p className="text-xs text-slate-500 mt-1">Se preenchido, o usuário recebe o login e a senha por WhatsApp assim que for criado.</p>
+              </div>
 
               {/* Permissions */}
               <div>
@@ -1301,16 +1340,6 @@ export const Settings = () => {
                           <option key={p} value={p}>{getProfessionLabel(p)}</option>
                         ))}
                       </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-200 mb-1.5">Telefone</label>
-                      <input
-                        type="text"
-                        value={userForm.phone}
-                        onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
-                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="(11) 99999-9999"
-                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-200 mb-1.5">Chave PIX</label>

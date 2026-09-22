@@ -37,7 +37,7 @@ export const clearWahaConfig = () => {
 
 // ─── Payload comum ────────────────────────────────────────────────────────────
 
-export type WhatsAppProvider = 'waha' | 'meta';
+export type WhatsAppProvider = 'waha' | 'meta' | 'crm';
 
 // Conexão via API oficial da Meta desativada por ora — WAHA central é o padrão.
 // Deixar em false mantém o código da Meta presente (para reativação futura)
@@ -107,6 +107,19 @@ const buildTextMessage = (p: NotificationPayload): string => {
 const sendViaWaha = async (phone: string, text: string): Promise<string | null> => {
   const { waSend } = await import('../lib/waGateway');
   const { error } = await waSend(formatPhone(phone), text);
+  return error;
+};
+
+// ─── CRM (api.apiintegracoes.com) sender ──────────────────────────────────────
+
+/**
+ * Envia texto livre via API de notificações do CRM — pelo gateway central
+ * (Edge Function crm-notify), que guarda a API Key da agência e isola por
+ * company_id. O navegador nunca fala direto com a API do CRM.
+ */
+const sendViaCrm = async (phone: string, text: string): Promise<string | null> => {
+  const { crmSend } = await import('../lib/crmGateway');
+  const { error } = await crmSend(formatPhone(phone), text);
   return error;
 };
 
@@ -207,7 +220,8 @@ const getProvider = async (): Promise<{ provider: WhatsAppProvider; meta: MetaCo
   // import dinâmico evita dependência circular (store → whatsapp → store)
   const { useCompanySettingsStore } = await import('../store/companySettingsStore');
   const state = useCompanySettingsStore.getState();
-  const provider: WhatsAppProvider = state.whatsappProvider === 'meta' ? 'meta' : 'waha';
+  const provider: WhatsAppProvider =
+    state.whatsappProvider === 'meta' ? 'meta' : state.whatsappProvider === 'crm' ? 'crm' : 'waha';
   const meta = state.metaAccessToken && state.metaPhoneNumberId
     ? {
         accessToken: state.metaAccessToken,
@@ -232,6 +246,8 @@ export const sendWhatsAppNotification = async (
     return sendViaMeta(payload, meta);
   }
 
+  if (provider === 'crm') return sendViaCrm(payload.phone, buildTextMessage(payload));
+
   return sendViaWaha(payload.phone, buildTextMessage(payload));
 };
 
@@ -249,6 +265,8 @@ export const sendWhatsAppText = async (
     if (!meta) return 'Meta API não configurada. Configure em Configurações → Integrações.';
     return sendTextViaMeta(phone, message, meta);
   }
+
+  if (provider === 'crm') return sendViaCrm(phone, message);
 
   return sendViaWaha(phone, message);
 };

@@ -54,6 +54,7 @@ export const Settings = () => {
     saveWhatsappProvider, saveMetaConfig, clearMetaConfig,
     metaLeadsPageId, metaLeadsPageToken, metaLeadsVerifyToken,
     saveMetaLeadsConfig, clearMetaLeadsConfig,
+    crmApiKey, crmInstanceId, saveCrmConfig, clearCrmConfig,
     waWebhookSecret, generateWaWebhookSecret,
   } = useCompanySettingsStore();
 
@@ -92,6 +93,23 @@ export const Settings = () => {
 
   const handleProviderChange = async (p: WhatsAppProvider) => {
     await saveWhatsappProvider(p);
+  };
+
+  // CRM (api.apiintegracoes.com) state
+  const [crmKey,      setCrmKey]      = useState('');
+  const [crmInstance, setCrmInstance] = useState('');
+  const [crmShowKey,  setCrmShowKey]  = useState(false);
+  const [crmSaved,    setCrmSaved]    = useState(false);
+
+  useEffect(() => {
+    setCrmKey(crmApiKey || '');
+    setCrmInstance(crmInstanceId || '');
+  }, [crmApiKey, crmInstanceId]);
+
+  const handleSaveCrm = async () => {
+    await saveCrmConfig(crmKey.trim(), crmInstance.trim());
+    setCrmSaved(true);
+    setTimeout(() => setCrmSaved(false), 2500);
   };
 
   // Meta Lead Ads state
@@ -140,6 +158,7 @@ export const Settings = () => {
 
   const wahaIsConfigured = !!getWahaConfig();
   const metaIsConfigured = !!(metaAccessToken && metaPhoneNumberId);
+  const crmIsConfigured  = !!(crmApiKey && crmInstanceId);
   const [driveClientId, setDriveClientId] = useState('');
   const [driveConnecting, setDriveConnecting] = useState(false);
   const [driveError, setDriveError] = useState('');
@@ -610,7 +629,6 @@ export const Settings = () => {
           {integrationTab === 'whatsapp' && (
             <div className="space-y-4">
               <WhatsAppConnect />
-              {WA_META_ENABLED && (
               <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -627,7 +645,8 @@ export const Settings = () => {
                 <div className="flex gap-2">
                   {([
                     { id: 'waha', label: 'WAHA', desc: 'Self-hosted · WhatsApp HTTP API' },
-                    { id: 'meta', label: 'Meta Oficial', desc: 'API oficial da Meta' },
+                    { id: 'crm', label: 'CRM', desc: 'api.apiintegracoes.com · notificações' },
+                    ...(WA_META_ENABLED ? [{ id: 'meta', label: 'Meta Oficial', desc: 'API oficial da Meta' }] : []),
                   ] as { id: WhatsAppProvider; label: string; desc: string }[]).map(p => (
                     <button
                       key={p.id}
@@ -643,6 +662,7 @@ export const Settings = () => {
                         <span className="text-sm font-semibold">{p.label}</span>
                         {p.id === 'waha' && wahaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
                         {p.id === 'meta' && metaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
+                        {p.id === 'crm' && crmIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
                       </div>
                       <span className="text-xs text-slate-500 pl-4">{p.desc}</span>
                     </button>
@@ -783,6 +803,59 @@ export const Settings = () => {
                 </div>
               )}
 
+              {whatsappProvider === 'crm' && (
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+                      API Key
+                      <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(Gerenciar Tokens no CRM)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={crmShowKey ? 'text' : 'password'}
+                        value={crmKey}
+                        onChange={e => setCrmKey(e.target.value)}
+                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="gha_seu_token_aqui"
+                      />
+                      <button onClick={() => setCrmShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                        {crmShowKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Instance ID</label>
+                    <input
+                      type="text"
+                      value={crmInstance}
+                      onChange={e => setCrmInstance(e.target.value)}
+                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="550e8400-e29b-41d4-a716-446655440000"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleSaveCrm}
+                      disabled={!crmKey.trim() || !crmInstance.trim()}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      {crmSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                      {crmSaved ? 'Salvo!' : 'Salvar'}
+                    </button>
+                    {crmIsConfigured && (
+                      <button onClick={() => { clearCrmConfig(); setCrmKey(''); setCrmInstance(''); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                        Remover configuração
+                      </button>
+                    )}
+                  </div>
+                  <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
+                    <p>• Gere o token em <strong className="text-slate-400">API Documentação → Gerenciar Tokens</strong> (escopo <strong className="text-slate-400">messages:send</strong>)</p>
+                    <p>• O Instance ID é a instância que fará o envio (GET /instances no CRM)</p>
+                    <p>• A API Key fica guardada com segurança no servidor — nunca é exposta ao navegador</p>
+                  </div>
+                </div>
+              )}
+
               {/* ── Atendimento (inbox) — webhook de recepção ── */}
               <div className="border-t border-white/[0.08] pt-5 space-y-3">
                 <div>
@@ -791,7 +864,14 @@ export const Settings = () => {
                     Para as mensagens dos clientes aparecerem na aba Atendimento, configure o webhook do provedor ativo.
                   </p>
                 </div>
-                {!waWebhookSecret ? (
+                {whatsappProvider === 'crm' ? (
+                  <div className="flex items-start gap-2 bg-slate-500/10 border border-white/[0.08] rounded-lg px-3 py-2.5">
+                    <Info className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-400">
+                      A notificação via CRM é transacional (sem conversa) e não gera histórico — não há webhook de recepção para este provedor.
+                    </p>
+                  </div>
+                ) : !waWebhookSecret ? (
                   <button
                     onClick={handleGenerateWaSecret}
                     disabled={generatingWaSecret}
@@ -842,7 +922,6 @@ export const Settings = () => {
                 )}
               </div>
             </div>
-              )}
             </div>
           )}
 

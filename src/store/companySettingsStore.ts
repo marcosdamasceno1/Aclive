@@ -37,6 +37,8 @@ interface CompanySettingsState {
   metaLeadsPageId: string;
   metaLeadsPageToken: string;
   metaLeadsVerifyToken: string;
+  crmApiKey: string;
+  crmInstanceId: string;
   waWebhookSecret: string;
   agencyName: string;             // branding da página pública de aprovação
   approvalNotifyPhone: string;    // telefone padrão para avisos de aprovação
@@ -57,6 +59,8 @@ interface CompanySettingsState {
   clearMetaConfig: () => Promise<void>;
   saveMetaLeadsConfig: (pageId: string, pageToken: string, verifyToken: string) => Promise<void>;
   clearMetaLeadsConfig: () => Promise<void>;
+  saveCrmConfig: (apiKey: string, instanceId: string) => Promise<void>;
+  clearCrmConfig: () => Promise<void>;
   saveKanbanStages: (stages: KanbanStage[]) => Promise<string | null>;
   saveDemandBoardStages: (stages: KanbanStage[]) => Promise<string | null>;
   generateWaWebhookSecret: () => Promise<string | null>;
@@ -107,6 +111,8 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaLeadsPageId: '',
   metaLeadsPageToken: '',
   metaLeadsVerifyToken: '',
+  crmApiKey: '',
+  crmInstanceId: '',
   waWebhookSecret: '',
   agencyName: '',
   approvalNotifyPhone: '',
@@ -137,13 +143,15 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       googleAccessToken:    (row?.google_access_token     as string) || null,
       googleTokenExpiry:    (row?.google_token_expiry     as string) || null,
       // Valor legado 'zapi' no banco vira 'waha' (Z-API foi descontinuada)
-      whatsappProvider:     (row?.whatsapp_provider === 'meta' ? 'meta' : 'waha') as WhatsAppProvider,
+      whatsappProvider:     (row?.whatsapp_provider === 'meta' ? 'meta' : row?.whatsapp_provider === 'crm' ? 'crm' : 'waha') as WhatsAppProvider,
       metaAccessToken:      (row?.meta_access_token       as string) || '',
       metaPhoneNumberId:    (row?.meta_phone_number_id    as string) || '',
       metaTemplateName:     (row?.meta_template_name      as string) || 'nova_demanda',
       metaLeadsPageId:      (row?.meta_leads_page_id      as string) || '',
       metaLeadsPageToken:   (row?.meta_leads_page_token   as string) || '',
       metaLeadsVerifyToken: (row?.meta_leads_verify_token as string) || '',
+      crmApiKey:            (row?.crm_api_key             as string) || '',
+      crmInstanceId:        (row?.crm_instance_id         as string) || '',
       waWebhookSecret:      (row?.wa_webhook_secret       as string) || '',
       agencyName:           (row?.agency_name             as string) || '',
       approvalNotifyPhone:  (row?.approval_notify_phone   as string) || '',
@@ -223,6 +231,16 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   clearMetaLeadsConfig: async () => {
     set({ metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '' });
     await upsert({ meta_leads_page_id: null, meta_leads_page_token: null, meta_leads_verify_token: null });
+  },
+
+  saveCrmConfig: async (apiKey, instanceId) => {
+    set({ crmApiKey: apiKey, crmInstanceId: instanceId });
+    await upsert({ crm_api_key: apiKey, crm_instance_id: instanceId });
+  },
+
+  clearCrmConfig: async () => {
+    set({ crmApiKey: '', crmInstanceId: '' });
+    await upsert({ crm_api_key: null, crm_instance_id: null });
   },
 
   saveKanbanStages: async (stages) => {

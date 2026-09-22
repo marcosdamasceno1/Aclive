@@ -24,7 +24,7 @@ import {
   Plus, X, Edit2, Trash2, MessageSquare, Send, MessageCircle, CheckCircle,
   Settings2, ChevronUp, Pencil, Save, GripVertical,
 } from 'lucide-react';
-import { sendWhatsAppNotification } from '../utils/whatsapp';
+import { sendWhatsAppNotification, sendWhatsAppText } from '../utils/whatsapp';
 import { ApprovalSection } from '../components/ApprovalSection';
 
 // ─── Stage color presets ───────────────────────────────────────────────────────
@@ -468,8 +468,19 @@ export const Kanban = () => {
 
   const handleAddComment = () => {
     if (!commentText.trim() || !viewingId || !currentUser) return;
-    addComment(viewingId, { authorId: currentUser.id, authorName: currentUser.name, text: commentText.trim() });
+    const text = commentText.trim();
+    addComment(viewingId, { authorId: currentUser.id, authorName: currentUser.name, text });
     setCommentText('');
+
+    // Notifica o profissional responsável, exceto se ele mesmo for o autor do comentário.
+    const demand = demands.find(d => d.id === viewingId);
+    const prof = professionals.find(p => p.id === demand?.professionalId);
+    if (demand && prof?.phone && prof.userId !== currentUser.id) {
+      sendWhatsAppText(
+        prof.phone,
+        `Olá, ${prof.name}! 👋\n\n${currentUser.name} comentou em *${demand.title}*:\n\n"${text}"\n\nAcesse o sistema para ver os detalhes.`,
+      );
+    }
   };
 
   const openView = (id: string) => { setViewingId(id); setShowViewModal(true); };

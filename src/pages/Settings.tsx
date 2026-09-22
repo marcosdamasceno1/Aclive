@@ -270,7 +270,7 @@ export const Settings = () => {
         setUserNotifyStatus('sending');
         sendWhatsAppText(
           userForm.phone,
-          `Olá, ${userForm.name}! 👋\n\nSeu acesso ao sistema foi criado:\n\n*Usuário:* ${userForm.email}\n*Senha:* ${userForm.password}\n\nRecomendamos alterar a senha após o primeiro login.`,
+          `Olá, ${userForm.name}! 👋\n\nSeu acesso ao sistema foi criado:\n\n*Link:* ${window.location.origin}\n*Usuário:* ${userForm.email}\n*Senha:* ${userForm.password}\n\nRecomendamos alterar a senha após o primeiro login.`,
         ).then(err => {
           if (err) { setUserNotifyStatus('error'); setUserNotifyMsg(`Usuário criado. WhatsApp não enviado: ${err}`); }
           else     { setUserNotifyStatus('ok');    setUserNotifyMsg('Usuário criado e notificado por WhatsApp!'); }

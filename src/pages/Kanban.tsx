@@ -245,6 +245,7 @@ export const Kanban = () => {
   const [deleteId, setDeleteId]             = useState<string | null>(null);
   const [form, setForm]                     = useState(emptyForm);
   const [commentText, setCommentText]       = useState('');
+  const commentInputRef = useRef<HTMLInputElement>(null);
   const [whatsappStatus, setWhatsappStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
   const [whatsappMsg, setWhatsappMsg]       = useState('');
   const waStatus = useCompanySettingsStore(s => s.waStatus);
@@ -466,16 +467,61 @@ export const Kanban = () => {
     if (deleteId) { deleteDemand(deleteId); setDeleteId(null); setShowViewModal(false); }
   };
 
+  // ── Menções (@nome) no campo de comentário ──────────────────────────────────
+  const mentionMatch = commentText.match(/@([^\s@]*)$/);
+  const mentionQuery = mentionMatch ? mentionMatch[1].toLowerCase() : null;
+  const mentionCandidates = mentionQuery !== null
+    ? professionals
+        .filter(p => p.status === 'active' && p.phone && p.name.toLowerCase().includes(mentionQuery))
+        .slice(0, 6)
+    : [];
+
+  // Destaca "@Nome" no texto exibido quando corresponde a um profissional real.
+  const renderCommentText = (text: string) => {
+    const names = professionals.map(p => p.name).filter(Boolean);
+    if (names.length === 0) return text;
+    const pattern = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    const parts = text.split(new RegExp(`(@(?:${pattern}))(?=\\s|$)`, 'g'));
+    return parts.map((part, i) =>
+      names.some(n => part === `@${n}`)
+        ? <span key={i} className="text-blue-400 font-semibold">{part}</span>
+        : part,
+    );
+  };
+
+  const handleSelectMention = (name: string) => {
+    setCommentText(prev => prev.replace(/@([^\s@]*)$/, `@${name} `));
+    commentInputRef.current?.focus();
+  };
+
+  // Extrai, do texto final, os profissionais mencionados via "@Nome" (usados como destino da notificação).
+  const extractMentionedProfessionals = (text: string) =>
+    professionals.filter(p => p.phone && new RegExp(`(?:^|\\s)@${p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=\\s|$)`).test(text));
+
   const handleAddComment = () => {
     if (!commentText.trim() || !viewingId || !currentUser) return;
     const text = commentText.trim();
     addComment(viewingId, { authorId: currentUser.id, authorName: currentUser.name, text });
     setCommentText('');
 
-    // Notifica o profissional responsável, exceto se ele mesmo for o autor do comentário.
     const demand = demands.find(d => d.id === viewingId);
-    const prof = professionals.find(p => p.id === demand?.professionalId);
-    if (demand && prof?.phone && prof.userId !== currentUser.id) {
+    if (!demand) return;
+
+    const mentioned = extractMentionedProfessionals(text).filter(p => p.userId !== currentUser.id);
+    if (mentioned.length > 0) {
+      // Notifica só quem foi mencionado — a menção é o destino explícito escolhido pelo autor.
+      mentioned.forEach(prof => {
+        sendWhatsAppText(
+          prof.phone,
+          `Olá, ${prof.name}! 👋\n\n${currentUser.name} mencionou você em *${demand.title}*:\n\n"${text}"\n\nAcesse o sistema para ver os detalhes.`,
+        );
+      });
+      return;
+    }
+
+    // Sem menção: mantém o comportamento padrão — avisa o profissional responsável.
+    const prof = professionals.find(p => p.id === demand.professionalId);
+    if (prof?.phone && prof.userId !== currentUser.id) {
       sendWhatsAppText(
         prof.phone,
         `Olá, ${prof.name}! 👋\n\n${currentUser.name} comentou em *${demand.title}*:\n\n"${text}"\n\nAcesse o sistema para ver os detalhes.`,
@@ -1165,20 +1211,40 @@ export const Kanban = () => {
                             <span className="text-xs font-semibold text-slate-200">{comment.authorName}</span>
                             <span className="text-xs text-slate-500">{formatDateTime(comment.createdAt)}</span>
                           </div>
-                          <p className="text-sm text-slate-400">{comment.text}</p>
+                          <p className="text-sm text-slate-400">{renderCommentText(comment.text)}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
                 <div className="flex gap-2 mt-3">
-                  <input
-                    type="text" value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleAddComment()}
-                    placeholder="Adicionar comentário..."
-                    className="flex-1 border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative flex-1">
+                    {mentionCandidates.length > 0 && (
+                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-[#21262d] border border-white/[0.08] rounded-lg shadow-lg overflow-hidden z-10">
+                        {mentionCandidates.map(p => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onMouseDown={e => { e.preventDefault(); handleSelectMention(p.name); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-slate-200 hover:bg-blue-500/10 transition-colors"
+                          >
+                            <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                              {p.name.charAt(0)}
+                            </div>
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <input
+                      ref={commentInputRef}
+                      type="text" value={commentText}
+                      onChange={e => setCommentText(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAddComment()}
+                      placeholder="Adicionar comentário... (use @ para mencionar alguém)"
+                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                   <button
                     onClick={handleAddComment}
                     disabled={!commentText.trim()}

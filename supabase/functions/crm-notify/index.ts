@@ -56,15 +56,26 @@ Deno.serve(async (req: Request) => {
   const name    = String(body.name ?? '');
   if (!phone || phone.length < 10 || !message) return json({ error: 'bad_request' }, 400);
 
-  try {
+  const payload = JSON.stringify({ phone, message, ...(name ? { name } : {}) });
+  const post = (authorization: string) => {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 12_000);
-    const res = await fetch(endpoint, {
+    return fetch(endpoint, {
       method: 'POST',
       signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json', 'Authorization': actaToken },
-      body: JSON.stringify({ phone, message, ...(name ? { name } : {}) }),
+      headers: { 'Content-Type': 'application/json', 'Authorization': authorization },
+      body: payload,
     }).finally(() => clearTimeout(t));
+  };
+
+  try {
+    const rawToken = actaToken.replace(/^Bearer\s+/i, '').trim();
+    let res = await post(rawToken);
+    // O Acta pode esperar o token puro ou no formato "Bearer <token>": tenta os dois.
+    if (res.status === 401 || res.status === 403) {
+      await res.body?.cancel();
+      res = await post(`Bearer ${rawToken}`);
+    }
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');

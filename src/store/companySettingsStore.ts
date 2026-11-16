@@ -38,7 +38,7 @@ interface CompanySettingsState {
   metaLeadsPageToken: string;
   metaLeadsVerifyToken: string;
   crmApiKey: string;
-  crmInstanceId: string;
+  crmEndpointUrl: string;
   waWebhookSecret: string;
   agencyName: string;             // branding da página pública de aprovação
   approvalNotifyPhone: string;    // telefone padrão para avisos de aprovação
@@ -59,7 +59,7 @@ interface CompanySettingsState {
   clearMetaConfig: () => Promise<void>;
   saveMetaLeadsConfig: (pageId: string, pageToken: string, verifyToken: string) => Promise<void>;
   clearMetaLeadsConfig: () => Promise<void>;
-  saveCrmConfig: (apiKey: string, instanceId: string) => Promise<void>;
+  saveCrmConfig: (apiKey: string, endpointUrl: string) => Promise<void>;
   clearCrmConfig: () => Promise<void>;
   saveKanbanStages: (stages: KanbanStage[]) => Promise<string | null>;
   saveDemandBoardStages: (stages: KanbanStage[]) => Promise<string | null>;
@@ -112,7 +112,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaLeadsPageToken: '',
   metaLeadsVerifyToken: '',
   crmApiKey: '',
-  crmInstanceId: '',
+  crmEndpointUrl: '',
   waWebhookSecret: '',
   agencyName: '',
   approvalNotifyPhone: '',
@@ -151,7 +151,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       metaLeadsPageToken:   (row?.meta_leads_page_token   as string) || '',
       metaLeadsVerifyToken: (row?.meta_leads_verify_token as string) || '',
       crmApiKey:            (row?.crm_api_key             as string) || '',
-      crmInstanceId:        (row?.crm_instance_id         as string) || '',
+      crmEndpointUrl:       (row?.crm_endpoint_url        as string) || '',
       waWebhookSecret:      (row?.wa_webhook_secret       as string) || '',
       agencyName:           (row?.agency_name             as string) || '',
       approvalNotifyPhone:  (row?.approval_notify_phone   as string) || '',
@@ -233,14 +233,14 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
     await upsert({ meta_leads_page_id: null, meta_leads_page_token: null, meta_leads_verify_token: null });
   },
 
-  saveCrmConfig: async (apiKey, instanceId) => {
-    set({ crmApiKey: apiKey, crmInstanceId: instanceId });
-    await upsert({ crm_api_key: apiKey, crm_instance_id: instanceId });
+  saveCrmConfig: async (apiKey, endpointUrl) => {
+    set({ crmApiKey: apiKey, crmEndpointUrl: endpointUrl });
+    await upsert({ crm_api_key: apiKey, crm_endpoint_url: endpointUrl });
   },
 
   clearCrmConfig: async () => {
-    set({ crmApiKey: '', crmInstanceId: '' });
-    await upsert({ crm_api_key: null, crm_instance_id: null });
+    set({ crmApiKey: '', crmEndpointUrl: '' });
+    await upsert({ crm_api_key: null, crm_endpoint_url: null });
   },
 
   saveKanbanStages: async (stages) => {

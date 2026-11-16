@@ -54,7 +54,7 @@ export const Settings = () => {
     saveWhatsappProvider, saveMetaConfig, clearMetaConfig,
     metaLeadsPageId, metaLeadsPageToken, metaLeadsVerifyToken,
     saveMetaLeadsConfig, clearMetaLeadsConfig,
-    crmApiKey, crmInstanceId, saveCrmConfig, clearCrmConfig,
+    crmApiKey, crmEndpointUrl, saveCrmConfig, clearCrmConfig,
     waWebhookSecret, generateWaWebhookSecret,
   } = useCompanySettingsStore();
 
@@ -95,19 +95,19 @@ export const Settings = () => {
     await saveWhatsappProvider(p);
   };
 
-  // CRM (api.apiintegracoes.com) state
+  // Acta (endpoint + token) state
   const [crmKey,      setCrmKey]      = useState('');
-  const [crmInstance, setCrmInstance] = useState('');
+  const [crmEndpoint, setCrmEndpoint] = useState('');
   const [crmShowKey,  setCrmShowKey]  = useState(false);
   const [crmSaved,    setCrmSaved]    = useState(false);
 
   useEffect(() => {
     setCrmKey(crmApiKey || '');
-    setCrmInstance(crmInstanceId || '');
-  }, [crmApiKey, crmInstanceId]);
+    setCrmEndpoint(crmEndpointUrl || '');
+  }, [crmApiKey, crmEndpointUrl]);
 
   const handleSaveCrm = async () => {
-    await saveCrmConfig(crmKey.trim(), crmInstance.trim());
+    await saveCrmConfig(crmKey.trim(), crmEndpoint.trim());
     setCrmSaved(true);
     setTimeout(() => setCrmSaved(false), 2500);
   };
@@ -158,7 +158,7 @@ export const Settings = () => {
 
   const wahaIsConfigured = !!getWahaConfig();
   const metaIsConfigured = !!(metaAccessToken && metaPhoneNumberId);
-  const crmIsConfigured  = !!(crmApiKey && crmInstanceId);
+  const crmIsConfigured  = !!(crmApiKey && crmEndpointUrl);
   const [driveClientId, setDriveClientId] = useState('');
   const [driveConnecting, setDriveConnecting] = useState(false);
   const [driveError, setDriveError] = useState('');
@@ -271,6 +271,7 @@ export const Settings = () => {
         sendWhatsAppText(
           userForm.phone,
           `Olá, ${userForm.name}! 👋\n\nSeu acesso ao sistema foi criado:\n\n*Link:* https://growthexpert.com.br/\n*Usuário:* ${userForm.email}\n*Senha:* ${userForm.password}\n\nRecomendamos alterar a senha após o primeiro login.`,
+          userForm.name,
         ).then(err => {
           if (err) { setUserNotifyStatus('error'); setUserNotifyMsg(`Usuário criado. WhatsApp não enviado: ${err}`); }
           else     { setUserNotifyStatus('ok');    setUserNotifyMsg('Usuário criado e notificado por WhatsApp!'); }
@@ -671,7 +672,7 @@ export const Settings = () => {
                 <div className="flex gap-2">
                   {([
                     { id: 'waha', label: 'WAHA', desc: 'Self-hosted · WhatsApp HTTP API' },
-                    { id: 'crm', label: 'CRM', desc: 'api.apiintegracoes.com · notificações' },
+                    { id: 'crm', label: 'Acta', desc: 'Endpoint + token · notificações' },
                     ...(WA_META_ENABLED ? [{ id: 'meta', label: 'Meta Oficial', desc: 'API oficial da Meta' }] : []),
                   ] as { id: WhatsAppProvider; label: string; desc: string }[]).map(p => (
                     <button
@@ -832,9 +833,19 @@ export const Settings = () => {
               {whatsappProvider === 'crm' && (
                 <div className="space-y-3 pt-1">
                   <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Endpoint (URL do endereço no Acta)</label>
+                    <input
+                      type="text"
+                      value={crmEndpoint}
+                      onChange={e => setCrmEndpoint(e.target.value)}
+                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div>
                     <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
-                      API Key
-                      <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(Gerenciar Tokens no CRM)</span>
+                      Token
+                      <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(segredo do endereço no Acta)</span>
                     </label>
                     <div className="relative">
                       <input
@@ -842,42 +853,32 @@ export const Settings = () => {
                         value={crmKey}
                         onChange={e => setCrmKey(e.target.value)}
                         className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="gha_seu_token_aqui"
+                        placeholder="whk_..."
                       />
                       <button onClick={() => setCrmShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                         {crmShowKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Instance ID</label>
-                    <input
-                      type="text"
-                      value={crmInstance}
-                      onChange={e => setCrmInstance(e.target.value)}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="550e8400-e29b-41d4-a716-446655440000"
-                    />
-                  </div>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={handleSaveCrm}
-                      disabled={!crmKey.trim() || !crmInstance.trim()}
+                      disabled={!crmKey.trim() || !/^https:\/\//i.test(crmEndpoint.trim())}
                       className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
                     >
                       {crmSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
                       {crmSaved ? 'Salvo!' : 'Salvar'}
                     </button>
                     {crmIsConfigured && (
-                      <button onClick={() => { clearCrmConfig(); setCrmKey(''); setCrmInstance(''); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                      <button onClick={() => { clearCrmConfig(); setCrmKey(''); setCrmEndpoint(''); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
                         Remover configuração
                       </button>
                     )}
                   </div>
                   <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                    <p>• Gere o token em <strong className="text-slate-400">API Documentação → Gerenciar Tokens</strong> (escopo <strong className="text-slate-400">messages:send</strong>)</p>
-                    <p>• O Instance ID é a instância que fará o envio (GET /instances no CRM)</p>
-                    <p>• A API Key fica guardada com segurança no servidor — nunca é exposta ao navegador</p>
+                    <p>• No Acta, o endereço deve usar <strong className="text-slate-400">chave no cabeçalho</strong> com o nome <strong className="text-slate-400">Authorization</strong></p>
+                    <p>• Campos do corpo enviados: <strong className="text-slate-400">phone</strong>, <strong className="text-slate-400">name</strong> e <strong className="text-slate-400">message</strong></p>
+                    <p>• O token fica guardado com segurança no servidor — nunca é exposto ao navegador</p>
                   </div>
                 </div>
               )}
@@ -894,7 +895,7 @@ export const Settings = () => {
                   <div className="flex items-start gap-2 bg-slate-500/10 border border-white/[0.08] rounded-lg px-3 py-2.5">
                     <Info className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-slate-400">
-                      A notificação via CRM é transacional (sem conversa) e não gera histórico — não há webhook de recepção para este provedor.
+                      O Acta é usado só para enviar notificações — não há webhook de recepção para este provedor.
                     </p>
                   </div>
                 ) : !waWebhookSecret ? (

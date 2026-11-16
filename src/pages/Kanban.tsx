@@ -514,6 +514,7 @@ export const Kanban = () => {
         sendWhatsAppText(
           prof.phone,
           `Olá, ${prof.name}! 👋\n\n${currentUser.name} mencionou você em *${demand.title}*:\n\n"${text}"\n\nAcesse o sistema para ver os detalhes.`,
+          prof.name,
         );
       });
       return;
@@ -525,6 +526,7 @@ export const Kanban = () => {
       sendWhatsAppText(
         prof.phone,
         `Olá, ${prof.name}! 👋\n\n${currentUser.name} comentou em *${demand.title}*:\n\n"${text}"\n\nAcesse o sistema para ver os detalhes.`,
+        prof.name,
       );
     }
   };

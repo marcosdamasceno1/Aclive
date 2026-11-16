@@ -1,10 +1,9 @@
-// crm-notify — Gateway para a API de notificações do CRM (api.apiintegracoes.com).
+// crm-notify — Envia notificações para o endpoint (webhook) do sistema Acta.
 //
-// O frontend NUNCA fala direto com a API do CRM: a API Key da agência fica
-// guardada em company_settings (linha isolada por company_id via RLS) e só
-// esta função a lê, usando a service role. O supabase-js injeta o JWT do
-// usuário automaticamente — é assim que a função sabe de qual agência é a
-// chamada e busca a API Key/instance_id corretos.
+// O frontend NUNCA fala direto com o Acta: a URL do endpoint e o token da
+// agência ficam em company_settings e só esta função os lê, usando a service
+// role. O supabase-js injeta o JWT do usuário automaticamente — é assim que a
+// função sabe de qual agência é a chamada.
 //
 // Mantenha "Verify JWT" LIGADO nesta função (é chamada autenticada).
 
@@ -12,8 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const ANON_KEY      = Deno.env.get('SUPABASE_ANON_KEY')!;
-const CRM_BASE_URL  = (Deno.env.get('CRM_API_BASE_URL') ?? 'https://api.apiintegracoes.com/v1').replace(/\/+$/, '');
+const ANON_KEY     = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -41,41 +39,43 @@ Deno.serve(async (req: Request) => {
   if (!companyId) return json({ error: 'no_company', message: 'Usuário sem agência associada.' });
 
   const { data: cfg } = await admin
-    .from('company_settings').select('crm_api_key, crm_instance_id').eq('company_id', companyId).maybeSingle();
-  const apiKey     = (cfg as Record<string, unknown> | null)?.crm_api_key as string || '';
-  const instanceId = (cfg as Record<string, unknown> | null)?.crm_instance_id as string || '';
-  if (!apiKey || !instanceId) {
-    return json({ error: 'not_configured', message: 'CRM não configurado. Configure em Configurações → Integrações → WhatsApp.' });
+    .from('company_settings').select('crm_api_key, crm_endpoint_url').eq('company_id', companyId).maybeSingle();
+  const actaToken = (cfg as Record<string, unknown> | null)?.crm_api_key as string || '';
+  const endpoint  = (cfg as Record<string, unknown> | null)?.crm_endpoint_url as string || '';
+  if (!actaToken || !endpoint) {
+    return json({ error: 'not_configured', message: 'Acta não configurado. Configure em Configurações → Integrações → WhatsApp.' });
+  }
+  if (!/^https:\/\//i.test(endpoint)) {
+    return json({ error: 'bad_endpoint', message: 'O endpoint do Acta precisa começar com https://' });
   }
 
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* corpo opcional */ }
-  const phone = String(body.phone ?? '').replace(/\D/g, '');
-  const content = String(body.content ?? '');
-  if (!phone || phone.length < 10 || !content) return json({ error: 'bad_request' }, 400);
+  const phone   = String(body.phone ?? '').replace(/\D/g, '');
+  const message = String(body.content ?? '');
+  const name    = String(body.name ?? '');
+  if (!phone || phone.length < 10 || !message) return json({ error: 'bad_request' }, 400);
 
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 12_000);
-    const res = await fetch(`${CRM_BASE_URL}/notifications`, {
+    const res = await fetch(endpoint, {
       method: 'POST',
       signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
-      body: JSON.stringify({
-        instance_id: instanceId,
-        phone,
-        content_type: 'text',
-        content,
-      }),
+      headers: { 'Content-Type': 'application/json', 'Authorization': actaToken },
+      body: JSON.stringify({ phone, message, ...(name ? { name } : {}) }),
     }).finally(() => clearTimeout(t));
 
-    const data = await res.json().catch(() => ({})) as Record<string, unknown>;
-    if (!res.ok || data.success === false) {
-      const err = data.error as { code?: string; message?: string } | undefined;
-      return json({ error: 'crm_error', message: err?.message || err?.code || `HTTP ${res.status}` });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      let detail = text.slice(0, 300);
+      try {
+        const j = JSON.parse(text) as { message?: string; error?: string | { message?: string } };
+        detail = j.message || (typeof j.error === 'string' ? j.error : j.error?.message) || detail;
+      } catch { /* resposta não-JSON */ }
+      return json({ error: 'acta_error', message: detail || `HTTP ${res.status}` });
     }
-    const result = (data.data ?? {}) as Record<string, unknown>;
-    return json({ ok: true, providerMessageId: (result.notification_id as string) ?? null, status: (result.status as string) ?? null });
+    return json({ ok: true });
   } catch (e) {
     return json({ error: 'gateway_error', message: String(e) });
   }

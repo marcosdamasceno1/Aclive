@@ -1,8 +1,8 @@
 /**
- * crmGateway.ts — Cliente da Edge Function crm-notify (API de notificações do CRM).
+ * crmGateway.ts — Cliente da Edge Function crm-notify (endpoint do sistema Acta).
  *
- * O frontend NUNCA fala direto com api.apiintegracoes.com — a chamada passa
- * pela função crm-notify, que guarda a API Key da agência e isola por
+ * O frontend NUNCA fala direto com o Acta — a chamada passa pela função
+ * crm-notify, que guarda o endpoint e o token da agência e isola por
  * company_id. O supabase-js injeta o Authorization (JWT do usuário)
  * automaticamente na invocação.
  */
@@ -17,13 +17,13 @@ export interface CrmGatewayResult {
 }
 
 /** Envia notificação de texto via CRM para o telefone informado. */
-export const crmSend = async (phone: string, content: string): Promise<CrmGatewayResult> => {
+export const crmSend = async (phone: string, content: string, name?: string): Promise<CrmGatewayResult> => {
   try {
-    const { data, error } = await supabase.functions.invoke('crm-notify', { body: { phone, content } });
+    const { data, error } = await supabase.functions.invoke('crm-notify', { body: { phone, content, name } });
     if (error) {
       const raw = error.message || '';
       const friendly = /Failed to send a request|Failed to fetch|NetworkError|network/i.test(raw)
-        ? 'CRM indisponível (conecte em Configurações → Integrações → WhatsApp).'
+        ? 'Acta indisponível (verifique se a função crm-notify foi publicada no Supabase).'
         : raw;
       return { error: friendly };
     }

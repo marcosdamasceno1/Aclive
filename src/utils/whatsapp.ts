@@ -110,16 +110,16 @@ const sendViaWaha = async (phone: string, text: string): Promise<string | null> 
   return error;
 };
 
-// ─── CRM (api.apiintegracoes.com) sender ──────────────────────────────────────
+// ─── Acta (endpoint/webhook) sender ───────────────────────────────────────────
 
 /**
- * Envia texto livre via API de notificações do CRM — pelo gateway central
- * (Edge Function crm-notify), que guarda a API Key da agência e isola por
- * company_id. O navegador nunca fala direto com a API do CRM.
+ * Envia texto livre para o endpoint do Acta — pelo gateway central
+ * (Edge Function crm-notify), que guarda endpoint e token da agência e isola
+ * por company_id. O navegador nunca fala direto com o Acta.
  */
-const sendViaCrm = async (phone: string, text: string): Promise<string | null> => {
+const sendViaCrm = async (phone: string, text: string, name?: string): Promise<string | null> => {
   const { crmSend } = await import('../lib/crmGateway');
-  const { error } = await crmSend(formatPhone(phone), text);
+  const { error } = await crmSend(formatPhone(phone), text, name);
   return error;
 };
 
@@ -246,7 +246,7 @@ export const sendWhatsAppNotification = async (
     return sendViaMeta(payload, meta);
   }
 
-  if (provider === 'crm') return sendViaCrm(payload.phone, buildTextMessage(payload));
+  if (provider === 'crm') return sendViaCrm(payload.phone, buildTextMessage(payload), payload.professionalName);
 
   return sendViaWaha(payload.phone, buildTextMessage(payload));
 };
@@ -258,6 +258,7 @@ export const sendWhatsAppNotification = async (
 export const sendWhatsAppText = async (
   phone: string,
   message: string,
+  name?: string,
 ): Promise<string | null> => {
   const { provider, meta } = await getProvider();
 
@@ -266,7 +267,7 @@ export const sendWhatsAppText = async (
     return sendTextViaMeta(phone, message, meta);
   }
 
-  if (provider === 'crm') return sendViaCrm(phone, message);
+  if (provider === 'crm') return sendViaCrm(phone, message, name);
 
   return sendViaWaha(phone, message);
 };

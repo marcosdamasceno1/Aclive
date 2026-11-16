@@ -107,7 +107,7 @@ export const DriveBrowser = ({ accessToken, onClose }: Props) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#161b22] border border-white/[0.08] rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+      <div className="bg-[#161b22] border border-white/[0.08] rounded-xl w-full max-w-2xl max-h-[85dvh] flex flex-col shadow-2xl">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08]">

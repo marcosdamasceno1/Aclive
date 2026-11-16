@@ -115,7 +115,7 @@ export const Atendimento = () => {
   };
 
   return (
-    <div className="flex flex-col h-full -mx-6 -mt-6">
+    <div className="flex flex-col h-full -mx-4 -mt-4 sm:-mx-6 sm:-mt-6">
       {/* ── Top bar ── */}
       <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-white/[0.05] bg-[#0d1117] flex-shrink-0">
         <div>

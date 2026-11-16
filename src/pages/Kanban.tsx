@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   DndContext, DragOverlay,
-  PointerSensor, useSensor, useSensors, closestCorners,
+  MouseSensor, TouchSensor, useSensor, useSensors, closestCorners,
   useDroppable,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
@@ -105,7 +105,7 @@ const DraggableCard = ({ demand, clientName, professionalName, onOpen, didDrag }
       {...attributes}
       {...listeners}
       onClick={() => { if (!didDrag.current) onOpen(demand.id); }}
-      className={`group bg-[#161b22] border rounded-xl p-3 cursor-grab active:cursor-grabbing select-none transition-all hover:border-white/20 ${
+      className={`group bg-[#161b22] border rounded-xl p-3 cursor-grab active:cursor-grabbing select-none [-webkit-touch-callout:none] transition-all hover:border-white/20 ${
         overdue ? 'border-red-500/30' : 'border-white/[0.06]'
       }`}
     >
@@ -165,7 +165,7 @@ const KanbanColumn = ({ stage, demands, clients, professionals, isLast, onOpen, 
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   return (
-    <div className={`flex flex-col flex-shrink-0 w-56 ${!isLast ? 'border-r border-white/[0.05]' : ''}`}>
+    <div className={`flex flex-col flex-shrink-0 w-[80vw] max-w-[18rem] snap-start sm:w-56 sm:max-w-none ${!isLast ? 'border-r border-white/[0.05]' : ''}`}>
       <div className={`flex items-center gap-2 px-3 py-3 transition-colors ${isOver ? 'bg-blue-500/5' : ''}`}>
         <span className="text-sm leading-none">{stage.icon}</span>
         <span className={`text-xs font-bold uppercase tracking-widest ${stage.color}`}>{stage.label}</span>
@@ -175,8 +175,7 @@ const KanbanColumn = ({ stage, demands, clients, professionals, isLast, onOpen, 
       </div>
       <div
         ref={setNodeRef}
-        className={`flex-1 px-2 pb-3 space-y-2 overflow-y-auto transition-colors ${isOver ? 'bg-blue-500/[0.03]' : ''}`}
-        style={{ maxHeight: 'calc(100vh - 200px)' }}
+        className={`flex-1 px-2 pb-3 space-y-2 lg:overflow-y-auto lg:max-h-[calc(100vh-200px)] transition-colors ${isOver ? 'bg-blue-500/[0.03]' : ''}`}
       >
         <SortableContext items={demands.map(d => d.id)} strategy={verticalListSortingStrategy}>
           {demands.map(demand => {
@@ -273,7 +272,9 @@ export const Kanban = () => {
   };
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // No toque, arrastar exige segurar o card: deslizar o dedo rola o quadro.
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
 
   // Auto-fill value
@@ -611,10 +612,10 @@ export const Kanban = () => {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full -mx-6 -mt-6">
+    <div className="flex flex-col h-full -mx-4 -mt-4 sm:-mx-6 sm:-mt-6">
 
       {/* ── Top bar ── */}
-      <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-white/[0.05] bg-[#0d1117] flex-shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-white/[0.05] bg-[#0d1117] flex-shrink-0">
         <div>
           <h1 className="text-base font-bold text-slate-100 leading-none">Esteira de Produção</h1>
           <p className="text-xs text-slate-600 mt-0.5">
@@ -641,12 +642,12 @@ export const Kanban = () => {
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Nova Demanda
+            Nova<span className="hidden sm:inline">&nbsp;Demanda</span>
           </button>
         )}
 
-        {/* Client filter dropdown */}
-        <div className="relative group">
+        {/* Client filter dropdown — no celular as pílulas abaixo já filtram */}
+        <div className="relative group hidden sm:block">
           <button className="flex items-center gap-2 bg-[#21262d] border border-white/[0.08] text-slate-300 px-3 py-2 rounded-lg text-xs font-semibold hover:border-white/20 transition-colors">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
             {selectedClientName}
@@ -683,7 +684,7 @@ export const Kanban = () => {
       </div>
 
       {/* ── Client pills ── */}
-      <div className="flex items-center gap-1.5 px-6 py-2.5 overflow-x-auto flex-shrink-0 bg-[#0d1117] border-b border-white/[0.04]">
+      <div className="flex items-center gap-1.5 px-4 sm:px-6 py-2.5 overflow-x-auto flex-shrink-0 bg-[#0d1117] border-b border-white/[0.04]">
         <button
           onClick={() => setClientFilter('all')}
           className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
@@ -704,7 +705,7 @@ export const Kanban = () => {
       </div>
 
       {/* ── Board ── */}
-      <div className="flex-1 overflow-x-auto bg-[#0d1117]">
+      <div className="flex-1 overflow-x-auto snap-x snap-mandatory sm:snap-none scroll-px-4 bg-[#0d1117]">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -712,7 +713,7 @@ export const Kanban = () => {
           onDragEnd={handleDragEnd}
         >
           <div className="flex h-full" style={{ minWidth: `${columns.length * 224 + 48}px` }}>
-            <div className="w-6 flex-shrink-0" />
+            <div className="w-2 sm:w-6 flex-shrink-0" />
             {columns.map((stage, i) => (
               <KanbanColumn
                 key={stage.id}
@@ -725,7 +726,7 @@ export const Kanban = () => {
                 didDrag={didDrag}
               />
             ))}
-            <div className="w-6 flex-shrink-0" />
+            <div className="w-2 sm:w-6 flex-shrink-0" />
           </div>
 
           <DragOverlay dropAnimation={{ duration: 150, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
@@ -738,7 +739,7 @@ export const Kanban = () => {
 
       {/* ── WhatsApp toast ── */}
       {whatsappStatus !== 'idle' && (
-        <div className={`fixed bottom-6 right-6 z-[70] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-semibold transition-all ${
+        <div className={`fixed bottom-24 lg:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-[70] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-semibold transition-all ${
           whatsappStatus === 'sending' ? 'bg-[#21262d] border-white/10 text-slate-300' :
           whatsappStatus === 'ok'     ? 'bg-green-500/15 border-green-500/30 text-green-300' :
                                         'bg-red-500/15 border-red-500/30 text-red-300'
@@ -753,7 +754,7 @@ export const Kanban = () => {
       {/* ── Stages Management Modal ── */}
       {showStagesModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] flex-shrink-0">
               <div>
                 <h2 className="text-base font-bold text-slate-100">Gerenciar Etapas</h2>
@@ -945,7 +946,7 @@ export const Kanban = () => {
       {/* ── Add / Edit Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
             <div className="sticky top-0 bg-[#21262d] flex items-center justify-between px-6 py-4 border-b border-white/[0.05] z-10">
               <h2 className="text-lg font-bold text-slate-100">{editingId ? 'Editar Demanda' : 'Nova Demanda'}</h2>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-300 p-1 rounded-lg hover:bg-white/[0.06]">
@@ -964,7 +965,7 @@ export const Kanban = () => {
                   placeholder="Ex: Criação de post para Instagram"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-200 mb-1.5">Cliente *</label>
                   <select
@@ -1033,7 +1034,7 @@ export const Kanban = () => {
                   </select>
                 </div>
                 {editingId && (
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-slate-200 mb-1.5">Status</label>
                     <select
                       value={form.status}
@@ -1111,7 +1112,7 @@ export const Kanban = () => {
       {/* ── View / Comment Modal ── */}
       {showViewModal && viewingDemand && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
             <div className="sticky top-0 bg-[#21262d] flex items-center justify-between px-6 py-4 border-b border-white/[0.05] z-10">
               <h2 className="text-base font-bold text-slate-100 truncate flex-1 mr-4">{viewingDemand.title}</h2>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1243,7 +1244,7 @@ export const Kanban = () => {
                       type="text" value={commentText}
                       onChange={e => setCommentText(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleAddComment()}
-                      placeholder="Adicionar comentário... (use @ para mencionar alguém)"
+                      placeholder="Comentar… (@ para mencionar)"
                       className="w-full border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

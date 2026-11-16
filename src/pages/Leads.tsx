@@ -646,9 +646,9 @@ export const Leads = () => {
   return (
     <div className="flex flex-col h-full space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Leads</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Leads</h1>
           <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">{leads.length} lead(s) no funil</p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -764,7 +764,7 @@ export const Leads = () => {
       {/* ── Apify Modal ──────────────────────────────────────────────────────────── */}
       {showApify && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-2xl w-full max-w-3xl max-h-[90dvh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-emerald-400" />
@@ -803,8 +803,8 @@ export const Leads = () => {
               })()}
 
               {/* Search fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-slate-200 mb-1.5">Segmento / Tipo de empresa</label>
                   <input type="text" value={segment} onChange={e => setSegment(e.target.value)}
                     placeholder="ex: agência de marketing digital"
@@ -970,7 +970,7 @@ export const Leads = () => {
                   className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Ex: XYZ Marketing" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-200 mb-1.5">Telefone</label>
                   <input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}

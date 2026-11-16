@@ -37,3 +37,15 @@ select option {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* iOS dá zoom automático em campos com fonte < 16px: no celular os campos usam 16px. */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Espaço da barra de navegação inferior (celular) + área segura do iPhone. */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }

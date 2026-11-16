@@ -147,9 +147,9 @@ export const Demands = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Demandas</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Demandas</h1>
           <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">{filtered.length} demanda(s) encontrada(s)</p>
         </div>
         {canCreate && (
@@ -323,7 +323,7 @@ export const Demands = () => {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
             <div className="sticky top-0 bg-[#21262d] flex items-center justify-between px-6 py-4 border-b border-white/[0.05] z-10">
               <h2 className="text-lg font-bold text-slate-100">
                 {editingId ? 'Editar Demanda' : 'Nova Demanda'}
@@ -345,7 +345,7 @@ export const Demands = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-200 mb-1.5">Cliente *</label>
                   <select
@@ -418,7 +418,7 @@ export const Demands = () => {
                   </select>
                 </div>
                 {editingId && (
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-slate-200 mb-1.5">Status</label>
                     <select
                       value={form.status}
@@ -461,7 +461,7 @@ export const Demands = () => {
       {/* View/Comment Modal */}
       {showViewModal && viewingDemand && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
             <div className="sticky top-0 bg-[#21262d] flex items-center justify-between px-6 py-4 border-b border-white/[0.05] z-10">
               <h2 className="text-lg font-bold text-slate-100 truncate flex-1 mr-4">{viewingDemand.title}</h2>
               <button onClick={() => { setShowViewModal(false); setCommentText(''); }} className="text-slate-400 hover:text-slate-500 p-1 rounded-lg hover:bg-white/[0.06] flex-shrink-0">

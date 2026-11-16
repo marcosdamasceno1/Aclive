@@ -88,6 +88,13 @@ export const Calendar = () => {
     });
   }
 
+  // Agenda do mês (lista exibida no celular, onde as células são estreitas demais).
+  const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const monthEnd = toDateStr(new Date(year, month + 1, 0));
+  const monthAgenda = visibleEvents
+    .filter(e => e.date <= monthEnd && (e.endDate || e.date) >= monthStart)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   function prevMonth() {
     if (month === 0) { setMonth(11); setYear(y => y - 1); }
     else setMonth(m => m - 1);
@@ -163,7 +170,7 @@ export const Calendar = () => {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-white">Calendário</h1>
           <p className="text-sm text-slate-400 mt-0.5">Visualize e gerencie eventos da equipe.</p>
@@ -173,7 +180,7 @@ export const Calendar = () => {
             onClick={() => openCreate()}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
           >
-            <Plus className="w-4 h-4" /> Novo Evento
+            <Plus className="w-4 h-4" /> Novo<span className="hidden sm:inline">&nbsp;Evento</span>
           </button>
         )}
       </div>
@@ -181,15 +188,15 @@ export const Calendar = () => {
       {/* Calendar card */}
       <div className="bg-[#161b27] border border-white/[0.06] rounded-xl overflow-hidden">
         {/* Month nav */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2">
-            <button onClick={prevMonth} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button onClick={prevMonth} aria-label="Mês anterior" className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-white font-semibold text-base w-36 text-center">
               {MONTHS[month]} {year}
             </span>
-            <button onClick={nextMonth} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors">
+            <button onClick={nextMonth} aria-label="Próximo mês" className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -204,7 +211,7 @@ export const Calendar = () => {
         {/* Weekday headers */}
         <div className="grid grid-cols-7 border-b border-white/[0.06]">
           {WEEKDAYS.map(d => (
-            <div key={d} className="py-2 text-center text-xs font-semibold text-slate-500 uppercase tracking-widest">
+            <div key={d} className="py-2 text-center text-[10px] sm:text-xs font-semibold text-slate-500 uppercase sm:tracking-widest">
               {d}
             </div>
           ))}
@@ -222,7 +229,7 @@ export const Calendar = () => {
               <div
                 key={ds}
                 onClick={() => canManage && currentMonth ? openCreate(ds) : undefined}
-                className={`min-h-[96px] p-1.5 border-b border-r border-white/[0.04] transition-colors
+                className={`min-h-[52px] sm:min-h-[96px] p-1 sm:p-1.5 border-b border-r border-white/[0.04] transition-colors
                   ${isLastRow ? 'border-b-0' : ''}
                   ${(idx + 1) % 7 === 0 ? 'border-r-0' : ''}
                   ${currentMonth && canManage ? 'cursor-pointer hover:bg-white/[0.02]' : ''}
@@ -233,7 +240,14 @@ export const Calendar = () => {
                 `}>
                   {date.getDate()}
                 </span>
-                <div className="space-y-0.5">
+                {dayEvents.length > 0 && (
+                  <div className="flex flex-wrap gap-0.5 px-0.5 sm:hidden">
+                    {dayEvents.slice(0, 4).map(ev => (
+                      <span key={ev.id} className={`w-1.5 h-1.5 rounded-full ${CALENDAR_COLORS.find(c => c.id === ev.color)?.dot ?? 'bg-blue-500'}`} />
+                    ))}
+                  </div>
+                )}
+                <div className="space-y-0.5 hidden sm:block">
                   {dayEvents.slice(0, 2).map(ev => (
                     <button
                       key={ev.id}
@@ -256,6 +270,36 @@ export const Calendar = () => {
             );
           })}
         </div>
+      </div>
+
+      {/* Agenda do mês — só no celular */}
+      <div className="sm:hidden bg-[#161b27] border border-white/[0.06] rounded-xl overflow-hidden">
+        <p className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-widest border-b border-white/[0.06]">
+          Agenda de {MONTHS[month]}
+        </p>
+        {monthAgenda.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-slate-500 text-center">Nenhum evento neste mês.</p>
+        ) : (
+          <div className="divide-y divide-white/[0.04]">
+            {monthAgenda.map(ev => (
+              <button
+                key={ev.id}
+                onClick={() => setViewingEvent(ev)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/[0.04]"
+              >
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${CALENDAR_COLORS.find(c => c.id === ev.color)?.dot ?? 'bg-blue-500'}`} />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium text-slate-100 truncate">{ev.title}</span>
+                  <span className="block text-xs text-slate-500">
+                    {formatDisplay(ev.date)}{ev.endDate && ev.endDate !== ev.date ? ` – ${formatDisplay(ev.endDate)}` : ''}
+                    {ev.assignedToName ? ` · ${ev.assignedToName}` : ''}
+                  </span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-600 flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Legend */}
@@ -362,7 +406,7 @@ export const Calendar = () => {
       {/* ── Create / Edit Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#161b27] border border-white/[0.08] rounded-xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#161b27] border border-white/[0.08] rounded-xl w-full max-w-md shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-blue-400" />

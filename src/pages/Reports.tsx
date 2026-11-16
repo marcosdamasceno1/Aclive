@@ -122,9 +122,9 @@ export const Reports = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Relatórios</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Relatórios</h1>
           <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Análise de produção e financeiro</p>
         </div>
         <button

@@ -67,7 +67,7 @@ const SqlBlock = ({ title, code }: { title: string; code: string }) => (
 /* ─────────────── modal wrapper ─────────────── */
 const Modal = ({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div className="bg-[#161b22] border border-white/[0.08] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="bg-[#161b22] border border-white/[0.08] rounded-xl w-full max-w-lg max-h-[90dvh] overflow-y-auto shadow-2xl">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08]">
         <h2 className="text-base font-semibold text-white">{title}</h2>
         <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors">
@@ -375,7 +375,7 @@ export const Master = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white">Painel Master</h1>
           <p className="text-sm text-slate-400 mt-1">Gerencie as agências clientes</p>

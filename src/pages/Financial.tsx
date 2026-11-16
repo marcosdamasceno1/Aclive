@@ -70,7 +70,7 @@ const ProfessionalView = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Meu Financeiro</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Meu Financeiro</h1>
           <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Acompanhe seus ganhos</p>
         </div>
         <div className="bg-[#21262d] rounded-xl border border-white/[0.08] p-12 text-center">
@@ -84,9 +84,9 @@ const ProfessionalView = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Meu Financeiro</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Meu Financeiro</h1>
           <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Acompanhe seus ganhos</p>
         </div>
         <select
@@ -100,34 +100,34 @@ const ProfessionalView = () => {
         </select>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
-          <div className="flex items-center gap-2 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-[#21262d] rounded-xl p-4 sm:p-5 border border-white/[0.08]">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center">
               <ArrowDownCircle className="w-4 h-4 text-orange-400" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.pending)}</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.pending)}</p>
           <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">A Receber</p>
           <p className="text-xs text-slate-500 mt-0.5">{myMovements.filter(m => m.status === 'pending').length} demanda(s)</p>
         </div>
-        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="bg-[#21262d] rounded-xl p-4 sm:p-5 border border-white/[0.08]">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <div className="w-8 h-8 bg-emerald-500/[0.12] rounded-lg flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.paid)}</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.paid)}</p>
           <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Recebido</p>
           <p className="text-xs text-slate-500 mt-0.5">{myMovements.filter(m => m.status === 'paid').length} pagamento(s)</p>
         </div>
-        <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="bg-[#21262d] rounded-xl p-4 sm:p-5 border border-white/[0.08]">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center">
               <BarChart3 className="w-4 h-4 text-blue-400" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.total)}</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.total)}</p>
           <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Total do Mês</p>
           <p className="text-xs text-slate-500 mt-0.5">{myMovements.length} tarefa(s) concluída(s)</p>
         </div>
@@ -149,15 +149,15 @@ const ProfessionalView = () => {
         ))}
       </div>
 
-      <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
+      <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-x-auto">
         <table className="w-full">
           <thead className="bg-slate-900">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Demanda</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Conclusão</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
+              <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
+              <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Conclusão</th>
+              <th className="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
+              <th className="text-center px-3 sm:px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/[0.05]">
@@ -169,15 +169,16 @@ const ProfessionalView = () => {
               </tr>
             ) : filtered.map(m => (
               <tr key={m.id} className="hover:bg-white/[0.04] transition-colors">
-                <td className="px-4 py-3">
+                <td className="px-3 sm:px-4 py-3">
                   <p className="text-sm font-semibold text-slate-100">{m.demandTitle}</p>
+                  <p className="sm:hidden text-xs text-slate-500 mt-0.5">{m.clientName} · {formatDate(m.completedAt)}</p>
                 </td>
-                <td className="px-4 py-3 text-sm text-slate-400">{m.clientName}</td>
-                <td className="px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
-                <td className="px-4 py-3 text-right">
+                <td className="hidden sm:table-cell px-4 py-3 text-sm text-slate-400">{m.clientName}</td>
+                <td className="hidden sm:table-cell px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
+                <td className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">
                   <span className="text-sm font-bold text-slate-100">{formatCurrency(m.value)}</span>
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-3 sm:px-4 py-3 text-center">
                   {m.status === 'paid' ? (
                     <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/[0.1] text-emerald-400 inline-flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" /> Pago
@@ -367,9 +368,9 @@ const AdminView = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Financeiro</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Financeiro</h1>
           <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Gestão financeira completa</p>
         </div>
         <button
@@ -382,12 +383,12 @@ const AdminView = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit max-w-full overflow-x-auto">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap flex-shrink-0 text-sm font-medium transition-all ${
               activeTab === key ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
             }`}
           >
@@ -553,7 +554,7 @@ const AdminView = () => {
             </select>
           </div>
 
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-x-auto">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-900">
@@ -697,7 +698,7 @@ const AdminView = () => {
 
           {/* Summary cards */}
           {entriesSubTab === 'income' ? (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="bg-[#21262d] rounded-xl p-4 border border-orange-500/20">
                 <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-2">
                   <Clock className="w-4 h-4 text-orange-400" />
@@ -724,7 +725,7 @@ const AdminView = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="bg-[#21262d] rounded-xl p-4 border border-orange-500/20">
                 <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-2">
                   <Clock className="w-4 h-4 text-orange-400" />
@@ -753,7 +754,7 @@ const AdminView = () => {
           )}
 
           {/* Entries table */}
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-900">
                 <tr>
@@ -867,7 +868,7 @@ const AdminView = () => {
       {/* ── New Entry Modal ── */}
       {showEntryModal && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
               <h2 className="text-lg font-bold text-slate-100">
                 {entryForm.type === 'income' ? 'Nova Entrada' : 'Nova Saída'}
@@ -1004,7 +1005,7 @@ const AdminView = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Valor (R$) *</label>
                   <input
@@ -1060,7 +1061,7 @@ const AdminView = () => {
       {/* ── Audit Log Modal ── */}
       {showAuditLog && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
               <h2 className="text-lg font-bold text-slate-100">Histórico de Alterações</h2>
               <button onClick={() => setShowAuditLog(false)} className="text-slate-400 hover:text-slate-300 p-1 rounded-lg hover:bg-white/[0.06]">

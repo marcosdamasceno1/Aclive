@@ -339,15 +339,15 @@ export const Settings = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Configurações</h1>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Configurações</h1>
         <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Gerenciamento do sistema</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit max-w-full overflow-x-auto">
         <button
           onClick={() => setActiveTab('users')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
             activeTab === 'users' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
           }`}
         >
@@ -358,7 +358,7 @@ export const Settings = () => {
         </button>
         <button
           onClick={() => setActiveTab('system')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
             activeTab === 'system' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
           }`}
         >
@@ -369,7 +369,7 @@ export const Settings = () => {
         </button>
         <button
           onClick={() => setActiveTab('integrations')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
             activeTab === 'integrations' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
           }`}
         >
@@ -424,7 +424,7 @@ export const Settings = () => {
             )}
           </div>
 
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-900">
                 <tr>
@@ -1217,7 +1217,7 @@ export const Settings = () => {
       {/* Create User Modal */}
       {showUserModal && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] sticky top-0 bg-[#21262d] z-10">
               <h2 className="text-lg font-bold text-slate-100">Novo usuário</h2>
               <button onClick={() => setShowUserModal(false)} className="text-slate-400 hover:text-slate-500 p-1 rounded-lg hover:bg-white/[0.06]">
@@ -1382,7 +1382,7 @@ export const Settings = () => {
       {/* Edit User Modal */}
       {editUserId && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] sticky top-0 bg-[#21262d] z-10">
               <h2 className="text-lg font-bold text-slate-100">Editar usuário</h2>
               <button onClick={() => setEditUserId(null)} className="text-slate-400 hover:text-slate-500 p-1 rounded-lg hover:bg-white/[0.06]">

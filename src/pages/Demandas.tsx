@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import {
   DndContext, DragOverlay,
-  PointerSensor, useSensor, useSensors, closestCorners,
+  MouseSensor, TouchSensor, useSensor, useSensors, closestCorners,
   useDroppable,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
@@ -75,7 +75,7 @@ const DraggableCard = ({ card, professionalName, onOpen, didDrag }: CardProps) =
       {...attributes}
       {...listeners}
       onClick={() => { if (!didDrag.current) onOpen(card.id); }}
-      className="group bg-[#161b22] border border-white/[0.06] rounded-xl p-3 cursor-grab active:cursor-grabbing select-none transition-all hover:border-white/20"
+      className="group bg-[#161b22] border border-white/[0.06] rounded-xl p-3 cursor-grab active:cursor-grabbing select-none [-webkit-touch-callout:none] transition-all hover:border-white/20"
     >
       <div className="flex items-start gap-2 mb-2">
         <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${PRIORITY_DOT[card.priority] || 'bg-slate-500'}`} />
@@ -125,7 +125,7 @@ const BoardColumn = ({ stage, cards, professionals, isLast, onOpen, didDrag }: C
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   return (
-    <div className={`flex flex-col flex-shrink-0 w-60 ${!isLast ? 'border-r border-white/[0.05]' : ''}`}>
+    <div className={`flex flex-col flex-shrink-0 w-[80vw] max-w-[18rem] snap-start sm:w-60 sm:max-w-none ${!isLast ? 'border-r border-white/[0.05]' : ''}`}>
       <div className={`flex items-center gap-2 px-3 py-3 transition-colors ${isOver ? 'bg-indigo-500/5' : ''}`}>
         <span className="text-sm leading-none">{stage.icon}</span>
         <span className={`text-xs font-bold uppercase tracking-widest ${stage.color}`}>{stage.label}</span>
@@ -135,8 +135,7 @@ const BoardColumn = ({ stage, cards, professionals, isLast, onOpen, didDrag }: C
       </div>
       <div
         ref={setNodeRef}
-        className={`flex-1 px-2 pb-3 space-y-2 overflow-y-auto transition-colors ${isOver ? 'bg-indigo-500/[0.03]' : ''}`}
-        style={{ maxHeight: 'calc(100vh - 160px)' }}
+        className={`flex-1 px-2 pb-3 space-y-2 lg:overflow-y-auto lg:max-h-[calc(100vh-160px)] transition-colors ${isOver ? 'bg-indigo-500/[0.03]' : ''}`}
       >
         <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
           {cards.map(card => (
@@ -177,7 +176,9 @@ export const Demandas = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const didDrag = useRef(false);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // No toque, arrastar exige segurar o card: deslizar o dedo rola o quadro.
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
 
   // Modals
@@ -379,10 +380,10 @@ export const Demandas = () => {
   const totalOpen = cards.length;
 
   return (
-    <div className="flex flex-col h-full -mx-6 -mt-6">
+    <div className="flex flex-col h-full -mx-4 -mt-4 sm:-mx-6 sm:-mt-6">
 
       {/* ── Top bar ── */}
-      <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-white/[0.05] bg-[#0d1117] flex-shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-white/[0.05] bg-[#0d1117] flex-shrink-0">
         <div>
           <h1 className="text-base font-bold text-slate-100 leading-none">Demandas</h1>
           <p className="text-xs text-slate-600 mt-0.5">
@@ -408,12 +409,12 @@ export const Demandas = () => {
           className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Nova Demanda
+          Nova<span className="hidden sm:inline">&nbsp;Demanda</span>
         </button>
       </div>
 
       {dbError && (
-        <div className="mx-6 mt-3 flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 flex-shrink-0">
+        <div className="mx-4 sm:mx-6 mt-3 flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 flex-shrink-0">
           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-amber-300">
             Não foi possível carregar as demandas. Verifique se a tabela <strong>demand_cards</strong> foi criada no banco (rode a migração SQL).
@@ -429,7 +430,7 @@ export const Demandas = () => {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
-        <div className="flex-1 overflow-x-auto">
+        <div className="flex-1 overflow-x-auto snap-x snap-mandatory sm:snap-none scroll-px-4">
           <div className="flex h-full min-w-max">
             {columns.map((stage, i) => (
               <BoardColumn
@@ -450,7 +451,7 @@ export const Demandas = () => {
       {/* ── Add/Edit modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-[#21262d] rounded-2xl w-full max-w-lg border border-white/[0.08] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#21262d] rounded-2xl w-full max-w-lg border border-white/[0.08] max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
               <h2 className="text-sm font-bold text-slate-100">{editingId ? 'Editar Demanda' : 'Nova Demanda'}</h2>
               <button onClick={() => setShowModal(false)} className="text-slate-500 hover:text-slate-300"><X className="w-4 h-4" /></button>
@@ -477,7 +478,7 @@ export const Demandas = () => {
                   placeholder="Detalhes do gargalo, contexto, bloqueio…"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Responsável</label>
                   <select
@@ -530,7 +531,7 @@ export const Demandas = () => {
       {/* ── View modal ── */}
       {showView && viewingCard && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowView(false)}>
-          <div className="bg-[#21262d] rounded-2xl w-full max-w-lg border border-white/[0.08] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#21262d] rounded-2xl w-full max-w-lg border border-white/[0.08] max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${PRIORITY_DOT[viewingCard.priority]}`} />
@@ -597,7 +598,7 @@ export const Demandas = () => {
       {/* ── Stages modal ── */}
       {showStagesModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowStagesModal(false)}>
-          <div className="bg-[#21262d] rounded-2xl w-full max-w-lg border border-white/[0.08] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#21262d] rounded-2xl w-full max-w-lg border border-white/[0.08] max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] sticky top-0 bg-[#21262d]">
               <h2 className="text-sm font-bold text-slate-100">Gerenciar Colunas</h2>
               <button onClick={() => setShowStagesModal(false)} className="text-slate-500 hover:text-slate-300"><X className="w-4 h-4" /></button>

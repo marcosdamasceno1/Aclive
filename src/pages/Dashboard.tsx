@@ -87,7 +87,7 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Dashboard</h1>
         <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">
           {now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>

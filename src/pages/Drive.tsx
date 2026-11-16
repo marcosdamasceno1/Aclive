@@ -430,7 +430,7 @@ export const Drive = () => {
 
 const DriveHeader = () => (
   <div>
-    <h1 className="text-3xl font-extrabold tracking-tight text-white">Drive</h1>
+    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Drive</h1>
     <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Armazenamento de arquivos</p>
   </div>
 );

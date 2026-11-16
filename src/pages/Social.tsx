@@ -92,7 +92,7 @@ const inputCls = 'w-full bg-[#21262d] border border-white/[0.08] rounded-lg px-3
 /* ─── Modal wrapper ─────────────────────────────────────────────────────────── */
 const Modal = ({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div className={`bg-[#161b22] border border-white/[0.08] rounded-xl w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} max-h-[90vh] overflow-y-auto shadow-2xl`}>
+    <div className={`bg-[#161b22] border border-white/[0.08] rounded-xl w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} max-h-[90dvh] overflow-y-auto shadow-2xl`}>
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08]">
         <h2 className="text-base font-semibold text-white">{title}</h2>
         <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors">
@@ -321,7 +321,7 @@ const PostFormModal = ({ post, onClose }: PostFormModalProps) => {
           )}
         </Field>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Data">
             <input type="date" className={inputCls} value={form.date} onChange={setField('date')} required />
           </Field>
@@ -640,7 +640,7 @@ export const Social = () => {
           )}
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 bg-[#161b22] border border-white/[0.08] rounded-lg w-fit mb-6">
+          <div className="flex gap-1 p-1 bg-[#161b22] border border-white/[0.08] rounded-lg w-fit max-w-full overflow-x-auto mb-6">
             {(['upcoming', 'calendar'] as const).map(t => (
               <button
                 key={t}

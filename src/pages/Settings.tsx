@@ -56,6 +56,7 @@ export const Settings = () => {
     saveMetaLeadsConfig, clearMetaLeadsConfig,
     crmApiKey, crmEndpointUrl, saveCrmConfig, clearCrmConfig,
     waWebhookSecret, generateWaWebhookSecret,
+    siteWebhookSecret, generateSiteWebhookSecret,
   } = useCompanySettingsStore();
 
   // WAHA config state
@@ -200,7 +201,9 @@ export const Settings = () => {
 
   const SITE_WEBHOOK_BASE = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1/site-leads-webhook';
   const siteCompanyId = currentUser?.companyId ?? '';
-  const siteWebhookFullUrl = siteCompanyId ? `${SITE_WEBHOOK_BASE}?company_id=${siteCompanyId}` : '';
+  const siteWebhookFullUrl = siteCompanyId && siteWebhookSecret
+    ? `${SITE_WEBHOOK_BASE}?company_id=${siteCompanyId}&token=${siteWebhookSecret}` : '';
+  const [regeneratingSite, setRegeneratingSite] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -261,7 +264,8 @@ export const Settings = () => {
         });
         // Fire-and-forget: don't block modal close on a second Edge Function call.
         // updateUser syncs professionalId to Auth metadata + user_profiles in the background.
-        updateUser(newUser.id, { professionalId: newPro.id });
+        updateUser(newUser.id, { professionalId: newPro.id })
+          .catch(e => console.error('[settings.linkProfessional]', e));
       }
 
       // Notifica o novo usuário com o acesso, se um telefone foi informado.
@@ -629,7 +633,7 @@ export const Settings = () => {
                 icon: <Globe className="w-4 h-4" />,
                 label: 'Formulário do Site',
                 color: 'purple',
-                configured: !!siteCompanyId,
+                configured: !!siteWebhookSecret,
               },
             ] as { key: string; icon: React.ReactNode; label: string; color: string; configured: boolean }[]).map(tab => (
               <button
@@ -1059,7 +1063,23 @@ export const Settings = () => {
                       {copiedSiteUrl ? 'Copiado!' : 'Copiar'}
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Envie um <strong className="text-slate-500">POST</strong> com JSON para esta URL a partir do formulário do seu site</p>
+                  <p className="text-xs text-slate-500 mt-1">Envie um <strong className="text-slate-500">POST</strong> com JSON para esta URL a partir do formulário do seu site. A URL contém um token secreto: não publique em lugares abertos.</p>
+                  {!siteWebhookSecret && (
+                    <p className="text-xs text-amber-700 mt-1">Nenhum token gerado ainda (só o administrador vê e gera o token).</p>
+                  )}
+                  <button
+                    onClick={async () => {
+                      if (siteWebhookSecret && !confirm('Gerar um novo token? A URL antiga para de funcionar e o formulário do site precisa ser atualizado.')) return;
+                      setRegeneratingSite(true);
+                      const ok = await generateSiteWebhookSecret();
+                      setRegeneratingSite(false);
+                      if (!ok) alert('Não foi possível gerar o token. Só o administrador da agência pode fazer isso.');
+                    }}
+                    disabled={regeneratingSite}
+                    className="mt-2 px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {regeneratingSite ? 'Gerando…' : siteWebhookSecret ? 'Gerar novo token' : 'Gerar token'}
+                  </button>
                 </div>
 
                 <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
@@ -1266,7 +1286,7 @@ export const Settings = () => {
                   value={userForm.password}
                   onChange={e => setUserForm({ ...userForm, password: e.target.value })}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                 />
               </div>
               <div>
@@ -1456,7 +1476,7 @@ export const Settings = () => {
                   value={editForm.newPassword}
                   onChange={e => setEditForm(f => ({ ...f, newPassword: e.target.value }))}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                 />
               </div>
             </div>

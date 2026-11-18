@@ -92,7 +92,7 @@ Deno.serve(async (req: Request) => {
     console.warn('[apify-search] getUser falhou:', uErr?.message);
     return json({ error: 'unauthorized', message: `Não foi possível validar o usuário: ${uErr?.message ?? 'sem usuário'}` });
   }
-  const companyId = (userData.user.user_metadata?.company_id as string) || '';
+  const companyId = (userData.user.app_metadata?.company_id as string) || '';
   if (!companyId) return json({ error: 'no_company', message: 'Usuário sem agência associada.' });
 
   let body: Record<string, unknown> = {};

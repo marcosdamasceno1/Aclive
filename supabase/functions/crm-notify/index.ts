@@ -35,12 +35,14 @@ Deno.serve(async (req: Request) => {
   });
   const { data: { user }, error: userErr } = await userClient.auth.getUser();
   if (userErr || !user) return json({ error: 'unauthorized' }, 401);
-  const companyId = (user.user_metadata?.company_id as string) || '';
+  const companyId = (user.app_metadata?.company_id as string) || '';
   if (!companyId) return json({ error: 'no_company', message: 'Usuário sem agência associada.' });
 
-  const { data: cfg } = await admin
-    .from('company_settings').select('crm_api_key, crm_endpoint_url').eq('company_id', companyId).maybeSingle();
-  const actaToken = (cfg as Record<string, unknown> | null)?.crm_api_key as string || '';
+  const [{ data: cfg }, { data: sec }] = await Promise.all([
+    admin.from('company_settings').select('crm_endpoint_url').eq('company_id', companyId).maybeSingle(),
+    admin.from('company_secrets').select('crm_api_key').eq('company_id', companyId).maybeSingle(),
+  ]);
+  const actaToken = (sec as Record<string, unknown> | null)?.crm_api_key as string || '';
   const endpoint  = (cfg as Record<string, unknown> | null)?.crm_endpoint_url as string || '';
   if (!actaToken || !endpoint) {
     return json({ error: 'not_configured', message: 'Acta não configurado. Configure em Configurações → Integrações → WhatsApp.' });
@@ -52,9 +54,9 @@ Deno.serve(async (req: Request) => {
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* corpo opcional */ }
   const phone   = String(body.phone ?? '').replace(/\D/g, '');
-  const message = String(body.content ?? '');
-  const name    = String(body.name ?? '');
-  if (!phone || phone.length < 10 || !message) return json({ error: 'bad_request' }, 400);
+  const message = String(body.content ?? '').slice(0, 4000);
+  const name    = String(body.name ?? '').slice(0, 120);
+  if (!phone || phone.length < 10 || phone.length > 15 || !message) return json({ error: 'bad_request' }, 400);
 
   const payload = JSON.stringify({ phone, message, ...(name ? { name } : {}) });
   const post = (authorization: string) => {

@@ -18,6 +18,17 @@ const CORS = {
 const json = (b: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
+// Só links https do Google Drive chegam ao cliente: impede javascript:/data:
+// e redirecionamentos para sites de phishing dentro da página de aprovação.
+const safeVideoUrl = (v: unknown): string | null => {
+  try {
+    const u = new URL(String(v ?? ''));
+    if (u.protocol !== 'https:') return null;
+    if (!/(^|\.)(drive|docs)\.google\.com$/.test(u.hostname)) return null;
+    return u.toString();
+  } catch { return null; }
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
@@ -41,7 +52,7 @@ Deno.serve(async (req: Request) => {
   return json({
     title: a.title,
     agencyName: a.agency_name,
-    videoUrl: a.video_url,
+    videoUrl: safeVideoUrl(a.video_url),
     videoStatus: a.video_status,
     videoFeedback: a.video_feedback,
     captions: a.captions,

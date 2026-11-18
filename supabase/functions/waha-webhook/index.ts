@@ -18,6 +18,14 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
+// Comparação em tempo constante: não vaza o segredo pelo tempo de resposta.
+const safeEqual = (a: string, b: string) => {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+};
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ok = (body: Record<string, unknown> = { ok: true }) =>
   new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -32,15 +40,15 @@ Deno.serve(async (req: Request) => {
 
   // Autentica: o token da URL precisa bater com o segredo da agência.
   // select('*'): tolerante a colunas ausentes no banco.
-  const { data: cfgRow, error: cfgErr } = await supabase
-    .from('company_settings')
-    .select('*')
+  const { data: secRow, error: cfgErr } = await supabase
+    .from('company_secrets')
+    .select('wa_webhook_secret')
     .eq('company_id', companyId)
     .maybeSingle();
-  if (cfgErr) return new Response(`config_error: ${cfgErr.message}`, { status: 500 });
-  const secret = typeof (cfgRow as Record<string, unknown> | null)?.wa_webhook_secret === 'string'
-    ? String((cfgRow as Record<string, unknown>).wa_webhook_secret) : '';
-  if (!secret || secret !== token) {
+  if (cfgErr) { console.error('[waha-webhook] config:', cfgErr.message); return new Response('config_error', { status: 500 }); }
+  const secret = typeof (secRow as Record<string, unknown> | null)?.wa_webhook_secret === 'string'
+    ? String((secRow as Record<string, unknown>).wa_webhook_secret) : '';
+  if (!secret || !safeEqual(secret, token)) {
     return new Response('Unauthorized', { status: 401 });
   }
 

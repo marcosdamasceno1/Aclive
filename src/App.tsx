@@ -118,6 +118,8 @@ function App() {
         whatsappProvider: 'waha',
         metaAccessToken: '', metaPhoneNumberId: '', metaTemplateName: 'nova_demanda',
         metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '',
+        crmApiKey: '', crmEndpointUrl: '', waWebhookSecret: '', siteWebhookSecret: '',
+        agencyName: '', approvalNotifyPhone: '',
         kanbanStages: DEFAULT_KANBAN_STAGES,
       });
     };

@@ -41,10 +41,10 @@ alter table leads add column if not exists company_id uuid references companies(
 alter table financial_movements add column if not exists company_id uuid references companies(id);
 alter table calendar_events add column if not exists company_id uuid references companies(id);`;
 
-const SQL_SUPER_ADMIN = `-- Replace with your actual user email
+const SQL_SUPER_ADMIN = `-- Troque pelo seu e-mail. app_metadata só pode ser gravado pelo servidor/banco.
 update auth.users
-  set raw_user_meta_data = raw_user_meta_data || '{"super_admin": true}'::jsonb
-where email = 'your@email.com';`;
+  set raw_app_meta_data = raw_app_meta_data || '{"super_admin": true}'::jsonb
+where email = 'seu@email.com';`;
 
 const SQL_MIGRATE = `-- After creating your company, replace COMPANY_ID with the UUID shown in the app
 update professionals set company_id = 'COMPANY_ID' where company_id is null;
@@ -115,7 +115,7 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
     if (!form.name.trim()) return setError('Nome da agência é obrigatório');
     if (!form.adminName.trim()) return setError('Nome do administrador é obrigatório');
     if (!form.adminEmail.trim()) return setError('E-mail do administrador é obrigatório');
-    if (form.adminPassword.length < 6) return setError('Senha deve ter no mínimo 6 caracteres');
+    if (form.adminPassword.length < 8) return setError('Senha deve ter no mínimo 8 caracteres');
 
     setSaving(true);
 
@@ -180,7 +180,7 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
           <Field label="E-mail *">
             <input className={inputCls} type="email" value={form.adminEmail} onChange={set('adminEmail')} placeholder="admin@agencia.com" />
           </Field>
-          <Field label="Senha * (mínimo 6 caracteres)">
+          <Field label="Senha * (mínimo 8 caracteres)">
             <input className={inputCls} type="password" value={form.adminPassword} onChange={set('adminPassword')} placeholder="••••••••" />
           </Field>
         </div>
@@ -222,7 +222,7 @@ const CreateUserModal = ({ company, onClose, onSuccess }: CreateUserModalProps) 
     setError('');
     if (!form.name.trim()) return setError('Nome é obrigatório');
     if (!form.email.trim()) return setError('E-mail é obrigatório');
-    if (form.password.length < 6) return setError('Senha deve ter no mínimo 6 caracteres');
+    if (form.password.length < 8) return setError('Senha deve ter no mínimo 8 caracteres');
 
     setSaving(true);
     try {
@@ -245,7 +245,7 @@ const CreateUserModal = ({ company, onClose, onSuccess }: CreateUserModalProps) 
         <Field label="E-mail *">
           <input className={inputCls} type="email" value={form.email} onChange={set('email')} placeholder="usuario@agencia.com" />
         </Field>
-        <Field label="Senha * (mínimo 6 caracteres)">
+        <Field label="Senha * (mínimo 8 caracteres)">
           <input className={inputCls} type="password" value={form.password} onChange={set('password')} placeholder="••••••••" />
         </Field>
         <Field label="Perfil">
@@ -298,29 +298,9 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm }: DeleteConfirmModalP
   </Modal>
 );
 
-/* ─────────────── SQL info panel ─────────────── */
-const [sqlOpen, setSqlOpen] = [false, (_: boolean) => {}]; // placeholder — managed inside component
-
-const EDGE_FN_CODE = `import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
-  const res = (d: unknown, s=200) => new Response(JSON.stringify(d), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } })
-  try {
-    const { action, ...body } = await req.json()
-    if (action === 'list')   { const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 }); return res({ users: data?.users ?? [], error }) }
-    if (action === 'create') { const { data, error } = await admin.auth.admin.createUser(body); return res({ user: data?.user ?? null, error }) }
-    if (action === 'update') { const { id, ...p } = body; const { error } = await admin.auth.admin.updateUserById(id, p); return res({ error }) }
-    if (action === 'delete') { const { id } = body; const { error } = await admin.auth.admin.deleteUser(id); return res({ error }) }
-    return res({ error: 'Unknown action' }, 400)
-  } catch (e) { return res({ error: String(e) }, 500) }
-})`;
-
 /* ─────────────── main page ─────────────── */
 export const Master = () => {
   const { companies, loading, setupNeeded, loadError: companiesLoadError, updateCompany, deleteCompany, init: initCompanies } = useCompaniesStore();
-  const { addUser } = useAuthStore();
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [edgeStatus, setEdgeStatus] = useState<'checking' | 'ok' | 'error'>('checking');
   const [edgeError, setEdgeError] = useState('');
@@ -338,11 +318,11 @@ export const Master = () => {
           id: u.id,
           name: (u.user_metadata?.name as string) || u.email?.split('@')[0] || 'Usuário',
           email: u.email || '',
-          role: ((u.user_metadata?.role as string) || 'admin') as User['role'],
+          role: ((u.app_metadata?.role as string) || 'professional') as User['role'],
           active: true,
           createdAt: u.created_at || new Date().toISOString(),
-          companyId: (u.user_metadata?.company_id as string) || undefined,
-          isSuperAdmin: u.user_metadata?.super_admin === true,
+          companyId: (u.app_metadata?.company_id as string) || undefined,
+          isSuperAdmin: u.app_metadata?.super_admin === true,
         })));
         setEdgeStatus('ok');
       }
@@ -440,13 +420,8 @@ export const Master = () => {
                   <ol className="text-xs text-slate-500 space-y-1 list-decimal list-inside">
                     <li>Acesse <span className="text-slate-700 font-mono">supabase.com</span> → seu projeto → <strong className="text-slate-700">Edge Functions</strong></li>
                     <li>Clique em <strong className="text-slate-700">New Function</strong> e nomeie como <code className="text-emerald-600 font-mono">admin-users</code></li>
-                    <li>Cole o código abaixo e clique <strong className="text-slate-700">Deploy</strong></li>
+                    <li>Cole o conteúdo de <code className="text-emerald-600 font-mono">supabase/functions/admin-users/index.ts</code> do repositório e clique <strong className="text-slate-700">Deploy</strong></li>
                   </ol>
-                  <div className="relative">
-                    <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-emerald-700 overflow-x-auto whitespace-pre-wrap break-all">
-                      {EDGE_FN_CODE}
-                    </pre>
-                  </div>
                   <p className="text-xs font-semibold text-slate-700 mt-2">
                     Opção 2 — Via Supabase CLI:
                   </p>

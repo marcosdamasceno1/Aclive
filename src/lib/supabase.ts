@@ -32,8 +32,16 @@ export const supabaseData = supabaseAuth;
 export const setDataSession = async (_a: string, _r: string): Promise<void> => {};
 export const clearDataSession = async (): Promise<void> => {};
 
-// Admin operations via Edge Function (server-side, uses service_role safely)
-type RawUser = { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string };
+// Admin operations via Edge Function (server-side, uses service_role safely).
+// A função confere no servidor quem chama: só administradores da agência
+// (ou o super admin) conseguem listar, criar, editar ou excluir usuários.
+export type RawUser = {
+  id: string;
+  email?: string;
+  created_at?: string;
+  user_metadata?: Record<string, unknown>;
+  app_metadata?: Record<string, unknown>;
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EdgeResult = { data: any; error: any };
@@ -52,44 +60,59 @@ const edgeFn = async (action: string, body: Record<string, unknown> = {}): Promi
   }
 };
 
+// Erro da função vem no corpo ({ error }) mesmo com status 4xx.
+const errorOf = async (res: EdgeResult): Promise<string | null> => {
+  if (res.data?.error) return typeof res.data.error === 'string' ? res.data.error : res.data.error.message ?? 'Erro desconhecido';
+  if (res.error) {
+    try {
+      const ctx = res.error.context;
+      if (ctx && typeof ctx.json === 'function') {
+        const b = await ctx.json();
+        if (b?.error) return String(b.error);
+      }
+    } catch { /* corpo não-JSON */ }
+    return res.error.message ?? 'Erro desconhecido';
+  }
+  return null;
+};
+
 export const adminApi = {
   ping: async (): Promise<{ ok: boolean; message: string }> => {
-    const { data, error } = await edgeFn('list');
-    if (error) return { ok: false, message: error.message ?? 'Erro desconhecido' };
-    if (data?.error) return { ok: false, message: typeof data.error === 'string' ? data.error : data.error?.message ?? 'Erro desconhecido' };
-    return { ok: true, message: '' };
+    const err = await errorOf(await edgeFn('list'));
+    return err ? { ok: false, message: err } : { ok: true, message: '' };
   },
 
   listUsers: async (): Promise<{ data: { users: RawUser[] } | null; error: { message: string } | null }> => {
-    const { data, error } = await edgeFn('list');
-    if (error) return { data: null, error: { message: error.message } };
-    return { data: { users: data?.users ?? [] }, error: data?.error ?? null };
+    const res = await edgeFn('list');
+    const err = await errorOf(res);
+    if (err) return { data: null, error: { message: err } };
+    return { data: { users: res.data?.users ?? [] }, error: null };
   },
 
   createUser: async (params: {
     email: string;
     password: string;
-    email_confirm: boolean;
-    user_metadata: Record<string, unknown>;
+    name: string;
+    role: string;
+    permissions?: string[];
+    companyId?: string;
   }): Promise<{ data: { user: RawUser } | null; error: { message: string } | null }> => {
-    const { data, error } = await edgeFn('create', params as unknown as Record<string, unknown>);
-    if (error) return { data: null, error: { message: error.message } };
-    if (!data?.user) return { data: null, error: data?.error ?? { message: 'Falha ao criar usuário' } };
-    return { data: { user: data.user }, error: null };
+    const res = await edgeFn('create', params as unknown as Record<string, unknown>);
+    const err = await errorOf(res);
+    if (err || !res.data?.user) return { data: null, error: { message: err ?? 'Falha ao criar usuário' } };
+    return { data: { user: res.data.user }, error: null };
   },
 
-  updateUserById: async (
+  updateUser: async (
     id: string,
-    params: { password?: string; user_metadata?: Record<string, unknown> },
+    params: { name?: string; role?: string; permissions?: string[]; professionalId?: string | null; password?: string },
   ): Promise<{ error: { message: string } | null }> => {
-    const { data, error } = await edgeFn('update', { id, ...params });
-    if (error) return { error: { message: error.message } };
-    return { error: data?.error ?? null };
+    const err = await errorOf(await edgeFn('update', { id, ...params }));
+    return { error: err ? { message: err } : null };
   },
 
   deleteUser: async (id: string): Promise<{ error: { message: string } | null }> => {
-    const { data, error } = await edgeFn('delete', { id });
-    if (error) return { error: { message: error.message } };
-    return { error: data?.error ?? null };
+    const err = await errorOf(await edgeFn('delete', { id }));
+    return { error: err ? { message: err } : null };
   },
 };

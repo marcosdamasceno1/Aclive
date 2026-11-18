@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabaseAuth, supabaseData, setDataSession, adminApi } from '../lib/supabase';
+import type { RawUser } from '../lib/supabase';
 import { performLogout, getValidSession, resumeAutoRefresh } from '../lib/authSession';
 import { scheduleInitRetry } from '../lib/initRetry';
 import type { User, UserRole } from '../types';
@@ -17,22 +18,25 @@ interface AuthState {
   deleteUser: (id: string) => Promise<void>;
   initAuth: () => Promise<void>;
   loadUsers: () => Promise<void>;
-  syncSession: (rawUser: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }) => void;
+  syncSession: (rawUser: RawUser) => void;
 }
 
-const metaToUser = (u: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }): User => {
+// Agência, papel e permissões vêm do app_metadata, que só o servidor grava.
+// O user_metadata pode ser alterado pelo próprio usuário: dele só o nome.
+const metaToUser = (u: RawUser): User => {
   const meta = u.user_metadata || {};
+  const app = u.app_metadata || {};
   return {
     id: u.id,
     name: (meta.name as string) || u.email?.split('@')[0] || 'Usuário',
     email: u.email || '',
-    role: ((meta.role as string) || 'admin') as UserRole,
-    permissions: meta.permissions !== undefined ? (meta.permissions as string[]) : undefined,
-    professionalId: meta.professionalId as string | undefined,
+    role: ((app.role as string) || 'professional') as UserRole,
+    permissions: Array.isArray(app.permissions) ? (app.permissions as string[]) : undefined,
+    professionalId: (app.professional_id as string) || undefined,
     active: true,
     createdAt: u.created_at || new Date().toISOString(),
-    companyId: (meta.company_id as string) || undefined,
-    isSuperAdmin: meta.super_admin === true,
+    companyId: (app.company_id as string) || undefined,
+    isSuperAdmin: app.super_admin === true,
   };
 };
 
@@ -125,16 +129,15 @@ export const useAuthStore = create<AuthState>()((set) => ({
     const me = useAuthStore.getState().currentUser;
     const companyId = userData.companyId || me?.companyId;
 
+    // A Edge Function cria a conta e o perfil; para quem não é super admin,
+    // ela ignora o companyId enviado e usa a agência de quem está criando.
     const { data: authData, error } = await adminApi.createUser({
       email: userData.email,
       password,
-      email_confirm: true,
-      user_metadata: {
-        name: userData.name,
-        role: userData.role,
-        ...(companyId ? { company_id: companyId } : {}),
-        ...(userData.role !== 'admin' && { permissions: userData.permissions || [] }),
-      },
+      name: userData.name,
+      role: userData.role,
+      permissions: userData.role !== 'admin' ? (userData.permissions || []) : undefined,
+      companyId,
     });
     if (error || !authData?.user) throw new Error(error?.message || 'Failed to create user');
 
@@ -149,45 +152,19 @@ export const useAuthStore = create<AuthState>()((set) => ({
       companyId,
     };
 
-    if (companyId) {
-      const { error: profileError } = await supabaseData.from('user_profiles').insert({
-        id: newUser.id,
-        company_id: companyId,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        permissions: newUser.permissions ?? null,
-        active: newUser.active,
-        created_at: newUser.createdAt,
-      });
-      if (profileError) console.error('[addUser.profile]', profileError);
-    }
-
     set(state => ({ users: [...state.users, newUser] }));
     return newUser;
   },
 
   updateUser: async (id, updates, newPassword) => {
-    const meta: Record<string, unknown> = {};
-    if (updates.name !== undefined) meta.name = updates.name;
-    if (updates.role !== undefined) meta.role = updates.role;
-    if (updates.permissions !== undefined) meta.permissions = updates.permissions;
-    if (updates.professionalId !== undefined) meta.professionalId = updates.professionalId;
-
-    await adminApi.updateUserById(id, {
+    const { error } = await adminApi.updateUser(id, {
+      ...(updates.name !== undefined ? { name: updates.name } : {}),
+      ...(updates.role !== undefined ? { role: updates.role } : {}),
+      ...(updates.permissions !== undefined ? { permissions: updates.permissions } : {}),
+      ...(updates.professionalId !== undefined ? { professionalId: updates.professionalId } : {}),
       ...(newPassword ? { password: newPassword } : {}),
-      ...(Object.keys(meta).length > 0 ? { user_metadata: meta } : {}),
     });
-
-    const profileUpdates: Record<string, unknown> = {};
-    if (updates.name !== undefined) profileUpdates.name = updates.name;
-    if (updates.role !== undefined) profileUpdates.role = updates.role;
-    if (updates.permissions !== undefined) profileUpdates.permissions = updates.permissions;
-    if (updates.professionalId !== undefined) profileUpdates.professional_id = updates.professionalId;
-    if (Object.keys(profileUpdates).length > 0) {
-      const { error: profileError } = await supabaseData.from('user_profiles').update(profileUpdates).eq('id', id);
-      if (profileError) console.error('[updateUser.profile]', profileError);
-    }
+    if (error) throw new Error(error.message);
 
     set(state => ({
       users: state.users.map(u => u.id === id ? { ...u, ...updates } : u),
@@ -196,9 +173,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   deleteUser: async (id) => {
-    await adminApi.deleteUser(id);
-    const { error: profileError } = await supabaseData.from('user_profiles').delete().eq('id', id);
-    if (profileError) console.error('[deleteUser.profile]', profileError);
+    const { error } = await adminApi.deleteUser(id);
+    if (error) throw new Error(error.message);
     set(state => ({ users: state.users.filter(u => u.id !== id) }));
   },
 

@@ -40,6 +40,8 @@ interface CompanySettingsState {
   crmApiKey: string;
   crmEndpointUrl: string;
   waWebhookSecret: string;
+  /** Token que autentica o webhook de leads do site (company_secrets). */
+  siteWebhookSecret: string;
   agencyName: string;             // branding da página pública de aprovação
   approvalNotifyPhone: string;    // telefone padrão para avisos de aprovação
   waStatus: string; // runtime: status da sessão WAHA central (WORKING, SCAN_QR_CODE...)
@@ -62,6 +64,7 @@ interface CompanySettingsState {
   clearCrmConfig: () => Promise<void>;
   saveKanbanStages: (stages: KanbanStage[]) => Promise<string | null>;
   generateWaWebhookSecret: () => Promise<string | null>;
+  generateSiteWebhookSecret: () => Promise<string | null>;
   setWaStatus: (status: string) => void;
   saveApprovalDefaults: (agencyName: string, notifyPhone: string) => Promise<void>;
 }
@@ -98,6 +101,29 @@ const upsert = (patch: Record<string, unknown>): Promise<UpsertResult> => {
   ]);
 };
 
+/**
+ * Tokens e chaves ficam em company_secrets, tabela que só o administrador da
+ * agência lê e grava (RLS). Mesmo contrato do upsert acima.
+ */
+const upsertSecret = (patch: Record<string, unknown>): Promise<UpsertResult> => {
+  const cid = companyId();
+  if (!cid) return Promise.resolve({ error: { message: 'sem company_id' } });
+  const query = supabaseData
+    .from('company_secrets')
+    .upsert(
+      { company_id: cid, ...patch, updated_at: new Date().toISOString() },
+      { onConflict: 'company_id' },
+    );
+  return Promise.race<UpsertResult>([
+    Promise.resolve(query)
+      .then(({ error }) => ({ error: error ? { message: error.message } : null }))
+      .catch((e) => ({ error: { message: String(e) } })),
+    new Promise<UpsertResult>((resolve) =>
+      setTimeout(() => resolve({ error: { message: 'timeout ao gravar configurações' } }), 7000),
+    ),
+  ]);
+};
+
 export const useCompanySettingsStore = create<CompanySettingsState>()((set, get) => ({
   googleClientId: '',
   googleAccessToken: null,
@@ -112,6 +138,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   crmApiKey: '',
   crmEndpointUrl: '',
   waWebhookSecret: '',
+  siteWebhookSecret: '',
   agencyName: '',
   approvalNotifyPhone: '',
   waStatus: 'UNKNOWN',
@@ -135,21 +162,29 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       return;
     }
     const row = data as Record<string, unknown> | null;
+    // Segredos: só o admin consegue ler (RLS). Para os demais vem vazio — ok.
+    const { data: secData } = await supabaseData
+      .from('company_secrets')
+      .select('*')
+      .eq('company_id', cid)
+      .maybeSingle();
+    const sec = secData as Record<string, unknown> | null;
     set({
       googleClientId:       (row?.google_client_id        as string) || '',
       googleAccessToken:    (row?.google_access_token     as string) || null,
       googleTokenExpiry:    (row?.google_token_expiry     as string) || null,
       // Valor legado 'zapi' no banco vira 'waha' (Z-API foi descontinuada)
       whatsappProvider:     (row?.whatsapp_provider === 'meta' ? 'meta' : row?.whatsapp_provider === 'crm' ? 'crm' : 'waha') as WhatsAppProvider,
-      metaAccessToken:      (row?.meta_access_token       as string) || '',
+      metaAccessToken:      (sec?.meta_access_token       as string) || '',
       metaPhoneNumberId:    (row?.meta_phone_number_id    as string) || '',
       metaTemplateName:     (row?.meta_template_name      as string) || 'nova_demanda',
       metaLeadsPageId:      (row?.meta_leads_page_id      as string) || '',
-      metaLeadsPageToken:   (row?.meta_leads_page_token   as string) || '',
-      metaLeadsVerifyToken: (row?.meta_leads_verify_token as string) || '',
-      crmApiKey:            (row?.crm_api_key             as string) || '',
+      metaLeadsPageToken:   (sec?.meta_leads_page_token   as string) || '',
+      metaLeadsVerifyToken: (sec?.meta_leads_verify_token as string) || '',
+      crmApiKey:            (sec?.crm_api_key             as string) || '',
       crmEndpointUrl:       (row?.crm_endpoint_url        as string) || '',
-      waWebhookSecret:      (row?.wa_webhook_secret       as string) || '',
+      waWebhookSecret:      (sec?.wa_webhook_secret       as string) || '',
+      siteWebhookSecret:    (sec?.site_webhook_secret     as string) || '',
       agencyName:           (row?.agency_name             as string) || '',
       approvalNotifyPhone:  (row?.approval_notify_phone   as string) || '',
       kanbanStages:         ((row?.kanban_stages as KanbanStage[]) || DEFAULT_KANBAN_STAGES).map(st => ({ ...st, color: toLightStageColor(st.color) })),
@@ -203,40 +238,44 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
 
   saveMetaConfig: async (accessToken, phoneNumberId, templateName) => {
     set({ metaAccessToken: accessToken, metaPhoneNumberId: phoneNumberId, metaTemplateName: templateName });
-    await upsert({
-      meta_access_token:    accessToken,
-      meta_phone_number_id: phoneNumberId,
-      meta_template_name:   templateName || 'nova_demanda',
-    });
+    await Promise.all([
+      upsertSecret({ meta_access_token: accessToken }),
+      upsert({ meta_phone_number_id: phoneNumberId, meta_template_name: templateName || 'nova_demanda' }),
+    ]);
   },
 
   clearMetaConfig: async () => {
     set({ metaAccessToken: '', metaPhoneNumberId: '', metaTemplateName: 'nova_demanda' });
-    await upsert({ meta_access_token: null, meta_phone_number_id: null, meta_template_name: null });
+    await Promise.all([
+      upsertSecret({ meta_access_token: null }),
+      upsert({ meta_phone_number_id: null, meta_template_name: null }),
+    ]);
   },
 
   saveMetaLeadsConfig: async (pageId, pageToken, verifyToken) => {
     set({ metaLeadsPageId: pageId, metaLeadsPageToken: pageToken, metaLeadsVerifyToken: verifyToken });
-    await upsert({
-      meta_leads_page_id:      pageId,
-      meta_leads_page_token:   pageToken,
-      meta_leads_verify_token: verifyToken,
-    });
+    await Promise.all([
+      upsertSecret({ meta_leads_page_token: pageToken, meta_leads_verify_token: verifyToken }),
+      upsert({ meta_leads_page_id: pageId }),
+    ]);
   },
 
   clearMetaLeadsConfig: async () => {
     set({ metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '' });
-    await upsert({ meta_leads_page_id: null, meta_leads_page_token: null, meta_leads_verify_token: null });
+    await Promise.all([
+      upsertSecret({ meta_leads_page_token: null, meta_leads_verify_token: null }),
+      upsert({ meta_leads_page_id: null }),
+    ]);
   },
 
   saveCrmConfig: async (apiKey, endpointUrl) => {
     set({ crmApiKey: apiKey, crmEndpointUrl: endpointUrl });
-    await upsert({ crm_api_key: apiKey, crm_endpoint_url: endpointUrl });
+    await Promise.all([upsertSecret({ crm_api_key: apiKey }), upsert({ crm_endpoint_url: endpointUrl })]);
   },
 
   clearCrmConfig: async () => {
     set({ crmApiKey: '', crmEndpointUrl: '' });
-    await upsert({ crm_api_key: null, crm_endpoint_url: null });
+    await Promise.all([upsertSecret({ crm_api_key: null }), upsert({ crm_endpoint_url: null })]);
   },
 
   saveKanbanStages: async (stages) => {
@@ -253,12 +292,25 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
     const existing = get().waWebhookSecret;
     if (existing) return existing;
     const secret = crypto.randomUUID().replace(/-/g, '');
-    const { error } = await upsert({ wa_webhook_secret: secret });
+    const { error } = await upsertSecret({ wa_webhook_secret: secret });
     if (error) {
       console.error('[company-settings.waSecret]', error.message);
       return null;
     }
     set({ waWebhookSecret: secret });
+    return secret;
+  },
+
+  // Token do webhook de leads do site. Gerar um novo invalida o antigo.
+  generateSiteWebhookSecret: async () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(24));
+    const secret = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+    const { error } = await upsertSecret({ site_webhook_secret: secret });
+    if (error) {
+      console.error('[company-settings.siteSecret]', error.message);
+      return null;
+    }
+    set({ siteWebhookSecret: secret });
     return secret;
   },
 

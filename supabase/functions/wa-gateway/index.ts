@@ -104,7 +104,7 @@ Deno.serve(async (req: Request) => {
   });
   const { data: { user }, error: userErr } = await userClient.auth.getUser();
   if (userErr || !user) return json({ error: 'unauthorized' }, 401);
-  const companyId = (user.user_metadata?.company_id as string) || '';
+  const companyId = (user.app_metadata?.company_id as string) || '';
   if (!companyId) return json({ error: 'no_company', message: 'Usuário sem agência associada.' });
 
   // Sessão determinística e à prova de injeção — vem só do JWT.
@@ -117,12 +117,12 @@ Deno.serve(async (req: Request) => {
   try {
     // ── Conectar: garante segredo do webhook, cria/inicia a sessão e retorna QR ──
     if (action === 'start') {
-      const { data: cfg } = await admin
-        .from('company_settings').select('*').eq('company_id', companyId).maybeSingle();
-      let secret = (cfg as Record<string, unknown> | null)?.wa_webhook_secret as string || '';
+      const { data: sec } = await admin
+        .from('company_secrets').select('wa_webhook_secret').eq('company_id', companyId).maybeSingle();
+      let secret = (sec as Record<string, unknown> | null)?.wa_webhook_secret as string || '';
       if (!secret) {
         secret = crypto.randomUUID().replace(/-/g, '');
-        await admin.from('company_settings').upsert(
+        await admin.from('company_secrets').upsert(
           { company_id: companyId, wa_webhook_secret: secret, updated_at: new Date().toISOString() },
           { onConflict: 'company_id' },
         );

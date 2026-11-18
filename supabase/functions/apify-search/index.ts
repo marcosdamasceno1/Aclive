@@ -153,7 +153,7 @@ Deno.serve(async (req: Request) => {
       const runId = String(body.runId ?? '');
       const datasetId = String(body.datasetId ?? '');
       const usageId = String(body.usageId ?? '');
-      if (!runId || !datasetId) return json({ error: 'bad_request' });
+      if (!/^[A-Za-z0-9]{5,40}$/.test(runId) || !/^[A-Za-z0-9]{5,40}$/.test(datasetId)) return json({ error: 'bad_request' });
 
       const stRes = await apify(`/actor-runs/${runId}`);
       const st = await stRes.json().catch(() => ({}));
@@ -164,7 +164,7 @@ Deno.serve(async (req: Request) => {
         const items = await itemsRes.json().catch(() => []);
         const valid = Array.isArray(items) ? items.filter((i: { title?: string }) => i.title) : [];
         // Conta as empresas de fato trazidas nesta busca (o que gastou crédito).
-        if (usageId) await admin.from('apify_usage').update({ result_count: valid.length }).eq('id', usageId);
+        if (usageId) await admin.from('apify_usage').update({ result_count: valid.length }).eq('id', usageId).eq('company_id', companyId);
         const after = await getQuota(companyId);
         return json({ status: 'SUCCEEDED', items: valid, used: after.used, limit: after.limit });
       }

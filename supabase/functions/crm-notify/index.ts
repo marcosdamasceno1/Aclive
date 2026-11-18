@@ -1,8 +1,8 @@
 // crm-notify — Envia notificações para o endpoint (webhook) do sistema Acta.
 //
-// O frontend NUNCA fala direto com o Acta: a URL do endpoint e o token da
-// agência ficam em company_settings e só esta função os lê, usando a service
-// role. O supabase-js injeta o JWT do usuário automaticamente — é assim que a
+// O frontend NUNCA fala direto com o Acta: a URL do endpoint fica em
+// company_settings e o token em company_secrets (só o admin acessa); esta
+// função os lê com a service role. O supabase-js injeta o JWT do usuário automaticamente — é assim que a
 // função sabe de qual agência é a chamada.
 //
 // Mantenha "Verify JWT" LIGADO nesta função (é chamada autenticada).

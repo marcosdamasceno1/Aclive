@@ -106,21 +106,22 @@ Deno.serve(async (req) => {
     if (!form) return json({ error: 'not_found' }, 404);
     const f = form as { id: string; name: string; config: unknown; pixel_id: string | null; capi_configured: boolean };
 
-    // Sessão do funil (com limite por IP: 60 sessões a cada 10 minutos)
+    // Sessão do funil, gravada em segundo plano para a página abrir mais rápido
+    // (limite por IP: 60 sessões a cada 10 minutos).
     const ip = clientIp(req);
-    const ipHash = ip ? await sha256(`${ip}|${SUPABASE_URL}`) : null;
-    let sessionId: string | null = null;
-    const since = new Date(Date.now() - 10 * 60_000).toISOString();
-    const { count } = ipHash
-      ? await admin.from('form_sessions').select('id', { count: 'exact', head: true }).eq('ip_hash', ipHash).gte('created_at', since)
-      : { count: 0 };
-    if ((count ?? 0) < 60) {
-      const dev = ['mobile', 'tablet', 'desktop'].includes(String(body.device)) ? String(body.device) : null;
-      const { data: s } = await admin.from('form_sessions').insert({
-        form_id: f.id, company_id: companyId, tracking: cleanTracking(body.tracking), device: dev, ip_hash: ipHash,
-      }).select('id').single();
-      sessionId = (s as { id: string } | null)?.id ?? null;
-    }
+    const sessionId = crypto.randomUUID();
+    const dev = ['mobile', 'tablet', 'desktop'].includes(String(body.device)) ? String(body.device) : null;
+    const tracking = cleanTracking(body.tracking);
+    background((async () => {
+      const ipHash = ip ? await sha256(`${ip}|${SUPABASE_URL}`) : null;
+      if (ipHash) {
+        const since = new Date(Date.now() - 10 * 60_000).toISOString();
+        const { count } = await admin.from('form_sessions').select('id', { count: 'exact', head: true }).eq('ip_hash', ipHash).gte('created_at', since);
+        if ((count ?? 0) >= 60) return;
+      }
+      const { error } = await admin.from('form_sessions').insert({ id: sessionId, form_id: f.id, company_id: companyId, tracking, device: dev, ip_hash: ipHash });
+      if (error) console.warn('[form-get] sessão', error.message);
+    })());
 
     // PageView + ViewContent pela API de Conversões (mesmo eventID do Pixel)
     const pvId = String(body.pageViewEventId ?? '');

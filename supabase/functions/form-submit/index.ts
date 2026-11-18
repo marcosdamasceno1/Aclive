@@ -257,11 +257,26 @@ Deno.serve(async (req) => {
       board_id: boardId, stage_id: stage?.id ?? null, tag_ids: tagIds, form_id: form.id,
       answers: readable, tracking, created_at: new Date().toISOString(),
     };
-    let { error: leadErr } = await admin.from('leads').insert(leadRow);
-    if (leadErr && /source|check/i.test(leadErr.message)) {
-      ({ error: leadErr } = await admin.from('leads').insert({ ...leadRow, source: 'website' }));
+    // Grava em até 3 tentativas: a tabela leads de cada instalação pode ter
+    // regras próprias (ex.: lista fechada de origens). O lead nunca se perde.
+    const attempts: Record<string, unknown>[] = [
+      leadRow,
+      { ...leadRow, source: 'website' },
+      {
+        id: leadId, company_id: companyId, name: leadRow.name, phone: leadRow.phone, status, source: 'website',
+        notes: [`Formulário: ${form.name}`, dqOption ? `Desqualificado: ${dqOption.label}` : '', ...readable.map(r => `${r.question}: ${r.answer}`)]
+          .filter(Boolean).join('\n').slice(0, 4000),
+        created_at: leadRow.created_at,
+      },
+    ];
+    let leadErr: { message: string; code?: string; details?: string } | null = null;
+    for (const row of attempts) {
+      const { error } = await admin.from('leads').insert(row);
+      if (!error) { leadErr = null; break; }
+      leadErr = error;
+      console.error('[form-submit] lead insert falhou:', error.code, error.message, error.details ?? '');
     }
-    if (leadErr) { console.error('[form-submit] lead', leadErr.message); return json({ error: 'Não foi possível salvar. Tente novamente.' }, 500); }
+    if (leadErr) return json({ error: 'Não foi possível salvar. Tente novamente.', code: leadErr.code ?? null }, 500);
 
     const sessionId = typeof body.sessionId === 'string' && UUID_RE.test(body.sessionId) ? body.sessionId : null;
     const eventId = typeof body.eventId === 'string' && /^ld_[a-z0-9]{8,64}$/i.test(body.eventId) ? body.eventId : `ld_${crypto.randomUUID().replace(/-/g, '')}`;

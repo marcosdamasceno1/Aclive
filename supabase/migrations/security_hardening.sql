@@ -34,18 +34,22 @@ SET raw_app_meta_data =
     'company_id',      COALESCE(p.company_id::text, u.raw_user_meta_data->>'company_id'),
     'role',            COALESCE(p.role, u.raw_user_meta_data->>'role', 'admin'),
     'professional_id', COALESCE(p.professional_id::text, u.raw_user_meta_data->>'professionalId'),
-    'permissions',     COALESCE(p.permissions, u.raw_user_meta_data->'permissions'),
+    'permissions',     COALESCE(to_jsonb(p.permissions), u.raw_user_meta_data->'permissions'),
     'super_admin',     CASE WHEN u.raw_user_meta_data->>'super_admin' = 'true' THEN true END
   ))
   || COALESCE(u.raw_app_meta_data, '{}'::jsonb)
 FROM (SELECT au.id, up.company_id, up.role, up.professional_id, up.permissions
-      FROM auth.users au LEFT JOIN public.user_profiles up ON up.id = au.id) p
+      FROM auth.users au LEFT JOIN public.user_profiles up ON up.id::text = au.id::text) p
 WHERE p.id = u.id;
 
 -- ── 2. Funções que leem o token de forma segura ──────────────────────────────
-CREATE OR REPLACE FUNCTION public.jwt_company() RETURNS uuid
+-- Retornam texto e as políticas comparam com ::text, então funcionam tanto em
+-- colunas UUID quanto TEXT (o banco tem os dois tipos).
+DROP FUNCTION IF EXISTS public.jwt_company() CASCADE;
+DROP FUNCTION IF EXISTS public.jwt_professional() CASCADE;
+CREATE OR REPLACE FUNCTION public.jwt_company() RETURNS text
 LANGUAGE sql STABLE AS $$
-  SELECT NULLIF(auth.jwt()->'app_metadata'->>'company_id', '')::uuid
+  SELECT NULLIF(auth.jwt()->'app_metadata'->>'company_id', '')
 $$;
 CREATE OR REPLACE FUNCTION public.jwt_role() RETURNS text
 LANGUAGE sql STABLE AS $$
@@ -55,9 +59,9 @@ CREATE OR REPLACE FUNCTION public.jwt_is_super() RETURNS boolean
 LANGUAGE sql STABLE AS $$
   SELECT COALESCE((auth.jwt()->'app_metadata'->>'super_admin')::boolean, false)
 $$;
-CREATE OR REPLACE FUNCTION public.jwt_professional() RETURNS uuid
+CREATE OR REPLACE FUNCTION public.jwt_professional() RETURNS text
 LANGUAGE sql STABLE AS $$
-  SELECT NULLIF(auth.jwt()->'app_metadata'->>'professional_id', '')::uuid
+  SELECT NULLIF(auth.jwt()->'app_metadata'->>'professional_id', '')
 $$;
 
 -- ── 3. Remove todas as políticas antigas (baseadas em user_metadata) ─────────
@@ -85,8 +89,8 @@ BEGIN
     IF to_regclass('public.' || t) IS NOT NULL THEN
       EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
       EXECUTE format('CREATE POLICY tenant_all ON public.%I FOR ALL TO authenticated
-                      USING (company_id = public.jwt_company())
-                      WITH CHECK (company_id = public.jwt_company())', t);
+                      USING (company_id::text = public.jwt_company())
+                      WITH CHECK (company_id::text = public.jwt_company())', t);
     END IF;
   END LOOP;
 END $$;
@@ -94,37 +98,37 @@ END $$;
 -- ── 5. Clientes: todos leem; só admin e gestor alteram ───────────────────────
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_read ON public.clients FOR SELECT TO authenticated
-  USING (company_id = public.jwt_company());
+  USING (company_id::text = public.jwt_company());
 CREATE POLICY managers_write ON public.clients FOR ALL TO authenticated
-  USING (company_id = public.jwt_company() AND public.jwt_role() IN ('admin','manager'))
-  WITH CHECK (company_id = public.jwt_company() AND public.jwt_role() IN ('admin','manager'));
+  USING (company_id::text = public.jwt_company() AND public.jwt_role() IN ('admin','manager'))
+  WITH CHECK (company_id::text = public.jwt_company() AND public.jwt_role() IN ('admin','manager'));
 
 -- ── 6. Profissionais (inclui chave Pix): todos leem; só admin altera ─────────
 ALTER TABLE public.professionals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_read ON public.professionals FOR SELECT TO authenticated
-  USING (company_id = public.jwt_company());
+  USING (company_id::text = public.jwt_company());
 CREATE POLICY admin_write ON public.professionals FOR ALL TO authenticated
-  USING (company_id = public.jwt_company() AND public.jwt_role() = 'admin')
-  WITH CHECK (company_id = public.jwt_company() AND public.jwt_role() = 'admin');
+  USING (company_id::text = public.jwt_company() AND public.jwt_role() = 'admin')
+  WITH CHECK (company_id::text = public.jwt_company() AND public.jwt_role() = 'admin');
 
 -- ── 7. Financeiro ─────────────────────────────────────────────────────────────
 -- Admin e financeiro: tudo. Demais: só leem os próprios créditos, e só podem
 -- criar o crédito de uma demanda real da agência, com o valor da demanda.
 ALTER TABLE public.financial_movements ENABLE ROW LEVEL SECURITY;
 CREATE POLICY finance_all ON public.financial_movements FOR ALL TO authenticated
-  USING (company_id = public.jwt_company() AND public.jwt_role() IN ('admin','financial'))
-  WITH CHECK (company_id = public.jwt_company() AND public.jwt_role() IN ('admin','financial'));
+  USING (company_id::text = public.jwt_company() AND public.jwt_role() IN ('admin','financial'))
+  WITH CHECK (company_id::text = public.jwt_company() AND public.jwt_role() IN ('admin','financial'));
 CREATE POLICY own_credits_read ON public.financial_movements FOR SELECT TO authenticated
-  USING (company_id = public.jwt_company() AND professional_id IS NOT NULL
-         AND professional_id = public.jwt_professional());
+  USING (company_id::text = public.jwt_company() AND professional_id IS NOT NULL
+         AND professional_id::text = public.jwt_professional());
 CREATE POLICY credit_from_demand ON public.financial_movements FOR INSERT TO authenticated
   WITH CHECK (
-    company_id = public.jwt_company() AND type = 'credit' AND status = 'pending'
+    company_id::text = public.jwt_company() AND type = 'credit' AND status = 'pending'
     AND EXISTS (SELECT 1 FROM public.demands d
-                WHERE d.id = financial_movements.demand_id
-                  AND d.company_id = public.jwt_company()
-                  AND d.professional_id = financial_movements.professional_id
-                  AND d.value = financial_movements.value)
+                WHERE d.id::text = financial_movements.demand_id::text
+                  AND d.company_id::text = public.jwt_company()
+                  AND d.professional_id::text = financial_movements.professional_id::text
+                  AND d.value::numeric = financial_movements.value::numeric)
   );
 -- Um crédito por demanda (evita pagamento em dobro).
 DO $$
@@ -138,33 +142,33 @@ END $$;
 -- ── 8. Histórico (auditoria): todos registram; admin e financeiro leem ───────
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY audit_insert ON public.audit_logs FOR INSERT TO authenticated
-  WITH CHECK (company_id = public.jwt_company() AND user_id = auth.uid());
+  WITH CHECK (company_id::text = public.jwt_company() AND user_id::text = auth.uid()::text);
 CREATE POLICY audit_read ON public.audit_logs FOR SELECT TO authenticated
-  USING (company_id = public.jwt_company() AND public.jwt_role() IN ('admin','financial'));
+  USING (company_id::text = public.jwt_company() AND public.jwt_role() IN ('admin','financial'));
 
 -- ── 9. Perfis de usuário: leitura na agência; escrita só pela Edge Function ──
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY profiles_read ON public.user_profiles FOR SELECT TO authenticated
-  USING (company_id = public.jwt_company() OR public.jwt_is_super());
+  USING (company_id::text = public.jwt_company() OR public.jwt_is_super());
 
 -- ── 10. Agências: cada uma vê a sua; só o super admin altera ─────────────────
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
 CREATE POLICY company_read ON public.companies FOR SELECT TO authenticated
-  USING (id = public.jwt_company() OR public.jwt_is_super());
+  USING (id::text = public.jwt_company() OR public.jwt_is_super());
 CREATE POLICY super_write ON public.companies FOR ALL TO authenticated
   USING (public.jwt_is_super()) WITH CHECK (public.jwt_is_super());
 
 -- ── 11. Configurações: todos leem; só admin altera ───────────────────────────
 ALTER TABLE public.company_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_read ON public.company_settings FOR SELECT TO authenticated
-  USING (company_id = public.jwt_company());
+  USING (company_id::text = public.jwt_company());
 CREATE POLICY admin_write ON public.company_settings FOR ALL TO authenticated
-  USING (company_id = public.jwt_company() AND public.jwt_role() = 'admin')
-  WITH CHECK (company_id = public.jwt_company() AND public.jwt_role() = 'admin');
+  USING (company_id::text = public.jwt_company() AND public.jwt_role() = 'admin')
+  WITH CHECK (company_id::text = public.jwt_company() AND public.jwt_role() = 'admin');
 
 -- ── 12. Tokens de integração: tabela só para administradores ─────────────────
 CREATE TABLE IF NOT EXISTS public.company_secrets (
-  company_id              UUID PRIMARY KEY,
+  company_id              TEXT PRIMARY KEY,
   crm_api_key             TEXT,
   meta_access_token       TEXT,
   meta_leads_page_token   TEXT,
@@ -174,9 +178,11 @@ CREATE TABLE IF NOT EXISTS public.company_secrets (
   updated_at              TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE public.company_secrets ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.company_secrets TO authenticated;
+REVOKE ALL ON public.company_secrets FROM anon;
 CREATE POLICY admin_only ON public.company_secrets FOR ALL TO authenticated
-  USING (company_id = public.jwt_company() AND public.jwt_role() = 'admin')
-  WITH CHECK (company_id = public.jwt_company() AND public.jwt_role() = 'admin');
+  USING (company_id::text = public.jwt_company() AND public.jwt_role() = 'admin')
+  WITH CHECK (company_id::text = public.jwt_company() AND public.jwt_role() = 'admin');
 
 ALTER TABLE public.company_settings ADD COLUMN IF NOT EXISTS crm_api_key TEXT;
 ALTER TABLE public.company_settings ADD COLUMN IF NOT EXISTS meta_access_token TEXT;
@@ -187,9 +193,10 @@ ALTER TABLE public.company_settings ADD COLUMN IF NOT EXISTS wa_webhook_secret T
 -- Move os tokens existentes e apaga as cópias em company_settings.
 INSERT INTO public.company_secrets (company_id, crm_api_key, meta_access_token, meta_leads_page_token,
                                     meta_leads_verify_token, wa_webhook_secret)
-SELECT company_id, crm_api_key, meta_access_token, meta_leads_page_token,
+SELECT company_id::text, crm_api_key, meta_access_token, meta_leads_page_token,
        meta_leads_verify_token, wa_webhook_secret
 FROM public.company_settings
+WHERE company_id IS NOT NULL
 ON CONFLICT (company_id) DO UPDATE SET
   crm_api_key             = COALESCE(EXCLUDED.crm_api_key, company_secrets.crm_api_key),
   meta_access_token       = COALESCE(EXCLUDED.meta_access_token, company_secrets.meta_access_token),
@@ -202,7 +209,7 @@ UPDATE public.company_settings SET crm_api_key = NULL, meta_access_token = NULL,
 
 -- Token do webhook de leads do site, um por agência.
 INSERT INTO public.company_secrets (company_id)
-SELECT id FROM public.companies ON CONFLICT (company_id) DO NOTHING;
+SELECT id::text FROM public.companies ON CONFLICT (company_id) DO NOTHING;
 UPDATE public.company_secrets SET site_webhook_secret = replace(gen_random_uuid()::text, '-', '')
 WHERE site_webhook_secret IS NULL;
 
@@ -212,7 +219,7 @@ BEGIN
   IF to_regclass('public.apify_usage') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.apify_usage ENABLE ROW LEVEL SECURITY';
     EXECUTE 'CREATE POLICY tenant_read ON public.apify_usage FOR SELECT TO authenticated
-             USING (company_id = public.jwt_company())';
+             USING (company_id::text = public.jwt_company())';
   END IF;
 END $$;
 

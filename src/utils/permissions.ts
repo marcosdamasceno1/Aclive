@@ -6,7 +6,6 @@ export const PAGE_PERMISSIONS = [
   { key: 'professionals', label: 'Profissionais' },
   { key: 'kanban', label: 'Esteira de Produção' },
   { key: 'leads', label: 'Leads' },
-  { key: 'atendimento', label: 'Atendimento' },
   { key: 'drive', label: 'Drive' },
   { key: 'financial', label: 'Financeiro' },
   { key: 'reports', label: 'Relatórios' },
@@ -17,8 +16,8 @@ export const PAGE_PERMISSIONS = [
 export type PageKey = (typeof PAGE_PERMISSIONS)[number]['key'];
 
 const ROLE_DEFAULTS: Record<UserRole, PageKey[]> = {
-  admin: ['dashboard', 'clients', 'professionals', 'kanban', 'leads', 'atendimento', 'drive', 'financial', 'reports', 'settings', 'calendar'],
-  manager: ['dashboard', 'clients', 'kanban', 'leads', 'atendimento', 'calendar'],
+  admin: ['dashboard', 'clients', 'professionals', 'kanban', 'leads', 'drive', 'financial', 'reports', 'settings', 'calendar'],
+  manager: ['dashboard', 'clients', 'kanban', 'leads', 'calendar'],
   professional: ['dashboard', 'kanban', 'calendar'],
   financial: ['dashboard', 'financial', 'reports', 'calendar'],
 };

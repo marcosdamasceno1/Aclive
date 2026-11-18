@@ -1,48 +1,8 @@
-// ─── WAHA (WhatsApp HTTP API — self-hosted) ──────────────────────────────────
-
-const LS_WAHA_URL     = 'waha_url';
-const LS_WAHA_API_KEY = 'waha_api_key';
-const LS_WAHA_SESSION = 'waha_session';
-
-// Migração: remove as chaves da antiga integração Z-API (descontinuada).
-try {
-  ['zapi_instance', 'zapi_token', 'zapi_client_token'].forEach(k => localStorage.removeItem(k));
-} catch { /* SSR/test */ }
-
-export interface WahaConfig {
-  baseUrl: string;
-  apiKey: string;
-  session: string;
-}
-
-export const getWahaConfig = (): WahaConfig | null => {
-  const baseUrl = localStorage.getItem(LS_WAHA_URL)     || '';
-  const apiKey  = localStorage.getItem(LS_WAHA_API_KEY) || '';
-  const session = localStorage.getItem(LS_WAHA_SESSION) || 'default';
-  if (!baseUrl) return null;
-  return { baseUrl, apiKey, session };
-};
-
-export const saveWahaConfig = (cfg: WahaConfig) => {
-  localStorage.setItem(LS_WAHA_URL,     cfg.baseUrl.replace(/\/+$/, ''));
-  localStorage.setItem(LS_WAHA_API_KEY, cfg.apiKey);
-  localStorage.setItem(LS_WAHA_SESSION, cfg.session || 'default');
-};
-
-export const clearWahaConfig = () => {
-  localStorage.removeItem(LS_WAHA_URL);
-  localStorage.removeItem(LS_WAHA_API_KEY);
-  localStorage.removeItem(LS_WAHA_SESSION);
-};
-
 // ─── Payload comum ────────────────────────────────────────────────────────────
 
-export type WhatsAppProvider = 'waha' | 'meta' | 'crm';
-
-// Conexão via API oficial da Meta desativada por ora — WAHA central é o padrão.
-// Deixar em false mantém o código da Meta presente (para reativação futura)
-// mas força todo envio pelo gateway WAHA.
-export const WA_META_ENABLED = false;
+// Todas as mensagens saem pelo Acta (Edge Function crm-notify), configurado
+// por agência em Configurações → Integrações → WhatsApp.
+export type WhatsAppProvider = 'crm';
 
 export interface NotificationPayload {
   phone: string;
@@ -78,7 +38,7 @@ const formatDeadline = (deadline: string): string =>
         .toLocaleDateString('pt-BR')
     : 'Sem prazo definido';
 
-// ─── WAHA sender ──────────────────────────────────────────────────────────────
+// ─── Texto da notificação ──────────────────────────────────────────────────────────────
 
 const buildTextMessage = (p: NotificationPayload): string => {
   const value = p.value > 0 ? `R$ ${p.value.toFixed(2).replace('.', ',')}` : '—';
@@ -98,18 +58,6 @@ const buildTextMessage = (p: NotificationPayload): string => {
   ].join('\n');
 };
 
-/**
- * Envia texto livre via WAHA — agora pelo gateway central (Edge Function),
- * que guarda a chave-mestra e isola por company_id. O navegador nunca fala
- * direto com o servidor WAHA.
- * Retorna null em sucesso ou string de erro.
- */
-const sendViaWaha = async (phone: string, text: string): Promise<string | null> => {
-  const { waSend } = await import('../lib/waGateway');
-  const { error } = await waSend(formatPhone(phone), text);
-  return error;
-};
-
 // ─── Acta (endpoint/webhook) sender ───────────────────────────────────────────
 
 /**
@@ -123,151 +71,21 @@ const sendViaCrm = async (phone: string, text: string, name?: string): Promise<s
   return error;
 };
 
-// ─── Meta Cloud API sender ────────────────────────────────────────────────────
-
-export interface MetaConfig {
-  accessToken: string;
-  phoneNumberId: string;
-  templateName: string;
-}
-
 /**
- * Envia via Meta WhatsApp Business Cloud API usando template aprovado.
- *
- * O template deve ter exatamente 5 variáveis no body na ordem:
- *   {{1}} profissional  {{2}} demanda  {{3}} cliente  {{4}} prazo  {{5}} prioridade
- *
- * Crie e aprove o template em:
- *   business.facebook.com → WhatsApp Manager → Message Templates
- */
-const sendViaMeta = async (payload: NotificationPayload, cfg: MetaConfig): Promise<string | null> => {
-  const phone = formatPhone(payload.phone);
-
-  const body = {
-    messaging_product: 'whatsapp',
-    to: phone,
-    type: 'template',
-    template: {
-      name: cfg.templateName,
-      language: { code: 'pt_BR' },
-      components: [{
-        type: 'body',
-        parameters: [
-          { type: 'text', text: payload.professionalName },
-          { type: 'text', text: payload.demandTitle },
-          { type: 'text', text: payload.clientName },
-          { type: 'text', text: formatDeadline(payload.deadline) },
-          { type: 'text', text: PRIORITY_PT[payload.priority] || payload.priority },
-        ],
-      }],
-    },
-  };
-
-  try {
-    const res = await fetch(
-      `https://graph.facebook.com/v19.0/${cfg.phoneNumberId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${cfg.accessToken}`,
-        },
-        body: JSON.stringify(body),
-      },
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
-      return err?.error?.message || `Erro Meta API: ${res.status}`;
-    }
-    return null;
-  } catch (err) {
-    return err instanceof Error ? err.message : 'Erro de rede (Meta API)';
-  }
-};
-
-/** Texto livre via Meta Cloud API (só entrega dentro da janela de 24h). */
-const sendTextViaMeta = async (phone: string, text: string, cfg: MetaConfig): Promise<string | null> => {
-  try {
-    const res = await fetch(
-      `https://graph.facebook.com/v19.0/${cfg.phoneNumberId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${cfg.accessToken}`,
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: formatPhone(phone),
-          type: 'text',
-          text: { body: text },
-        }),
-      },
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
-      return err?.error?.message || `Erro Meta API: ${res.status}`;
-    }
-    return null;
-  } catch (err) {
-    return err instanceof Error ? err.message : 'Erro de rede (Meta API)';
-  }
-};
-
-// ─── Router público ───────────────────────────────────────────────────────────
-
-const getProvider = async (): Promise<{ provider: WhatsAppProvider; meta: MetaConfig | null }> => {
-  // import dinâmico evita dependência circular (store → whatsapp → store)
-  const { useCompanySettingsStore } = await import('../store/companySettingsStore');
-  const state = useCompanySettingsStore.getState();
-  const provider: WhatsAppProvider =
-    state.whatsappProvider === 'meta' ? 'meta' : state.whatsappProvider === 'crm' ? 'crm' : 'waha';
-  const meta = state.metaAccessToken && state.metaPhoneNumberId
-    ? {
-        accessToken: state.metaAccessToken,
-        phoneNumberId: state.metaPhoneNumberId,
-        templateName: state.metaTemplateName || 'nova_demanda',
-      }
-    : null;
-  return { provider, meta };
-};
-
-/**
- * Envia notificação de nova demanda pelo provider configurado na agência.
+ * Envia notificação de nova demanda pelo Acta da agência.
  * Retorna null em sucesso ou string de erro.
  */
 export const sendWhatsAppNotification = async (
   payload: NotificationPayload,
-): Promise<string | null> => {
-  const { provider, meta } = await getProvider();
-
-  if (WA_META_ENABLED && provider === 'meta') {
-    if (!meta) return 'Meta API não configurada. Configure em Configurações → Integrações.';
-    return sendViaMeta(payload, meta);
-  }
-
-  if (provider === 'crm') return sendViaCrm(payload.phone, buildTextMessage(payload), payload.professionalName);
-
-  return sendViaWaha(payload.phone, buildTextMessage(payload));
-};
+): Promise<string | null> =>
+  sendViaCrm(payload.phone, buildTextMessage(payload), payload.professionalName);
 
 /**
- * Envia uma mensagem de texto livre pelo provider configurado.
+ * Envia uma mensagem de texto livre pelo Acta da agência.
  * Usado para lembretes (ex: postagens agendadas no Social).
  */
 export const sendWhatsAppText = async (
   phone: string,
   message: string,
   name?: string,
-): Promise<string | null> => {
-  const { provider, meta } = await getProvider();
-
-  if (WA_META_ENABLED && provider === 'meta') {
-    if (!meta) return 'Meta API não configurada. Configure em Configurações → Integrações.';
-    return sendTextViaMeta(phone, message, meta);
-  }
-
-  if (provider === 'crm') return sendViaCrm(phone, message, name);
-
-  return sendViaWaha(phone, message);
-};
+): Promise<string | null> => sendViaCrm(phone, message, name);

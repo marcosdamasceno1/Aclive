@@ -10,7 +10,6 @@ import { useFinancialStore } from './store/financialStore';
 import { useLeadsStore } from './store/leadsStore';
 import { useCalendarStore } from './store/calendarStore';
 import { useCompaniesStore } from './store/companiesStore';
-import { useWaInboxStore } from './store/waInboxStore';
 import { useApprovalsStore } from './store/approvalsStore';
 import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES } from './store/companySettingsStore';
 import { Layout } from './components/layout/Layout';
@@ -26,7 +25,6 @@ import { Settings } from './pages/Settings';
 import { Leads } from './pages/Leads';
 import { Calendar } from './pages/Calendar';
 import { Master } from './pages/Master';
-import { Atendimento } from './pages/Atendimento';
 import { ApprovalPage } from './pages/ApprovalPage';
 import { Drive } from './pages/Drive';
 
@@ -59,7 +57,6 @@ function App() {
   const { init: initLeads } = useLeadsStore();
   const { init: initCalendar } = useCalendarStore();
   const { init: initCompanies } = useCompaniesStore();
-  const { init: initWaInbox } = useWaInboxStore();
   const { init: initApprovals } = useApprovalsStore();
   const { init: initCompanySettings } = useCompanySettingsStore();
 
@@ -81,7 +78,7 @@ function App() {
         // todo o carregamento e a tela ficava sem dados.
         await Promise.allSettled([
           initProfessionals(), initClients(), initDemands(), initFinancial(),
-          initLeads(), initCalendar(), initWaInbox(), initApprovals(), initCompanySettings(),
+          initLeads(), initCalendar(), initApprovals(), initCompanySettings(),
         ]);
       }
       useAuthStore.getState().loadUsers();
@@ -109,16 +106,14 @@ function App() {
       useDemandsStore.setState({ demands: [] });
       useFinancialStore.setState({ movements: [] });
       useCalendarStore.setState({ events: [] });
-      useWaInboxStore.getState().teardown();
-      useWaInboxStore.setState({ chats: [], messages: [], dbError: null });
       useApprovalsStore.setState({ approvals: [] });
       useAuthStore.setState({ users: [] });
       useCompanySettingsStore.setState({
         googleClientId: '', googleAccessToken: null, googleTokenExpiry: null,
-        whatsappProvider: 'waha',
+        whatsappProvider: 'crm',
         metaAccessToken: '', metaPhoneNumberId: '', metaTemplateName: 'nova_demanda',
         metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '',
-        crmApiKey: '', crmEndpointUrl: '', waWebhookSecret: '', siteWebhookSecret: '',
+        crmApiKey: '', crmEndpointUrl: '', siteWebhookSecret: '',
         agencyName: '', approvalNotifyPhone: '',
         kanbanStages: DEFAULT_KANBAN_STAGES,
       });
@@ -204,7 +199,6 @@ function App() {
           <Route path="kanban"       element={<AgencyRoute><Kanban /></AgencyRoute>} />
           <Route path="financial"    element={<AgencyRoute><Financial /></AgencyRoute>} />
           <Route path="leads"        element={<AgencyRoute><Leads /></AgencyRoute>} />
-          <Route path="atendimento"  element={<AgencyRoute><Atendimento /></AgencyRoute>} />
           <Route path="calendar"     element={<AgencyRoute><Calendar /></AgencyRoute>} />
           <Route path="social"       element={<Navigate to="/kanban" replace />} />
           <Route path="drive"        element={<AgencyRoute><Drive /></AgencyRoute>} />

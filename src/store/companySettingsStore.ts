@@ -39,12 +39,10 @@ interface CompanySettingsState {
   metaLeadsVerifyToken: string;
   crmApiKey: string;
   crmEndpointUrl: string;
-  waWebhookSecret: string;
   /** Token que autentica o webhook de leads do site (company_secrets). */
   siteWebhookSecret: string;
   agencyName: string;             // branding da página pública de aprovação
   approvalNotifyPhone: string;    // telefone padrão para avisos de aprovação
-  waStatus: string; // runtime: status da sessão WAHA central (WORKING, SCAN_QR_CODE...)
   kanbanStages: KanbanStage[];
   loading: boolean;
 
@@ -63,9 +61,7 @@ interface CompanySettingsState {
   saveCrmConfig: (apiKey: string, endpointUrl: string) => Promise<void>;
   clearCrmConfig: () => Promise<void>;
   saveKanbanStages: (stages: KanbanStage[]) => Promise<string | null>;
-  generateWaWebhookSecret: () => Promise<string | null>;
   generateSiteWebhookSecret: () => Promise<string | null>;
-  setWaStatus: (status: string) => void;
   saveApprovalDefaults: (agencyName: string, notifyPhone: string) => Promise<void>;
 }
 
@@ -128,7 +124,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   googleClientId: '',
   googleAccessToken: null,
   googleTokenExpiry: null,
-  whatsappProvider: 'waha',
+  whatsappProvider: 'crm',
   metaAccessToken: '',
   metaPhoneNumberId: '',
   metaTemplateName: 'nova_demanda',
@@ -137,11 +133,9 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   metaLeadsVerifyToken: '',
   crmApiKey: '',
   crmEndpointUrl: '',
-  waWebhookSecret: '',
   siteWebhookSecret: '',
   agencyName: '',
   approvalNotifyPhone: '',
-  waStatus: 'UNKNOWN',
   kanbanStages: DEFAULT_KANBAN_STAGES,
   loading: false,
 
@@ -173,8 +167,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       googleClientId:       (row?.google_client_id        as string) || '',
       googleAccessToken:    (row?.google_access_token     as string) || null,
       googleTokenExpiry:    (row?.google_token_expiry     as string) || null,
-      // Valor legado 'zapi' no banco vira 'waha' (Z-API foi descontinuada)
-      whatsappProvider:     (row?.whatsapp_provider === 'meta' ? 'meta' : row?.whatsapp_provider === 'crm' ? 'crm' : 'waha') as WhatsAppProvider,
+      whatsappProvider:     'crm' as WhatsAppProvider,
       metaAccessToken:      (sec?.meta_access_token       as string) || '',
       metaPhoneNumberId:    (row?.meta_phone_number_id    as string) || '',
       metaTemplateName:     (row?.meta_template_name      as string) || 'nova_demanda',
@@ -183,7 +176,6 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       metaLeadsVerifyToken: (sec?.meta_leads_verify_token as string) || '',
       crmApiKey:            (sec?.crm_api_key             as string) || '',
       crmEndpointUrl:       (row?.crm_endpoint_url        as string) || '',
-      waWebhookSecret:      (sec?.wa_webhook_secret       as string) || '',
       siteWebhookSecret:    (sec?.site_webhook_secret     as string) || '',
       agencyName:           (row?.agency_name             as string) || '',
       approvalNotifyPhone:  (row?.approval_notify_phone   as string) || '',
@@ -286,21 +278,6 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   },
 
 
-  // Gera (uma única vez) o segredo que autentica os webhooks do Atendimento.
-  // Se já existe, apenas retorna — trocar o segredo quebraria webhooks ativos.
-  generateWaWebhookSecret: async () => {
-    const existing = get().waWebhookSecret;
-    if (existing) return existing;
-    const secret = crypto.randomUUID().replace(/-/g, '');
-    const { error } = await upsertSecret({ wa_webhook_secret: secret });
-    if (error) {
-      console.error('[company-settings.waSecret]', error.message);
-      return null;
-    }
-    set({ waWebhookSecret: secret });
-    return secret;
-  },
-
   // Token do webhook de leads do site. Gerar um novo invalida o antigo.
   generateSiteWebhookSecret: async () => {
     const bytes = crypto.getRandomValues(new Uint8Array(24));
@@ -314,7 +291,6 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
     return secret;
   },
 
-  setWaStatus: (status) => set({ waStatus: status }),
 
   saveApprovalDefaults: async (agencyName, notifyPhone) => {
     set({ agencyName, approvalNotifyPhone: notifyPhone });

@@ -3,9 +3,8 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users,
   Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
-  ChevronLeft, ChevronRight, CalendarDays, X, Loader2, HardDrive, MessageCircle,
+  ChevronLeft, ChevronRight, CalendarDays, X, Loader2,
 } from 'lucide-react';
-import { useWaInboxStore } from '../../store/waInboxStore';
 import { useAuthStore } from '../../store/authStore';
 import { hasPageAccess } from '../../utils/permissions';
 import type { PageKey } from '../../utils/permissions';
@@ -45,7 +44,6 @@ interface NavItemDef {
 
 export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) => {
   const { currentUser, logout } = useAuthStore();
-  const waUnread = useWaInboxStore(s => s.chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0));
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -61,9 +59,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
     { to: '/kanban',    icon: Kanban,          label: 'Esteira de Produção',  pageKey: 'kanban' },
     { to: '/calendar',  icon: CalendarDays,    label: 'Calendário',           pageKey: 'calendar' },
     { to: '/leads',     icon: Target,          label: 'Leads',                pageKey: 'leads' },
-    // Atendimento e Drive ocultos por ora (inviáveis no momento). Código e
-    // rotas preservados — basta descomentar para reativar.
-    // { to: '/atendimento', icon: MessageCircle, label: 'Atendimento',          pageKey: 'atendimento', badge: waUnread },
+    // Drive oculto por ora. Código e rota preservados — basta descomentar.
     // { to: '/drive',    icon: HardDrive,    label: 'Drive',                pageKey: 'drive' },
   ].filter(i => access(i.pageKey));
 

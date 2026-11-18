@@ -247,10 +247,9 @@ export const Kanban = () => {
   const commentInputRef = useRef<HTMLInputElement>(null);
   const [whatsappStatus, setWhatsappStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
   const [whatsappMsg, setWhatsappMsg]       = useState('');
-  const waStatus = useCompanySettingsStore(s => s.waStatus);
-  // WhatsApp central: "configurado" = sessão conectada. Enquanto desconhecido,
-  // assume ok (o envio reporta erro tratado se não estiver conectado).
-  const whatsappConfigured = waStatus === 'WORKING' || waStatus === 'UNKNOWN';
+  // Envio pelo Acta da agência. O token só é visível ao admin, então basta o
+  // endpoint estar salvo; se faltar o token, o envio devolve erro tratado.
+  const whatsappConfigured = useCompanySettingsStore(s => !!s.crmEndpointUrl);
 
   // Stage management state
   const [editingStages, setEditingStages]   = useState<KanbanStage[]>([]);

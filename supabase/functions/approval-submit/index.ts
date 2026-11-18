@@ -5,7 +5,8 @@
 // daquele token é alterada, e apenas os campos que o cliente pode mexer.
 // Textos têm tamanho limitado. Nenhum dado interno é exposto.
 //
-// Secrets (compartilhados com wa-gateway): WAHA_BASE_URL, WAHA_API_KEY.
+// O aviso sai pelo Acta da agência (endpoint em company_settings, token em
+// company_secrets) — o mesmo usado pela função crm-notify.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -13,8 +14,6 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
-const WAHA_BASE = (Deno.env.get('WAHA_BASE_URL') ?? '').replace(/\/+$/, '');
-const WAHA_KEY  = Deno.env.get('WAHA_API_KEY') ?? '';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -32,18 +31,35 @@ const clampText = (v: unknown, max = 2000): string | null => {
 };
 
 async function notifyAgency(companyId: string, phone: string, message: string): Promise<void> {
-  if (!WAHA_BASE || !WAHA_KEY || !phone) return;
-  const chatKey = phone.replace(/\D/g, '');
-  if (chatKey.length < 8) return;
-  try {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.length < 10) return;
+  if (!digits.startsWith('55')) digits = '55' + digits;
+  const [{ data: cfg }, { data: sec }] = await Promise.all([
+    supabase.from('company_settings').select('crm_endpoint_url').eq('company_id', companyId).maybeSingle(),
+    supabase.from('company_secrets').select('crm_api_key').eq('company_id', companyId).maybeSingle(),
+  ]);
+  const endpoint = String((cfg as Record<string, unknown> | null)?.crm_endpoint_url ?? '');
+  const token = String((sec as Record<string, unknown> | null)?.crm_api_key ?? '').replace(/^Bearer\s+/i, '').trim();
+  if (!token || !/^https:\/\//i.test(endpoint)) return;
+
+  const body = JSON.stringify({ phone: digits, message: message.slice(0, 4000) });
+  const post = async (authorization: string) => {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 10_000);
-    await fetch(`${WAHA_BASE}/api/sendText`, {
-      method: 'POST',
-      signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json', 'X-Api-Key': WAHA_KEY },
-      body: JSON.stringify({ session: `c_${companyId.replace(/-/g, '')}`, chatId: `${chatKey}@c.us`, text: message }),
-    }).finally(() => clearTimeout(t));
+    try {
+      return await fetch(endpoint, {
+        method: 'POST', signal: ctrl.signal,
+        headers: { 'Content-Type': 'application/json', Authorization: authorization },
+        body,
+      });
+    } finally { clearTimeout(t); }
+  };
+  try {
+    let res = await post(token);
+    // O Acta pode esperar o token puro ou "Bearer <token>": tenta os dois.
+    if (res.status === 401 || res.status === 403) { await res.body?.cancel(); res = await post(`Bearer ${token}`); }
+    if (!res.ok) console.warn('[approval-submit] Acta respondeu HTTP', res.status);
+    else await res.body?.cancel();
   } catch (e) { console.warn('[approval-submit] notify falhou:', String(e)); }
 }
 

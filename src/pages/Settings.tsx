@@ -4,11 +4,9 @@ import { useProfessionalsStore } from '../store/professionalsStore';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
 import { PAGE_PERMISSIONS } from '../utils/permissions';
 import { getProfessionLabel } from '../utils/formatters';
-import { getWahaConfig, saveWahaConfig, clearWahaConfig, sendWhatsAppText, WA_META_ENABLED } from '../utils/whatsapp';
-import { WhatsAppConnect } from '../components/WhatsAppConnect';
+import { sendWhatsAppText } from '../utils/whatsapp';
 import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
 import type { UserRole, ProfessionType } from '../types';
-import type { WhatsAppProvider } from '../utils/whatsapp';
 import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, Link2, Link2Off, Loader2, MessageCircle, Target, Copy, RefreshCw, Globe } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -50,51 +48,11 @@ export const Settings = () => {
   const {
     googleClientId, googleAccessToken, init: initSettings,
     saveClientId, saveToken, clearToken, isConnected,
-    whatsappProvider, metaAccessToken, metaPhoneNumberId, metaTemplateName,
-    saveWhatsappProvider, saveMetaConfig, clearMetaConfig,
     metaLeadsPageId, metaLeadsPageToken, metaLeadsVerifyToken,
     saveMetaLeadsConfig, clearMetaLeadsConfig,
     crmApiKey, crmEndpointUrl, saveCrmConfig, clearCrmConfig,
-    waWebhookSecret, generateWaWebhookSecret,
     siteWebhookSecret, generateSiteWebhookSecret,
   } = useCompanySettingsStore();
-
-  // WAHA config state
-  const existingWaha = getWahaConfig();
-  const [wahaUrl,     setWahaUrl]     = useState(existingWaha?.baseUrl || '');
-  const [wahaApiKey,  setWahaApiKey]  = useState(existingWaha?.apiKey  || '');
-  const [wahaSession, setWahaSession] = useState(existingWaha?.session || 'default');
-  const [wahaShowKey, setWahaShowKey] = useState(false);
-  const [wahaSaved,   setWahaSaved]   = useState(false);
-
-  const handleSaveWaha = () => {
-    saveWahaConfig({ baseUrl: wahaUrl.trim(), apiKey: wahaApiKey.trim(), session: wahaSession.trim() || 'default' });
-    setWahaSaved(true);
-    setTimeout(() => setWahaSaved(false), 2500);
-  };
-
-  // Meta API state
-  const [metaToken,    setMetaToken]    = useState('');
-  const [metaPhoneId,  setMetaPhoneId]  = useState('');
-  const [metaTemplate, setMetaTemplate] = useState('nova_demanda');
-  const [metaShowToken, setMetaShowToken] = useState(false);
-  const [metaSaved,    setMetaSaved]    = useState(false);
-
-  useEffect(() => {
-    setMetaToken(metaAccessToken || '');
-    setMetaPhoneId(metaPhoneNumberId || '');
-    setMetaTemplate(metaTemplateName || 'nova_demanda');
-  }, [metaAccessToken, metaPhoneNumberId, metaTemplateName]);
-
-  const handleSaveMeta = async () => {
-    await saveMetaConfig(metaToken.trim(), metaPhoneId.trim(), metaTemplate.trim() || 'nova_demanda');
-    setMetaSaved(true);
-    setTimeout(() => setMetaSaved(false), 2500);
-  };
-
-  const handleProviderChange = async (p: WhatsAppProvider) => {
-    await saveWhatsappProvider(p);
-  };
 
   // Acta (endpoint + token) state
   const [crmKey,      setCrmKey]      = useState('');
@@ -129,21 +87,6 @@ export const Settings = () => {
 
   const WEBHOOK_URL = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1/meta-leads-webhook';
 
-  // Atendimento (inbox) — webhooks de recepção
-  const FN_BASE = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1';
-  const inboxCompanyId = currentUser?.companyId ?? '';
-  const wahaHookUrl = inboxCompanyId && waWebhookSecret
-    ? `${FN_BASE}/waha-webhook?company_id=${inboxCompanyId}&token=${waWebhookSecret}` : '';
-  const metaHookUrl = inboxCompanyId
-    ? `${FN_BASE}/meta-wa-webhook?company_id=${inboxCompanyId}` : '';
-  const [copiedWaHook, setCopiedWaHook] = useState(false);
-  const [copiedWaSecret, setCopiedWaSecret] = useState(false);
-  const [generatingWaSecret, setGeneratingWaSecret] = useState(false);
-  const handleGenerateWaSecret = async () => {
-    setGeneratingWaSecret(true);
-    try { await generateWaWebhookSecret(); } finally { setGeneratingWaSecret(false); }
-  };
-
   const copyToClipboard = (text: string, setCopied: (v: boolean) => void) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -157,8 +100,6 @@ export const Settings = () => {
     setTimeout(() => setLeadsSaved(false), 2500);
   };
 
-  const wahaIsConfigured = !!getWahaConfig();
-  const metaIsConfigured = !!(metaAccessToken && metaPhoneNumberId);
   const crmIsConfigured  = !!(crmApiKey && crmEndpointUrl);
   const [driveClientId, setDriveClientId] = useState('');
   const [driveConnecting, setDriveConnecting] = useState(false);
@@ -612,7 +553,7 @@ export const Settings = () => {
                 icon: <MessageCircle className="w-4 h-4" />,
                 label: 'WhatsApp',
                 color: 'green',
-                configured: wahaIsConfigured || metaIsConfigured,
+                configured: crmIsConfigured,
               },
               {
                 key: 'drive',
@@ -656,185 +597,20 @@ export const Settings = () => {
             ))}
           </div>
 
-          {/* ── WhatsApp ── */}
+          {/* ── WhatsApp (Acta) ── */}
           {integrationTab === 'whatsapp' && (
             <div className="space-y-4">
-              <WhatsAppConnect />
               <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
                   <MessageCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">WhatsApp — Notificações</h3>
-                  <p className="text-xs text-slate-500">Notificações automáticas para profissionais ao criar demandas</p>
+                  <h3 className="text-sm font-bold text-slate-900">WhatsApp — Notificações (Acta)</h3>
+                  <p className="text-xs text-slate-500">Demandas, comentários, menções, novos usuários e aprovações são enviados pelo Acta</p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Provedor ativo</label>
-                <div className="flex gap-2">
-                  {([
-                    { id: 'waha', label: 'WAHA', desc: 'Self-hosted · WhatsApp HTTP API' },
-                    { id: 'crm', label: 'Acta', desc: 'Endpoint + token · notificações' },
-                    ...(WA_META_ENABLED ? [{ id: 'meta', label: 'Meta Oficial', desc: 'API oficial da Meta' }] : []),
-                  ] as { id: WhatsAppProvider; label: string; desc: string }[]).map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => handleProviderChange(p.id)}
-                      className={`flex-1 flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
-                        whatsappProvider === p.id
-                          ? 'border-blue-500/50 bg-blue-500/10 text-blue-700'
-                          : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <div className={`w-2 h-2 rounded-full ${whatsappProvider === p.id ? 'bg-blue-400' : 'bg-slate-200'}`} />
-                        <span className="text-sm font-semibold">{p.label}</span>
-                        {p.id === 'waha' && wahaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
-                        {p.id === 'meta' && metaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
-                        {p.id === 'crm' && crmIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
-                      </div>
-                      <span className="text-xs text-slate-500 pl-4">{p.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {whatsappProvider === 'waha' && (
-                <div className="space-y-3 pt-1">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">URL do servidor</label>
-                    <input
-                      type="text"
-                      value={wahaUrl}
-                      onChange={e => setWahaUrl(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="https://waha.seudominio.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-                      API Key
-                      <span className="ml-1 text-slate-400 font-normal normal-case tracking-normal">(se configurada no servidor)</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={wahaShowKey ? 'text' : 'password'}
-                        value={wahaApiKey}
-                        onChange={e => setWahaApiKey(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Valor de WHATSAPP_API_KEY"
-                      />
-                      <button onClick={() => setWahaShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700">
-                        {wahaShowKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Nome da sessão</label>
-                    <input
-                      type="text"
-                      value={wahaSession}
-                      onChange={e => setWahaSession(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="default"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleSaveWaha}
-                      disabled={!wahaUrl.trim()}
-                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                    >
-                      {wahaSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                      {wahaSaved ? 'Salvo!' : 'Salvar'}
-                    </button>
-                    {wahaIsConfigured && (
-                      <button onClick={() => { clearWahaConfig(); setWahaUrl(''); setWahaApiKey(''); setWahaSession('default'); }} className="text-xs text-slate-500 hover:text-red-600 transition-colors">
-                        Remover configuração
-                      </button>
-                    )}
-                  </div>
-                  <div className="border-t border-slate-200 pt-3 text-xs text-slate-500 space-y-1">
-                    <p>• WAHA é self-hosted: instale com Docker — <strong className="text-slate-500">docker run -p 3000:3000 devlikeapro/waha</strong></p>
-                    <p>• Conecte seu WhatsApp escaneando o QR code no painel do WAHA (Dashboard → Sessions)</p>
-                    <p>• Documentação completa em <strong className="text-slate-500">waha.devlike.pro</strong></p>
-                    <p>• A URL precisa ser acessível pelo navegador (HTTPS se o sistema estiver em HTTPS)</p>
-                  </div>
-                </div>
-              )}
-
-              {whatsappProvider === 'meta' && (
-                <div className="space-y-3 pt-1">
-                  <div className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2.5">
-                    <AlertTriangle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-blue-700">
-                      Requer conta no <strong>Meta Business Manager</strong> com WhatsApp Business API ativado e um template de mensagem aprovado pela Meta.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Access Token</label>
-                    <div className="relative">
-                      <input
-                        type={metaShowToken ? 'text' : 'password'}
-                        value={metaToken}
-                        onChange={e => setMetaToken(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="EAAxxxxxxxx..."
-                      />
-                      <button onClick={() => setMetaShowToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700">
-                        {metaShowToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Phone Number ID</label>
-                    <input
-                      type="text"
-                      value={metaPhoneId}
-                      onChange={e => setMetaPhoneId(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="1234567890"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-                      Nome do Template
-                      <span className="ml-1 text-slate-400 font-normal normal-case tracking-normal">(aprovado pela Meta)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={metaTemplate}
-                      onChange={e => setMetaTemplate(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="nova_demanda"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleSaveMeta}
-                      disabled={!metaToken.trim() || !metaPhoneId.trim()}
-                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                    >
-                      {metaSaved ? <CheckCircle className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                      {metaSaved ? 'Salvo!' : 'Salvar'}
-                    </button>
-                    {metaIsConfigured && (
-                      <button onClick={() => { clearMetaConfig(); setMetaToken(''); setMetaPhoneId(''); setMetaTemplate('nova_demanda'); }} className="text-xs text-slate-500 hover:text-red-600 transition-colors">
-                        Remover configuração
-                      </button>
-                    )}
-                  </div>
-                  <div className="border-t border-slate-200 pt-3 text-xs text-slate-500 space-y-1">
-                    <p>• Access Token e Phone Number ID em <strong className="text-slate-500">business.facebook.com</strong> → WhatsApp → API Setup</p>
-                    <p>• O template deve ter 5 variáveis: profissional, demanda, cliente, prazo, prioridade</p>
-                    <p>• Crie e aprove o template em WhatsApp Manager → Message Templates</p>
-                  </div>
-                </div>
-              )}
-
-              {whatsappProvider === 'crm' && (
                 <div className="space-y-3 pt-1">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Endpoint (URL do endereço no Acta)</label>
@@ -885,73 +661,6 @@ export const Settings = () => {
                     <p>• O token fica guardado com segurança no servidor — nunca é exposto ao navegador</p>
                   </div>
                 </div>
-              )}
-
-              {/* ── Atendimento (inbox) — webhook de recepção ── */}
-              <div className="border-t border-slate-200 pt-5 space-y-3">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">Atendimento (receber mensagens no painel)</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Para as mensagens dos clientes aparecerem na aba Atendimento, configure o webhook do provedor ativo.
-                  </p>
-                </div>
-                {whatsappProvider === 'crm' ? (
-                  <div className="flex items-start gap-2 bg-slate-500/10 border border-slate-200 rounded-lg px-3 py-2.5">
-                    <Info className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-500">
-                      O Acta é usado só para enviar notificações — não há webhook de recepção para este provedor.
-                    </p>
-                  </div>
-                ) : !waWebhookSecret ? (
-                  <button
-                    onClick={handleGenerateWaSecret}
-                    disabled={generatingWaSecret}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                  >
-                    {generatingWaSecret ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    Ativar recepção de mensagens
-                  </button>
-                ) : whatsappProvider === 'waha' ? (
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">URL do webhook (configure no WAHA)</label>
-                    <div className="flex gap-2">
-                      <input readOnly value={wahaHookUrl} className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-700 bg-slate-50 font-mono" />
-                      <button onClick={() => copyToClipboard(wahaHookUrl, setCopiedWaHook)} className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:border-slate-300 px-3 rounded-lg text-xs font-semibold">
-                        {copiedWaHook ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copiedWaHook ? 'Copiado' : 'Copiar'}
-                      </button>
-                    </div>
-                    <div className="text-xs text-slate-500 space-y-1 pt-1">
-                      <p>• No container do WAHA, defina: <strong className="text-slate-500">WHATSAPP_HOOK_URL</strong> = a URL acima</p>
-                      <p>• E <strong className="text-slate-500">WHATSAPP_HOOK_EVENTS=message</strong> (somente "message" — não use "message.any")</p>
-                      <p>• Reinicie o container do WAHA após alterar as variáveis</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Callback URL (configure no app da Meta)</label>
-                    <div className="flex gap-2">
-                      <input readOnly value={metaHookUrl} className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-700 bg-slate-50 font-mono" />
-                      <button onClick={() => copyToClipboard(metaHookUrl, setCopiedWaHook)} className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:border-slate-300 px-3 rounded-lg text-xs font-semibold">
-                        {copiedWaHook ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copiedWaHook ? 'Copiado' : 'Copiar'}
-                      </button>
-                    </div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide pt-1">Verify token</label>
-                    <div className="flex gap-2">
-                      <input readOnly value={waWebhookSecret} className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-700 bg-slate-50 font-mono" />
-                      <button onClick={() => copyToClipboard(waWebhookSecret, setCopiedWaSecret)} className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:border-slate-300 px-3 rounded-lg text-xs font-semibold">
-                        {copiedWaSecret ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copiedWaSecret ? 'Copiado' : 'Copiar'}
-                      </button>
-                    </div>
-                    <div className="text-xs text-slate-500 space-y-1 pt-1">
-                      <p>• Em <strong className="text-slate-500">developers.facebook.com</strong> → seu app → WhatsApp → Configuration → Webhook</p>
-                      <p>• Cole a Callback URL e o Verify token acima, e assine o campo <strong className="text-slate-500">messages</strong></p>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
             </div>
           )}

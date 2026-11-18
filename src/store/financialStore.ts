@@ -43,6 +43,7 @@ interface FinancialState {
   markAsPaid: (movementId: string, paidBy: string, paidByName: string) => void;
   updateMovementValue: (movementId: string, newValue: number, updatedBy: string, updatedByName: string) => void;
   addManualEntry: (data: ManualEntryInput) => void;
+  updateEntry: (id: string, data: Omit<ManualEntryInput, 'createdBy'>, updatedBy: string, updatedByName: string) => void;
   deleteMovement: (id: string) => void;
   getProfessionalBalance: (professionalId: string) => { pending: number; paid: number; total: number };
   getMovementsByProfessional: (professionalId: string) => FinancialMovement[];
@@ -179,6 +180,49 @@ export const useFinancialStore = create<FinancialState>()((set, get) => ({
       company_id: cid,
     } as Record<string, unknown>)
       .then(({ error }) => { if (error) console.error('[financial.addManualEntry]', error); });
+  },
+
+  updateEntry: (id, data, updatedBy, updatedByName) => {
+    const cid = getCompanyId();
+    const current = get().movements.find(m => m.id === id);
+    if (!current || !cid) return;
+    const isPaid = data.status === 'paid';
+    const updates: Partial<FinancialMovement> = {
+      type: data.type,
+      demandTitle: data.description,
+      category: data.category,
+      value: data.value,
+      completedAt: data.date,
+      notes: data.notes || '',
+      clientId: data.clientId || '',
+      clientName: data.clientName || '',
+      status: isPaid ? 'paid' : 'pending',
+      paidAt: isPaid ? (current.paidAt || data.date) : undefined,
+      paidBy: isPaid ? (current.paidBy || updatedBy) : undefined,
+    };
+    set(s => ({ movements: s.movements.map(m => m.id === id ? { ...m, ...updates } : m) }));
+    companyUpdate('financial_movements', id, {
+      type: data.type,
+      demand_title: data.description,
+      category: data.category,
+      value: data.value,
+      completed_at: data.date || null,
+      notes: data.notes || null,
+      client_id: data.clientId || null,
+      client_name: data.clientName || null,
+      status: updates.status,
+      paid_at: updates.paidAt || null,
+      paid_by: updates.paidBy || null,
+    }, cid)
+      .then(({ error }) => { if (error) console.error('[financial.updateEntry]', error); });
+
+    if (current.value !== data.value) {
+      get().addAuditLog({
+        entityType: 'financial', entityId: id, action: 'value_updated',
+        oldValue: String(current.value), newValue: String(data.value),
+        userId: updatedBy, userName: updatedByName,
+      });
+    }
   },
 
   deleteMovement: (id) => {

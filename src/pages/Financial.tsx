@@ -4,10 +4,10 @@ import { useProfessionalsStore } from '../store/professionalsStore';
 import { useClientsStore } from '../store/clientsStore';
 import { useAuthStore } from '../store/authStore';
 import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters';
+import type { FinancialMovement } from '../types';
 import {
-  CheckCircle2, X, History, Edit2, Search,
-  TrendingUp, TrendingDown, Plus, Trash2, ArrowUpCircle, ArrowDownCircle,
-  DollarSign, Users, BarChart3, Clock,
+  CheckCircle2, X, History, Search, Plus, Trash2, ArrowDownCircle, BarChart3, Clock, DollarSign,
+  ArrowUpRight, ArrowDownRight, UserRound, ChevronLeft, ChevronRight, Copy, Check, Pencil, Repeat,
 } from 'lucide-react';
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
@@ -200,141 +200,241 @@ const ProfessionalView = () => {
 
 // ─── Admin View (complete) ────────────────────────────────────────────────────
 
+type Kind = 'income' | 'expense' | 'provider';
+type Movement = FinancialMovement;
+
+const kindOf = (m: Movement): Kind => m.type === 'credit' ? 'provider' : m.type === 'income' ? 'income' : 'expense';
+const day = (s?: string) => (s || '').slice(0, 10);
+// Data que posiciona o lançamento no mês: quando pago, a data do pagamento; senão, o vencimento.
+const refDate = (m: Movement) => m.status === 'paid' ? day(m.paidAt || m.completedAt) : day(m.completedAt);
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const thisMonth = () => todayStr().slice(0, 7);
+const shiftMonth = (ym: string, delta: number) => {
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+const monthLabel = (ym: string) => {
+  const [y, m] = ym.split('-').map(Number);
+  const name = new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'long' });
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${y}`;
+};
+const addMonths = (date: string, n: number) => {
+  const [y, m, d] = date.split('-').map(Number);
+  const last = new Date(y, m - 1 + n + 1, 0).getDate();
+  const r = new Date(y, m - 1 + n, Math.min(d, last));
+  return `${r.getFullYear()}-${String(r.getMonth() + 1).padStart(2, '0')}-${String(r.getDate()).padStart(2, '0')}`;
+};
+const sum = (list: Movement[]) => list.reduce((s, m) => s + m.value, 0);
+
 const emptyEntry = {
   type: 'income' as 'income' | 'expense',
   category: '',
   description: '',
   value: '',
-  date: new Date().toISOString().split('T')[0],
+  date: todayStr(),
   notes: '',
   clientId: '',
   status: 'paid' as 'pending' | 'paid',
+  repeat: 1,
+};
+
+const Stat = ({ label, value, sub, tone = 'text-slate-900' }: { label: string; value: string; sub?: string; tone?: string }) => (
+  <div className="bg-white rounded-xl px-4 py-3.5 border border-slate-200">
+    <p className="text-sm text-slate-500">{label}</p>
+    <p className={`text-xl sm:text-2xl font-semibold tracking-tight mt-1 ${tone}`}>{value}</p>
+    {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
+  </div>
+);
+
+const KIND_STYLE: Record<Kind, { icon: React.ElementType; bubble: string; sign: string; value: string }> = {
+  income:   { icon: ArrowUpRight,   bubble: 'bg-emerald-50 text-emerald-600', sign: '+', value: 'text-emerald-600' },
+  expense:  { icon: ArrowDownRight, bubble: 'bg-red-50 text-red-600',         sign: '−', value: 'text-slate-900' },
+  provider: { icon: UserRound,      bubble: 'bg-violet-50 text-violet-600',   sign: '−', value: 'text-slate-900' },
+};
+
+const CopyButton = ({ text }: { text: string }) => {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => { navigator.clipboard.writeText(text); setDone(true); setTimeout(() => setDone(false), 1500); }}
+      className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+    >
+      {done ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+      {done ? 'Copiado' : 'Copiar Pix'}
+    </button>
+  );
 };
 
 const AdminView = () => {
   const { currentUser } = useAuthStore();
-  const { movements, markAsPaid, updateMovementValue, deleteMovement, addManualEntry, auditLog, customCategories, addCustomCategory } = useFinancialStore();
+  const { movements, markAsPaid, updateMovementValue, updateEntry, deleteMovement, addManualEntry, auditLog, customCategories, addCustomCategory } = useFinancialStore();
   const { professionals } = useProfessionalsStore();
   const { clients } = useClientsStore();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'professionals' | 'demands' | 'entries'>('overview');
-  const [entriesSubTab, setEntriesSubTab] = useState<'income' | 'expense'>('income');
+  const [month, setMonth] = useState(thisMonth());
+  const [tab, setTab] = useState<'summary' | 'entries' | 'providers'>('summary');
+  const [kindFilter, setKindFilter] = useState<'all' | Kind>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
-  const [professionalFilter, setProfessionalFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [confirmPay, setConfirmPay] = useState<string | null>(null);
-  const [editingValue, setEditingValue] = useState<{ id: string; value: string } | null>(null);
+
+  const [confirmPay, setConfirmPay] = useState<Movement | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Movement | null>(null);
+  const [valueEdit, setValueEdit] = useState<{ m: Movement; value: string } | null>(null);
+  const [payProvider, setPayProvider] = useState<{ id: string; selected: Set<string> } | null>(null);
   const [showAuditLog, setShowAuditLog] = useState(false);
-  const [showEntryModal, setShowEntryModal] = useState(false);
+
+  const [entryModal, setEntryModal] = useState<{ editing: Movement | null } | null>(null);
   const [entryForm, setEntryForm] = useState(emptyEntry);
-  const [submitting, setSubmitting] = useState(false);
   const [showNewCatInput, setShowNewCatInput] = useState(false);
   const [newCatName, setNewCatName] = useState('');
 
-  // Demand movements (credits from professionals)
-  const demandMovements = useMemo(() => {
-    let list = movements.filter(m => m.type === 'credit');
-    if (statusFilter !== 'all') list = list.filter(m => m.status === statusFilter);
-    if (professionalFilter !== 'all') list = list.filter(m => m.professionalId === professionalFilter);
-    if (search) {
-      const s = search.toLowerCase();
-      list = list.filter(m =>
-        m.demandTitle.toLowerCase().includes(s) ||
-        m.clientName.toLowerCase().includes(s)
-      );
-    }
-    return list.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
-  }, [movements, statusFilter, professionalFilter, search]);
+  const today = todayStr();
+  const isCurrentMonth = month === thisMonth();
+  const monthStart = `${month}-01`;
+  const profName = (id: string) => professionals.find(p => p.id === id)?.name || 'Prestador';
+  const isOverdue = (m: Movement) => m.status === 'pending' && day(m.completedAt) < today;
 
-  // Entries split by type: pending first (soonest due), then paid (most recent)
-  const entriesByType = useMemo(() => {
-    const sortFn = (a: typeof movements[number], b: typeof movements[number]) => {
-      if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
-      if (a.status === 'pending') return new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime();
-      return new Date(b.paidAt || b.completedAt).getTime() - new Date(a.paidAt || a.completedAt).getTime();
-    };
-    return {
-      income: movements.filter(m => m.type === 'income').sort(sortFn),
-      expense: movements.filter(m => m.type === 'expense').sort(sortFn),
-    };
-  }, [movements]);
+  // Lançamentos do mês + pendências vencidas de meses anteriores (só no mês atual).
+  const monthMovements = useMemo(() => movements.filter(m =>
+    refDate(m).startsWith(month) ||
+    (isCurrentMonth && m.status === 'pending' && kindOf(m) !== 'provider' && refDate(m) < monthStart),
+  ), [movements, month, isCurrentMonth, monthStart]);
 
-  // Professional balances
-  const professionalsWithBalance = useMemo(() => {
-    const allCredits = movements.filter(m => m.type === 'credit');
-    return professionals
-      .filter(p => p.status === 'active')
-      .map(p => {
-        const mine = allCredits.filter(m => m.professionalId === p.id);
-        const pending = mine.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
-        const paid = mine.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
-        return { ...p, balance: { pending, paid, total: pending + paid } };
-      })
-      .filter(p => p.balance.total > 0)
-      .sort((a, b) => b.balance.pending - a.balance.pending);
-  }, [professionals, movements]);
-
-  // Extended summary
   const summary = useMemo(() => {
-    const credits = movements.filter(m => m.type === 'credit');
-    const pendingPro = credits.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
-    const paidPro = credits.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
-    const incomes = movements.filter(m => m.type === 'income');
-    const expenses = movements.filter(m => m.type === 'expense');
-    const pendingIncome = incomes.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
-    const paidIncome = incomes.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
-    const pendingExpense = expenses.filter(m => m.status === 'pending').reduce((s, m) => s + m.value, 0);
-    const paidExpense = expenses.filter(m => m.status === 'paid').reduce((s, m) => s + m.value, 0);
+    const of = (k: Kind, status: 'paid' | 'pending') => monthMovements.filter(m => kindOf(m) === k && m.status === status);
+    const providersPending = movements.filter(m => kindOf(m) === 'provider' && m.status === 'pending');
+    const received = sum(of('income', 'paid'));
+    const paidOut = sum(of('expense', 'paid')) + sum(of('provider', 'paid'));
+    const toReceive = sum(of('income', 'pending'));
+    const toPay = sum(of('expense', 'pending'));
+    const providersTotal = sum(providersPending);
     return {
-      pendingPro, paidPro,
-      pendingIncome, paidIncome,
-      pendingExpense, paidExpense,
-      income: pendingIncome + paidIncome,
-      expense: pendingExpense + paidExpense,
-      balance: paidIncome - paidExpense - pendingPro,
+      received, paidOut, toReceive, toPay, providersTotal,
+      providersCount: providersPending.length,
+      balance: received - paidOut,
+      forecast: received - paidOut + toReceive - toPay - providersTotal,
     };
-  }, [movements]);
+  }, [monthMovements, movements]);
 
-  const handleMarkPaid = (movementId: string) => {
-    if (!currentUser) return;
-    markAsPaid(movementId, currentUser.id, currentUser.name);
+  const sortForList = (a: Movement, b: Movement) => {
+    if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
+    if (a.status === 'pending') return refDate(a).localeCompare(refDate(b));
+    return refDate(b).localeCompare(refDate(a));
+  };
+
+  const entries = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    return monthMovements
+      .filter(m => kindFilter === 'all' || kindOf(m) === kindFilter)
+      .filter(m => statusFilter === 'all' || m.status === statusFilter)
+      .filter(m => !s || [m.demandTitle, m.clientName, m.category, kindOf(m) === 'provider' ? professionals.find(p => p.id === m.professionalId)?.name : '']
+        .some(v => (v || '').toLowerCase().includes(s)))
+      .sort(sortForList);
+  }, [monthMovements, kindFilter, statusFilter, search, professionals]);
+
+  const pendingBills = useMemo(() =>
+    monthMovements.filter(m => kindOf(m) !== 'provider' && m.status === 'pending').sort(sortForList),
+  [monthMovements]);
+
+  const providers = useMemo(() => {
+    const credits = movements.filter(m => kindOf(m) === 'provider');
+    return professionals
+      .map(p => {
+        const mine = credits.filter(m => m.professionalId === p.id);
+        const pending = mine.filter(m => m.status === 'pending').sort((a, b) => refDate(a).localeCompare(refDate(b)));
+        const paidMonth = mine.filter(m => m.status === 'paid' && refDate(m).startsWith(month));
+        return { ...p, pending, pendingTotal: sum(pending), paidMonthTotal: sum(paidMonth), hasHistory: mine.length > 0 };
+      })
+      .filter(p => p.hasHistory || p.status === 'active')
+      .sort((a, b) => b.pendingTotal - a.pendingTotal || a.name.localeCompare(b.name));
+  }, [professionals, movements, month]);
+
+  // ── Ações ──
+  const confirmMarkPaid = () => {
+    if (!confirmPay || !currentUser) return;
+    markAsPaid(confirmPay.id, currentUser.id, currentUser.name);
     setConfirmPay(null);
   };
 
-  const handleUpdateValue = () => {
-    if (!editingValue || !currentUser) return;
-    const newVal = parseFloat(editingValue.value);
-    if (isNaN(newVal) || newVal < 0) return;
-    updateMovementValue(editingValue.id, newVal, currentUser.id, currentUser.name);
-    setEditingValue(null);
+  const confirmProviderPayment = () => {
+    if (!payProvider || !currentUser) return;
+    payProvider.selected.forEach(id => markAsPaid(id, currentUser.id, currentUser.name));
+    setPayProvider(null);
   };
 
-  const handleAddEntry = () => {
-    if (!entryForm.description.trim() || !entryForm.value || !currentUser) return;
-    const val = parseFloat(entryForm.value);
-    if (isNaN(val) || val <= 0) return;
-    setSubmitting(true);
-    const selectedClient = entryForm.clientId ? clients.find(c => c.id === entryForm.clientId) : undefined;
-    addManualEntry({
+  const saveValueEdit = () => {
+    if (!valueEdit || !currentUser) return;
+    const v = parseFloat(valueEdit.value.replace(',', '.'));
+    if (isNaN(v) || v < 0) return;
+    updateMovementValue(valueEdit.m.id, v, currentUser.id, currentUser.name);
+    setValueEdit(null);
+  };
+
+  const openNewEntry = (type: 'income' | 'expense' = 'income') => {
+    setEntryForm({ ...emptyEntry, type, date: todayStr() });
+    setShowNewCatInput(false);
+    setEntryModal({ editing: null });
+  };
+
+  const openEditEntry = (m: Movement) => {
+    setEntryForm({
+      type: m.type === 'income' ? 'income' : 'expense',
+      category: m.category || '',
+      description: m.demandTitle,
+      value: String(m.value),
+      date: day(m.completedAt) || todayStr(),
+      notes: m.notes || '',
+      clientId: m.clientId || '',
+      status: m.status,
+      repeat: 1,
+    });
+    setShowNewCatInput(false);
+    setEntryModal({ editing: m });
+  };
+
+  const entryValue = parseFloat(entryForm.value.replace(',', '.'));
+  const entryValid = !!entryForm.description.trim() && !isNaN(entryValue) && entryValue > 0 && !!entryForm.date;
+
+  const saveEntry = () => {
+    if (!entryModal || !entryValid || !currentUser) return;
+    const client = entryForm.clientId ? clients.find(c => c.id === entryForm.clientId) : undefined;
+    const base = {
       type: entryForm.type,
       category: entryForm.category || 'Outros',
-      description: entryForm.description,
-      value: val,
+      description: entryForm.description.trim(),
+      value: entryValue,
       date: entryForm.date,
-      createdBy: currentUser.name,
       notes: entryForm.notes || undefined,
       clientId: entryForm.clientId || undefined,
-      clientName: selectedClient?.companyName || undefined,
+      clientName: client?.companyName,
       status: entryForm.status,
-    });
-    setEntryForm({ ...emptyEntry, type: entryForm.type });
-    setShowEntryModal(false);
-    setSubmitting(false);
+    };
+    if (entryModal.editing) {
+      updateEntry(entryModal.editing.id, base, currentUser.id, currentUser.name);
+    } else {
+      const n = Math.max(1, Math.min(36, Math.floor(entryForm.repeat) || 1));
+      for (let i = 0; i < n; i++) {
+        addManualEntry({
+          ...base,
+          description: n > 1 ? `${base.description} (${i + 1}/${n})` : base.description,
+          date: addMonths(entryForm.date, i),
+          status: i === 0 ? base.status : 'pending',
+          createdBy: currentUser.name,
+        });
+      }
+    }
+    setEntryModal(null);
   };
 
-  const availableCategories = entryForm.type === 'income'
+  const baseCategories = entryForm.type === 'income'
     ? [...DEFAULT_INCOME_CATEGORIES, ...customCategories.income]
     : [...DEFAULT_EXPENSE_CATEGORIES, ...customCategories.expense];
+  // Categoria salva que não está mais na lista (ex.: criada em outro aparelho) continua selecionável.
+  const availableCategories = entryForm.category && !baseCategories.includes(entryForm.category)
+    ? [...baseCategories, entryForm.category]
+    : baseCategories;
 
   const handleAddCustomCategory = () => {
     if (!newCatName.trim()) return;
@@ -344,176 +444,303 @@ const AdminView = () => {
     setShowNewCatInput(false);
   };
 
-  const openEntryModal = (type: 'income' | 'expense') => {
-    setEntryForm({ ...emptyEntry, type, status: 'paid' });
-    setShowNewCatInput(false);
-    setNewCatName('');
-    setShowEntryModal(true);
-  };
-
   const recentAudit = [...auditLog]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 20);
+    .slice(0, 30);
 
-  // For context-aware confirm modal
-  const confirmPayMovement = confirmPay ? movements.find(m => m.id === confirmPay) : null;
+  const payingProvider = payProvider ? providers.find(p => p.id === payProvider.id) : null;
+  const payingTotal = payingProvider ? sum(payingProvider.pending.filter(m => payProvider!.selected.has(m.id))) : 0;
+  const openPayProvider = (id: string) => {
+    const p = providers.find(x => x.id === id);
+    if (p) setPayProvider({ id, selected: new Set(p.pending.map(m => m.id)) });
+  };
+
+  // ── Linha do extrato ──
+  const renderRow = (m: Movement) => {
+    const k = kindOf(m);
+    const st = KIND_STYLE[k];
+    const Icon = st.icon;
+    const overdue = isOverdue(m);
+    const dateText = m.status === 'paid'
+      ? `${k === 'income' ? 'Recebido' : 'Pago'} ${formatDate(refDate(m))}`
+      : `${overdue ? 'Venceu' : 'Vence'} ${formatDate(day(m.completedAt))}`;
+    const meta = [
+      k === 'provider' ? profName(m.professionalId) : m.category,
+      m.clientName,
+    ].filter(Boolean).join(' · ');
+    return (
+      <div
+        key={m.id}
+        onClick={() => k === 'provider' ? (m.status === 'pending' && setValueEdit({ m, value: String(m.value) })) : openEditEntry(m)}
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50"
+      >
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${st.bubble}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-slate-900 truncate">{m.demandTitle}</p>
+          <p className="text-xs text-slate-500 truncate">
+            {meta && <>{meta} · </>}
+            <span className={overdue ? 'text-red-600 font-medium' : ''}>{dateText}</span>
+          </p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className={`text-sm font-semibold ${m.status === 'pending' ? 'text-slate-400' : st.value}`}>
+            {st.sign} {formatCurrency(m.value)}
+          </p>
+          {m.status === 'pending' && (
+            <p className={`text-xs ${overdue ? 'text-red-600' : 'text-orange-600'}`}>
+              {k === 'income' ? 'A receber' : 'A pagar'}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+          {m.status === 'pending' && (
+            <button
+              onClick={() => k === 'provider' ? openPayProvider(m.professionalId) : setConfirmPay(m)}
+              title={k === 'income' ? 'Marcar como recebido' : 'Marcar como pago'}
+              className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+            </button>
+          )}
+          {k === 'provider' ? (
+            m.status === 'pending' && (
+              <button onClick={() => setValueEdit({ m, value: String(m.value) })} title="Corrigir valor" className="hidden sm:inline-flex p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+                <Pencil className="w-4 h-4" />
+              </button>
+            )
+          ) : (
+            <>
+              <button onClick={() => openEditEntry(m)} title="Editar" className="hidden sm:inline-flex p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button onClick={() => setConfirmDelete(m)} title="Excluir" className="hidden sm:inline-flex p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const TABS = [
-    { key: 'overview', label: 'Visão Geral', icon: BarChart3 },
-    { key: 'professionals', label: 'Profissionais', icon: Users },
-    { key: 'demands', label: 'Demandas', icon: DollarSign },
-    { key: 'entries', label: 'Lançamentos', icon: TrendingUp },
+    { key: 'summary', label: 'Resumo' },
+    { key: 'entries', label: 'Lançamentos' },
+    { key: 'providers', label: 'Prestadores', badge: summary.providersCount },
   ] as const;
 
+  const KIND_FILTERS = [
+    { key: 'all', label: 'Todos' },
+    { key: 'income', label: 'Entradas' },
+    { key: 'expense', label: 'Saídas' },
+    { key: 'provider', label: 'Prestadores' },
+  ] as const;
+
+  const card = 'bg-white rounded-xl border border-slate-200';
+  const input = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+  const toggle = (active: boolean, color: string) =>
+    `flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+      active ? `${color} text-white border-transparent` : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+    }`;
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-5">
+      {/* Cabeçalho */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-slate-900">Financeiro</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Gestão financeira completa</p>
+          <p className="text-sm text-slate-500 mt-0.5">Entradas, saídas e pagamento de prestadores</p>
         </div>
-        <button
-          onClick={() => setShowAuditLog(true)}
-          className="flex items-center gap-2 border border-slate-200 text-slate-500 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          <History className="w-4 h-4" />
-          Histórico
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-1 sm:flex-none items-center justify-between bg-white border border-slate-200 rounded-lg">
+            <button onClick={() => setMonth(m => shiftMonth(m, -1))} aria-label="Mês anterior" className="p-2 text-slate-500 hover:text-slate-900">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-medium text-slate-900 sm:w-36 text-center whitespace-nowrap">{monthLabel(month)}</span>
+            <button onClick={() => setMonth(m => shiftMonth(m, 1))} aria-label="Próximo mês" className="p-2 text-slate-500 hover:text-slate-900">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          <button onClick={() => setShowAuditLog(true)} title="Histórico de alterações" className="p-2.5 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-slate-900">
+            <History className="w-4 h-4" />
+          </button>
+          <button onClick={() => openNewEntry()} aria-label="Novo lançamento" className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium">
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Lançamento</span>
+          </button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-slate-50 p-1 rounded-xl w-fit max-w-full overflow-x-auto">
-        {TABS.map(({ key, label, icon: Icon }) => (
+      {/* Abas */}
+      <div className="flex gap-6 border-b border-slate-200 overflow-x-auto">
+        {TABS.map(t => (
           <button
-            key={key}
-            onClick={() => setActiveTab(key)}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap flex-shrink-0 text-sm font-medium transition-all ${
-              activeTab === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`flex items-center gap-1.5 pb-2.5 -mb-px border-b-2 text-sm font-medium whitespace-nowrap transition-colors ${
+              tab === t.key ? 'border-blue-600 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Icon className="w-4 h-4" />
-            {label}
+            {t.label}
+            {'badge' in t && t.badge > 0 && (
+              <span className="text-[11px] bg-orange-100 text-orange-700 px-1.5 rounded-full">{t.badge}</span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* ── Overview Tab ── */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl p-5 border border-slate-200">
-              <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-3">
-                <DollarSign className="w-4 h-4 text-orange-600" />
-              </div>
-              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(summary.pendingPro)}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">A Pagar (Profissionais)</p>
-            </div>
-            <div className="bg-white rounded-xl p-5 border border-slate-200">
-              <div className="w-8 h-8 bg-emerald-500/[0.12] rounded-lg flex items-center justify-center mb-3">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              </div>
-              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(summary.paidPro)}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Pago (Profissionais)</p>
-            </div>
-            <div className="bg-white rounded-xl p-5 border border-slate-200">
-              <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center mb-3">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-              </div>
-              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(summary.paidIncome)}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Entradas Realizadas</p>
-              {summary.pendingIncome > 0 && (
-                <p className="text-xs text-orange-600 mt-0.5">+ {formatCurrency(summary.pendingIncome)} previsto</p>
-              )}
-            </div>
-            <div className="bg-white rounded-xl p-5 border border-slate-200">
-              <div className="w-8 h-8 bg-red-500/[0.12] rounded-lg flex items-center justify-center mb-3">
-                <TrendingDown className="w-4 h-4 text-red-600" />
-              </div>
-              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(summary.paidExpense)}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Saídas Realizadas</p>
-              {summary.pendingExpense > 0 && (
-                <p className="text-xs text-orange-600 mt-0.5">+ {formatCurrency(summary.pendingExpense)} previsto</p>
-              )}
-            </div>
+      {/* ── Resumo ── */}
+      {tab === 'summary' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Stat label="Recebido no mês" value={formatCurrency(summary.received)} tone="text-emerald-600"
+              sub={summary.toReceive > 0 ? `+ ${formatCurrency(summary.toReceive)} a receber` : undefined} />
+            <Stat label="Pago no mês" value={formatCurrency(summary.paidOut)}
+              sub={summary.toPay > 0 ? `+ ${formatCurrency(summary.toPay)} em contas a pagar` : 'inclui prestadores pagos'} />
+            <Stat label="Prestadores a pagar" value={formatCurrency(summary.providersTotal)} tone={summary.providersTotal > 0 ? 'text-orange-600' : 'text-slate-900'}
+              sub={`${summary.providersCount} demanda(s) concluída(s)`} />
+            <Stat label="Saldo do mês" value={formatCurrency(summary.balance)} tone={summary.balance >= 0 ? 'text-slate-900' : 'text-red-600'}
+              sub={`Previsto: ${formatCurrency(summary.forecast)}`} />
           </div>
 
-          {/* Saldo */}
-          <div className={`rounded-xl p-5 border ${summary.balance >= 0 ? 'bg-emerald-500/[0.06] border-emerald-500/[0.2]' : 'bg-red-500/[0.06] border-red-500/[0.2]'}`}>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Saldo Operacional (Entradas − Saídas − A Pagar Prof.)</p>
-            <p className={`text-3xl font-semibold tracking-tight ${summary.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {formatCurrency(summary.balance)}
-            </p>
-          </div>
-
-          {/* Recent demand movements */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200">
-              <h3 className="text-sm font-bold text-slate-900">Últimas movimentações de demandas</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className={card}>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+                <h3 className="text-sm font-semibold text-slate-900">Contas a receber e a pagar</h3>
+                <button onClick={() => { setTab('entries'); setStatusFilter('pending'); setKindFilter('all'); }} className="text-xs font-medium text-blue-600 hover:text-blue-700">
+                  Ver todas
+                </button>
+              </div>
+              {pendingBills.length === 0 ? (
+                <p className="px-4 py-8 text-sm text-slate-500 text-center">Nenhuma conta pendente neste mês.</p>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {pendingBills.slice(0, 6).map(renderRow)}
+                </div>
+              )}
             </div>
-            {movements.filter(m => m.type === 'credit').length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-sm">Nenhuma movimentação registrada</div>
-            ) : (
-              <div className="divide-y divide-slate-200">
-                {movements.filter(m => m.type === 'credit')
-                  .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-                  .slice(0, 5)
-                  .map(m => {
-                    const prof = professionals.find(p => p.id === m.professionalId);
-                    return (
-                      <div key={m.id} className="px-6 py-3 flex items-center gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 truncate">{m.demandTitle}</p>
-                          <p className="text-xs text-slate-500">{prof?.name || '—'} · {m.clientName}</p>
-                        </div>
-                        <span className="text-sm font-bold text-slate-900 flex-shrink-0">{formatCurrency(m.value)}</span>
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${
-                          m.status === 'paid' ? 'bg-emerald-500/[0.1] text-emerald-600' : 'bg-orange-500/[0.1] text-orange-600'
-                        }`}>
-                          {m.status === 'paid' ? 'Pago' : 'Pendente'}
-                        </span>
+
+            <div className={card}>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+                <h3 className="text-sm font-semibold text-slate-900">Prestadores a pagar</h3>
+                <button onClick={() => setTab('providers')} className="text-xs font-medium text-blue-600 hover:text-blue-700">Ver todos</button>
+              </div>
+              {providers.filter(p => p.pendingTotal > 0).length === 0 ? (
+                <p className="px-4 py-8 text-sm text-slate-500 text-center">Todos os prestadores estão em dia.</p>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {providers.filter(p => p.pendingTotal > 0).slice(0, 6).map(p => (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="w-9 h-9 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                        {p.name.charAt(0)}
                       </div>
-                    );
-                  })}
-              </div>
-            )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">{p.name}</p>
+                        <p className="text-xs text-slate-500">{p.pending.length} demanda(s)</p>
+                      </div>
+                      <p className="text-sm font-semibold text-orange-600">{formatCurrency(p.pendingTotal)}</p>
+                      <button onClick={() => openPayProvider(p.id)} className="text-xs font-medium bg-slate-900 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg">
+                        Pagar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Professionals Tab ── */}
-      {activeTab === 'professionals' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200">
-            <h3 className="text-base font-bold text-slate-900">Saldo por Profissional</h3>
+      {/* ── Lançamentos (extrato único) ── */}
+      {tab === 'entries' && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar descrição, cliente, categoria ou prestador"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="all">Todos os status</option>
+              <option value="pending">Pendentes</option>
+              <option value="paid">Pagos / recebidos</option>
+            </select>
           </div>
-          {professionalsWithBalance.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">Nenhum profissional com saldo registrado</div>
+          <div className="flex gap-1.5 overflow-x-auto">
+            {KIND_FILTERS.map(f => (
+              <button key={f.key} onClick={() => setKindFilter(f.key)}
+                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border transition-colors ${
+                  kindFilter === f.key ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          <div className={card}>
+            {entries.length === 0 ? (
+              <div className="px-4 py-12 text-center">
+                <p className="text-sm text-slate-500">Nenhum lançamento em {monthLabel(month).toLowerCase()} com esses filtros.</p>
+                <button onClick={() => openNewEntry()} className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700">+ Novo lançamento</button>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {entries.map(renderRow)}
+              </div>
+            )}
+          </div>
+          {entries.length > 0 && (
+            <p className="text-xs text-slate-500 text-right">
+              {entries.length} lançamento(s) · Entradas {formatCurrency(sum(entries.filter(m => kindOf(m) === 'income')))} ·
+              Saídas {formatCurrency(sum(entries.filter(m => kindOf(m) !== 'income')))}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Prestadores ── */}
+      {tab === 'providers' && (
+        <div className={card}>
+          {providers.length === 0 ? (
+            <p className="px-4 py-12 text-sm text-slate-500 text-center">Nenhum prestador cadastrado.</p>
           ) : (
-            <div className="divide-y divide-slate-200">
-              {professionalsWithBalance.map(pro => (
-                <div key={pro.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-100 transition-colors">
-                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                    {pro.name.charAt(0)}
+            <div className="divide-y divide-slate-100">
+              {providers.map(p => (
+                <div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+                  <div className="w-10 h-10 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center font-semibold flex-shrink-0">
+                    {p.name.charAt(0)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">{pro.name}</p>
-                    <p className="text-xs text-slate-500">Pix: {pro.pixKey || 'Não cadastrado'}</p>
+                  <div className="flex-1 min-w-[10rem]">
+                    <p className="text-sm font-medium text-slate-900">{p.name}</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
+                      {p.pixKey ? <>Pix: {p.pixKey} <CopyButton text={p.pixKey} /></> : <span className="text-orange-600">Sem chave Pix cadastrada</span>}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-6 text-right">
-                    <div>
-                      <p className="text-xs text-slate-500">Pendente</p>
-                      <p className="text-sm font-bold text-orange-600">{formatCurrency(pro.balance.pending)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Pago</p>
-                      <p className="text-sm font-bold text-emerald-600">{formatCurrency(pro.balance.paid)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Total</p>
-                      <p className="text-sm font-bold text-slate-900">{formatCurrency(pro.balance.total)}</p>
-                    </div>
+                  <div className="text-right">
+                    {p.pendingTotal > 0 ? (
+                      <>
+                        <p className="text-sm font-semibold text-orange-600">{formatCurrency(p.pendingTotal)}</p>
+                        <p className="text-xs text-slate-500">{p.pending.length} demanda(s) a pagar</p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-emerald-600 font-medium">Em dia</p>
+                    )}
+                    {p.paidMonthTotal > 0 && (
+                      <p className="text-xs text-slate-500">Pago no mês: {formatCurrency(p.paidMonthTotal)}</p>
+                    )}
                   </div>
+                  {p.pendingTotal > 0 && (
+                    <button onClick={() => openPayProvider(p.id)} className="text-sm font-medium bg-slate-900 hover:bg-slate-700 text-white px-4 py-2 rounded-lg">
+                      Pagar
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -521,572 +748,263 @@ const AdminView = () => {
         </div>
       )}
 
-      {/* ── Demands Tab ── */}
-      {activeTab === 'demands' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-52">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input
-                type="text"
-                placeholder="Buscar por demanda ou cliente..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+      {/* ── Pagar prestador ── */}
+      {payProvider && payingProvider && (
+        <div className="fixed inset-0 bg-slate-900/40 flex items-end sm:items-center justify-center z-50 sm:p-4">
+          <div className="bg-white sm:rounded-xl rounded-t-2xl shadow-xl w-full max-w-md max-h-[90dvh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">Pagar {payingProvider.name}</h2>
+                <p className="text-xs text-slate-500">Selecione as demandas incluídas neste pagamento</p>
+              </div>
+              <button onClick={() => setPayProvider(null)} className="p-1 text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
             </div>
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">Todos os status</option>
-              <option value="pending">Pendentes</option>
-              <option value="paid">Pagos</option>
-            </select>
-            <select
-              value={professionalFilter}
-              onChange={e => setProfessionalFilter(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">Todos os profissionais</option>
-              {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Demanda</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Profissional</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Cliente</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Conclusão</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Valor</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Status</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {demandMovements.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center text-slate-500 text-sm">
-                        Nenhuma movimentação encontrada.
-                      </td>
-                    </tr>
-                  ) : demandMovements.map(m => {
-                    const prof = professionals.find(p => p.id === m.professionalId);
-                    const client = clients.find(c => c.id === m.clientId);
-                    return (
-                      <tr key={m.id} className="hover:bg-slate-100 transition-colors">
-                        <td className="px-4 py-3">
-                          <p className="text-sm font-semibold text-slate-900">{m.demandTitle}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                              {(prof?.name || '?').charAt(0)}
-                            </div>
-                            <span className="text-sm text-slate-500">{prof?.name || '—'}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-500">{client?.companyName || m.clientName}</td>
-                        <td className="px-4 py-3 text-sm text-slate-500">{formatDate(m.completedAt)}</td>
-                        <td className="px-4 py-3 text-right">
-                          {editingValue?.id === m.id ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <input
-                                type="number"
-                                value={editingValue.value}
-                                onChange={e => setEditingValue({ ...editingValue, value: e.target.value })}
-                                className="w-24 border border-blue-500/[0.4] rounded-lg px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                autoFocus
-                                onKeyDown={e => { if (e.key === 'Enter') handleUpdateValue(); if (e.key === 'Escape') setEditingValue(null); }}
-                              />
-                              <button onClick={handleUpdateValue} className="text-emerald-600 hover:text-emerald-700"><CheckCircle2 className="w-4 h-4" /></button>
-                              <button onClick={() => setEditingValue(null)} className="text-slate-500 hover:text-slate-700"><X className="w-4 h-4" /></button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="text-sm font-bold text-slate-900">{formatCurrency(m.value)}</span>
-                              {m.status === 'pending' && (
-                                <button onClick={() => setEditingValue({ id: m.id, value: String(m.value) })} className="text-slate-500 hover:text-slate-700 transition-colors" title="Corrigir valor">
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                            m.status === 'paid' ? 'bg-emerald-500/[0.1] text-emerald-600' : 'bg-orange-500/[0.1] text-orange-600'
-                          }`}>
-                            {m.status === 'paid' ? 'Pago' : 'Pendente'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {m.status === 'pending' ? (
-                            <button
-                              onClick={() => setConfirmPay(m.id)}
-                              className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors"
-                            >
-                              Marcar Pago
-                            </button>
-                          ) : (
-                            <div className="text-xs text-slate-500">
-                              <p>Pago em</p>
-                              <p className="font-medium">{m.paidAt ? formatDate(m.paidAt) : '—'}</p>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="overflow-y-auto divide-y divide-slate-100">
+              {payingProvider.pending.map(m => {
+                const checked = payProvider.selected.has(m.id);
+                return (
+                  <label key={m.id} className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => setPayProvider(pp => {
+                        if (!pp) return pp;
+                        const next = new Set(pp.selected);
+                        if (next.has(m.id)) next.delete(m.id); else next.add(m.id);
+                        return { ...pp, selected: next };
+                      })}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm text-slate-900 truncate">{m.demandTitle}</span>
+                      <span className="block text-xs text-slate-500">{[m.clientName, `concluída ${formatDate(day(m.completedAt))}`].filter(Boolean).join(' · ')}</span>
+                    </span>
+                    <span className="text-sm font-medium text-slate-900">{formatCurrency(m.value)}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="px-5 py-4 border-t border-slate-200 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">
+                  {payingProvider.pixKey ? <>Pix: <span className="text-slate-900">{payingProvider.pixKey}</span> <CopyButton text={payingProvider.pixKey} /></> : 'Prestador sem chave Pix'}
+                </span>
+              </div>
+              <button
+                onClick={confirmProviderPayment}
+                disabled={payProvider.selected.size === 0}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white py-2.5 rounded-lg text-sm font-semibold"
+              >
+                Confirmar pagamento de {formatCurrency(payingTotal)}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Entries Tab ── */}
-      {activeTab === 'entries' && (
-        <div className="space-y-4">
-          {/* Sub-tabs + action button */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-1 bg-slate-50 p-1 rounded-xl">
-              <button
-                onClick={() => setEntriesSubTab('income')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  entriesSubTab === 'income' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <ArrowUpCircle className="w-4 h-4 text-blue-600" />
-                Entradas
-                {summary.pendingIncome > 0 && (
-                  <span className="ml-1 text-xs bg-orange-500/20 text-orange-600 px-1.5 py-0.5 rounded-full">
-                    {entriesByType.income.filter(m => m.status === 'pending').length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setEntriesSubTab('expense')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  entriesSubTab === 'expense' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <ArrowDownCircle className="w-4 h-4 text-red-600" />
-                Saídas
-                {summary.pendingExpense > 0 && (
-                  <span className="ml-1 text-xs bg-orange-500/20 text-orange-600 px-1.5 py-0.5 rounded-full">
-                    {entriesByType.expense.filter(m => m.status === 'pending').length}
-                  </span>
-                )}
-              </button>
-            </div>
-            <button
-              onClick={() => openEntryModal(entriesSubTab)}
-              className={`flex items-center gap-2 text-slate-900 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                entriesSubTab === 'income' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'
-              }`}
-            >
-              <Plus className="w-4 h-4" />
-              {entriesSubTab === 'income' ? 'Nova Entrada' : 'Nova Saída'}
-            </button>
-          </div>
-
-          {/* Summary cards */}
-          {entriesSubTab === 'income' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-white rounded-xl p-4 border border-orange-500/20">
-                <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <Clock className="w-4 h-4 text-orange-600" />
-                </div>
-                <p className="text-lg font-bold text-orange-600">{formatCurrency(summary.pendingIncome)}</p>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">A Receber</p>
-                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.income.filter(m => m.status === 'pending').length} lançamento(s)</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-slate-200">
-                <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                </div>
-                <p className="text-lg font-bold text-blue-600">{formatCurrency(summary.paidIncome)}</p>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Recebido</p>
-                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.income.filter(m => m.status === 'paid').length} lançamento(s)</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-slate-200">
-                <div className="w-8 h-8 bg-slate-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <TrendingUp className="w-4 h-4 text-slate-500" />
-                </div>
-                <p className="text-lg font-bold text-slate-900">{formatCurrency(summary.income)}</p>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Total</p>
-                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.income.length} lançamento(s)</p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-white rounded-xl p-4 border border-orange-500/20">
-                <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <Clock className="w-4 h-4 text-orange-600" />
-                </div>
-                <p className="text-lg font-bold text-orange-600">{formatCurrency(summary.pendingExpense)}</p>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">A Pagar</p>
-                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.expense.filter(m => m.status === 'pending').length} lançamento(s)</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-slate-200">
-                <div className="w-8 h-8 bg-red-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-red-600" />
-                </div>
-                <p className="text-lg font-bold text-red-600">{formatCurrency(summary.paidExpense)}</p>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Pago</p>
-                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.expense.filter(m => m.status === 'paid').length} lançamento(s)</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-slate-200">
-                <div className="w-8 h-8 bg-slate-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <TrendingDown className="w-4 h-4 text-slate-500" />
-                </div>
-                <p className="text-lg font-bold text-slate-900">{formatCurrency(summary.expense)}</p>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Total</p>
-                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.expense.length} lançamento(s)</p>
-              </div>
-            </div>
-          )}
-
-          {/* Entries table */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Descrição</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Categoria</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Cliente</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Vencimento</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Valor</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Status</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {entriesByType[entriesSubTab].length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-slate-500 text-sm">
-                      Nenhum lançamento. Clique em "{entriesSubTab === 'income' ? 'Nova Entrada' : 'Nova Saída'}" para começar.
-                    </td>
-                  </tr>
-                ) : entriesByType[entriesSubTab].map(m => (
-                  <tr key={m.id} className={`hover:bg-slate-100 transition-colors ${m.status === 'pending' ? 'border-l-2 border-orange-500/40' : ''}`}>
-                    <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-slate-900">{m.demandTitle}</p>
-                      {m.notes && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">{m.notes}</p>}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{m.category || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{m.clientName || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{formatDate(m.completedAt)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={`text-sm font-bold ${entriesSubTab === 'income' ? 'text-blue-600' : 'text-red-600'}`}>
-                        {entriesSubTab === 'income' ? '+' : '-'}{formatCurrency(m.value)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {m.status === 'paid' ? (
-                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/[0.1] text-emerald-600 inline-flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          {entriesSubTab === 'income' ? 'Recebido' : 'Pago'}
-                        </span>
-                      ) : (
-                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-orange-500/[0.1] text-orange-600 inline-flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {entriesSubTab === 'income' ? 'A Receber' : 'A Pagar'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-2">
-                        {m.status === 'pending' && (
-                          <button
-                            onClick={() => setConfirmPay(m.id)}
-                            className={`text-xs text-slate-900 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                              entriesSubTab === 'income'
-                                ? 'bg-blue-600 hover:bg-blue-700'
-                                : 'bg-green-600 hover:bg-green-700'
-                            }`}
-                          >
-                            {entriesSubTab === 'income' ? 'Receber' : 'Pagar'}
-                          </button>
-                        )}
-                        {m.status === 'paid' && m.paidAt && (
-                          <span className="text-xs text-slate-500">{formatDate(m.paidAt)}</span>
-                        )}
-                        <button
-                          onClick={() => deleteMovement(m.id)}
-                          className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-500/[0.1] rounded-lg transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── Confirm Pay Modal ── */}
+      {/* ── Confirmar recebimento/pagamento ── */}
       {confirmPay && (
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-green-500/[0.12] rounded-xl flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">
-                {confirmPayMovement?.type === 'income' ? 'Confirmar recebimento' : 'Confirmar pagamento'}
-              </h3>
-            </div>
-            <p className="text-slate-500 text-sm mb-6">
-              {confirmPayMovement?.type === 'income'
-                ? 'Confirmar que este recebimento foi realizado hoje? Esta ação ficará registrada no histórico.'
-                : 'Confirmar que este pagamento foi realizado hoje? Esta ação ficará registrada no histórico.'
-              }
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
+            <h3 className="text-base font-semibold text-slate-900">
+              {confirmPay.type === 'income' ? 'Confirmar recebimento' : 'Confirmar pagamento'}
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              {confirmPay.demandTitle} · {formatCurrency(confirmPay.value)}. Fica registrado com a data de hoje no histórico.
             </p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmPay(null)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">
-                Cancelar
-              </button>
-              <button onClick={() => handleMarkPaid(confirmPay)} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-bold">
-                {confirmPayMovement?.type === 'income' ? 'Confirmar Recebimento' : 'Confirmar Pagamento'}
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setConfirmPay(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm hover:bg-slate-50">Cancelar</button>
+              <button onClick={confirmMarkPaid} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-semibold">
+                {confirmPay.type === 'income' ? 'Recebido' : 'Pago'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── New Entry Modal ── */}
-      {showEntryModal && (
+      {/* ── Confirmar exclusão ── */}
+      {confirmDelete && (
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-900">
-                {entryForm.type === 'income' ? 'Nova Entrada' : 'Nova Saída'}
-              </h2>
-              <button onClick={() => setShowEntryModal(false)} className="text-slate-500 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
-                <X className="w-5 h-5" />
-              </button>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
+            <h3 className="text-base font-semibold text-slate-900">Excluir lançamento?</h3>
+            <p className="text-sm text-slate-500 mt-1">{confirmDelete.demandTitle} · {formatCurrency(confirmDelete.value)}. Não dá para desfazer.</p>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm hover:bg-slate-50">Cancelar</button>
+              <button onClick={() => { deleteMovement(confirmDelete.id); setConfirmDelete(null); }} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold">Excluir</button>
             </div>
-            <div className="p-6 space-y-4">
-              {/* Type selector */}
+          </div>
+        </div>
+      )}
+
+      {/* ── Corrigir valor (prestador) ── */}
+      {valueEdit && (
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
+            <h3 className="text-base font-semibold text-slate-900">Corrigir valor</h3>
+            <p className="text-sm text-slate-500 mt-1">{valueEdit.m.demandTitle} · {profName(valueEdit.m.professionalId)}</p>
+            <input
+              type="number" min="0" step="0.01" autoFocus
+              value={valueEdit.value}
+              onChange={e => setValueEdit(v => v && { ...v, value: e.target.value })}
+              onKeyDown={e => { if (e.key === 'Enter') saveValueEdit(); }}
+              className={`${input} mt-4`}
+            />
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setValueEdit(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm hover:bg-slate-50">Cancelar</button>
+              <button onClick={saveValueEdit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Novo / editar lançamento ── */}
+      {entryModal && (
+        <div className="fixed inset-0 bg-slate-900/40 flex items-end sm:items-center justify-center z-50 sm:p-4">
+          <div className="bg-white sm:rounded-xl rounded-t-2xl shadow-xl w-full max-w-md max-h-[92dvh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h2 className="text-base font-semibold text-slate-900">{entryModal.editing ? 'Editar lançamento' : 'Novo lançamento'}</h2>
+              <button onClick={() => setEntryModal(null)} className="p-1 text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 space-y-4 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setEntryForm(f => ({ ...f, type: 'income', category: '' }))} className={toggle(entryForm.type === 'income', 'bg-emerald-600')}>
+                  <ArrowUpRight className="w-4 h-4" /> Entrada
+                </button>
+                <button type="button" onClick={() => setEntryForm(f => ({ ...f, type: 'expense', category: '' }))} className={toggle(entryForm.type === 'expense', 'bg-red-600')}>
+                  <ArrowDownRight className="w-4 h-4" /> Saída
+                </button>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEntryForm(f => ({ ...f, type: 'income', category: '' }))}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      entryForm.type === 'income'
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
-                    }`}
-                  >
-                    <ArrowUpCircle className="w-4 h-4" /> Entrada
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEntryForm(f => ({ ...f, type: 'expense', category: '' }))}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      entryForm.type === 'expense'
-                        ? 'bg-red-600 border-red-600 text-white'
-                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
-                    }`}
-                  >
-                    <ArrowDownCircle className="w-4 h-4" /> Saída
-                  </button>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Descrição</label>
+                <input type="text" autoFocus={!entryModal.editing} value={entryForm.description} onChange={e => setEntryForm(f => ({ ...f, description: e.target.value }))}
+                  className={input} placeholder={entryForm.type === 'income' ? 'Ex.: Mensalidade Brito Advocacia' : 'Ex.: Assinatura Adobe'} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Valor (R$)</label>
+                  <input type="number" inputMode="decimal" min="0" step="0.01" value={entryForm.value}
+                    onChange={e => setEntryForm(f => ({ ...f, value: e.target.value }))} className={input} placeholder="0,00" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">{entryForm.status === 'pending' ? 'Vencimento' : 'Data'}</label>
+                  <input type="date" value={entryForm.date} onChange={e => setEntryForm(f => ({ ...f, date: e.target.value }))} className={input} />
                 </div>
               </div>
 
-              {/* Status toggle */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Status *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEntryForm(f => ({ ...f, status: 'paid' }))}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      entryForm.status === 'paid'
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
-                    }`}
-                  >
-                    <CheckCircle2 className="w-4 h-4" /> Já realizado
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEntryForm(f => ({ ...f, status: 'pending' }))}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      entryForm.status === 'pending'
-                        ? 'bg-orange-600 border-orange-600 text-white'
-                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
-                    }`}
-                  >
-                    <Clock className="w-4 h-4" /> Previsão
-                  </button>
-                </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setEntryForm(f => ({ ...f, status: 'paid' }))} className={toggle(entryForm.status === 'paid', 'bg-slate-900')}>
+                  <CheckCircle2 className="w-4 h-4" /> {entryForm.type === 'income' ? 'Já recebido' : 'Já pago'}
+                </button>
+                <button type="button" onClick={() => setEntryForm(f => ({ ...f, status: 'pending' }))} className={toggle(entryForm.status === 'pending', 'bg-orange-500')}>
+                  <Clock className="w-4 h-4" /> {entryForm.type === 'income' ? 'A receber' : 'A pagar'}
+                </button>
               </div>
 
-              {/* Category */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-slate-700">Categoria *</label>
-                  <button
-                    type="button"
-                    onClick={() => { setShowNewCatInput(v => !v); setNewCatName(''); }}
-                    className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Nova categoria
+                  <label className="text-sm font-medium text-slate-700">Categoria</label>
+                  <button type="button" onClick={() => { setShowNewCatInput(v => !v); setNewCatName(''); }} className="text-xs text-blue-600 hover:text-blue-700">
+                    + Nova categoria
                   </button>
                 </div>
                 {showNewCatInput ? (
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newCatName}
-                      onChange={e => setNewCatName(e.target.value)}
+                    <input type="text" autoFocus value={newCatName} onChange={e => setNewCatName(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomCategory(); } if (e.key === 'Escape') setShowNewCatInput(false); }}
-                      autoFocus
-                      className="flex-1 border border-blue-500/[0.4] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Nome da nova categoria..."
-                    />
-                    <button type="button" onClick={handleAddCustomCategory} className="px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
-                      Criar
-                    </button>
-                    <button type="button" onClick={() => setShowNewCatInput(false)} className="px-3 py-2.5 border border-slate-200 text-slate-500 rounded-lg text-sm hover:bg-slate-100">
-                      <X className="w-4 h-4" />
-                    </button>
+                      className={input} placeholder="Nome da categoria" />
+                    <button type="button" onClick={handleAddCustomCategory} className="px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Criar</button>
                   </div>
                 ) : (
-                  <select
-                    value={entryForm.category}
-                    onChange={e => setEntryForm(f => ({ ...f, category: e.target.value }))}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Selecione...</option>
-                    {availableCategories.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
+                  <select value={entryForm.category} onChange={e => setEntryForm(f => ({ ...f, category: e.target.value }))} className={input}>
+                    <option value="">Outros</option>
+                    {availableCategories.filter(c => c !== 'Outros').map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Descrição *</label>
-                <input
-                  type="text"
-                  value={entryForm.description}
-                  onChange={e => setEntryForm(f => ({ ...f, description: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Descreva o lançamento..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Cliente <span className="text-slate-500 font-normal">(opcional)</span></label>
-                <select
-                  value={entryForm.clientId}
-                  onChange={e => setEntryForm(f => ({ ...f, clientId: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Cliente <span className="text-slate-400 font-normal">(opcional)</span></label>
+                <select value={entryForm.clientId} onChange={e => setEntryForm(f => ({ ...f, clientId: e.target.value }))} className={input}>
                   <option value="">Nenhum</option>
-                  {clients.filter(c => c.status === 'active').map(c => (
-                    <option key={c.id} value={c.id}>{c.companyName}</option>
-                  ))}
+                  {clients.filter(c => c.status === 'active' || c.id === entryForm.clientId).map(c => <option key={c.id} value={c.id}>{c.companyName}</option>)}
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {!entryModal.editing && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Valor (R$) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={entryForm.value}
-                    onChange={e => setEntryForm(f => ({ ...f, value: e.target.value }))}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0,00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    {entryForm.status === 'pending' ? 'Data de vencimento *' : 'Data *'}
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
+                    <Repeat className="w-4 h-4 text-slate-400" /> Repetir todo mês
                   </label>
-                  <input
-                    type="date"
-                    value={entryForm.date}
-                    onChange={e => setEntryForm(f => ({ ...f, date: e.target.value }))}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <select value={entryForm.repeat} onChange={e => setEntryForm(f => ({ ...f, repeat: Number(e.target.value) }))} className={input}>
+                    <option value={1}>Não repetir</option>
+                    {[2, 3, 6, 12, 24].map(n => <option key={n} value={n}>Por {n} meses</option>)}
+                  </select>
+                  {entryForm.repeat > 1 && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Cria {entryForm.repeat} lançamentos, um por mês, até {formatDate(addMonths(entryForm.date, entryForm.repeat - 1))}. Os meses seguintes ficam como {entryForm.type === 'income' ? 'a receber' : 'a pagar'}.
+                    </p>
+                  )}
                 </div>
-              </div>
+              )}
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Observações <span className="text-slate-500 font-normal">(opcional)</span></label>
-                <textarea
-                  value={entryForm.notes}
-                  onChange={e => setEntryForm(f => ({ ...f, notes: e.target.value }))}
-                  rows={2}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Anotações adicionais..."
-                />
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Observações <span className="text-slate-400 font-normal">(opcional)</span></label>
+                <textarea rows={2} value={entryForm.notes} onChange={e => setEntryForm(f => ({ ...f, notes: e.target.value }))} className={`${input} resize-none`} />
               </div>
             </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-slate-200">
-              <button onClick={() => { setShowEntryModal(false); setShowNewCatInput(false); }} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">
-                Cancelar
-              </button>
-              <button
-                onClick={handleAddEntry}
-                disabled={submitting || !entryForm.description.trim() || !entryForm.value || !entryForm.category}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:text-blue-500 text-white py-2.5 rounded-lg text-sm font-semibold"
-              >
-                {submitting ? 'Salvando...' : 'Salvar Lançamento'}
+            <div className="flex gap-2 px-5 py-4 border-t border-slate-200">
+              {entryModal.editing && (
+                <button
+                  onClick={() => { setConfirmDelete(entryModal.editing); setEntryModal(null); }}
+                  aria-label="Excluir lançamento"
+                  className="px-3 border border-slate-200 text-red-600 rounded-lg hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+              <button onClick={() => setEntryModal(null)} className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-lg text-sm hover:bg-slate-50">Cancelar</button>
+              <button onClick={saveEntry} disabled={!entryValid} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white py-2.5 rounded-lg text-sm font-semibold">
+                {entryModal.editing ? 'Salvar alterações' : 'Salvar'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Audit Log Modal ── */}
+      {/* ── Histórico ── */}
       {showAuditLog && (
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-900">Histórico de Alterações</h2>
-              <button onClick={() => setShowAuditLog(false)} className="text-slate-500 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
-                <X className="w-5 h-5" />
-              </button>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h2 className="text-base font-semibold text-slate-900">Histórico de alterações</h2>
+              <button onClick={() => setShowAuditLog(false)} className="p-1 text-slate-400 hover:text-slate-700"><X className="w-5 h-5" /></button>
             </div>
             <div className="overflow-y-auto flex-1">
               {recentAudit.length === 0 ? (
                 <div className="p-8 text-center text-slate-500 text-sm">Nenhuma alteração registrada</div>
               ) : (
-                <div className="divide-y divide-slate-200">
-                  {recentAudit.map(log => (
-                    <div key={log.id} className="px-6 py-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-semibold text-slate-900">
-                          {log.action === 'payment_marked' ? 'Pagamento confirmado' : 'Valor atualizado'}
+                <div className="divide-y divide-slate-100">
+                  {recentAudit.map(log => {
+                    const target = movements.find(m => m.id === log.entityId);
+                    const money = (v?: string) => (v && !isNaN(Number(v)) ? formatCurrency(Number(v)) : v);
+                    return (
+                      <div key={log.id} className="px-5 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-medium text-slate-900">
+                            {log.action === 'payment_marked' ? 'Pagamento confirmado' : 'Valor alterado'}
+                            {target && <span className="font-normal text-slate-500"> · {target.demandTitle}</span>}
+                          </p>
+                          <span className="text-xs text-slate-500 flex-shrink-0">{formatDateTime(log.createdAt)}</span>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Por {log.userName}
+                          {log.action === 'value_updated' && log.oldValue && log.newValue && <> · {money(log.oldValue)} → {money(log.newValue)}</>}
                         </p>
-                        <span className="text-xs text-slate-500">{formatDateTime(log.createdAt)}</span>
                       </div>
-                      <p className="text-xs text-slate-500">Por: <span className="font-medium text-slate-500">{log.userName}</span></p>
-                      {log.oldValue && log.newValue && (
-                        <p className="text-xs text-slate-500 mt-0.5">{log.oldValue} → {log.newValue}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

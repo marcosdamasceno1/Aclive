@@ -65,7 +65,7 @@ const emptyForm = {
   priority: 'medium' as Priority,
   value: 0,
   status: 'new' as KanbanStatus,
-  notifyWhatsapp: false,
+  notifyWhatsapp: true, // padrão: notifica o profissional (dá para desmarcar)
 };
 
 // ─── Draggable Card ────────────────────────────────────────────────────────────

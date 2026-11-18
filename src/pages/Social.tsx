@@ -231,7 +231,7 @@ const PostFormModal = ({ post, onClose }: PostFormModalProps) => {
     imageUrl: post?.imageUrl ?? '',
     date: post?.scheduledAt ? post.scheduledAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
     time: post?.scheduledAt ? post.scheduledAt.slice(11, 16) : '09:00',
-    notifyWhatsapp: post?.notifyWhatsapp ?? false,
+    notifyWhatsapp: post?.notifyWhatsapp ?? true,
     notifyPhone: post?.notifyPhone ?? '',
   });
 

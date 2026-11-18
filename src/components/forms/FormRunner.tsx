@@ -30,7 +30,15 @@ export const FormRunner = ({ config, mode, previewTarget, onStart, onStep, onSub
   const questions = config.questions;
   const initial: Screen = config.welcome.enabled ? { kind: 'welcome' } : { kind: 'question', index: 0 };
   const [screen, setScreen] = useState<Screen>(initial);
-  const [answers, setAnswers] = useState<Answers>({});
+  const [answers, setAnswersState] = useState<Answers>({});
+  // Cópia sempre atual das respostas: Enter logo depois de digitar não pode
+  // usar uma versão anterior (acontece com renderização assíncrona).
+  const answersRef = useRef<Answers>({});
+  const setAnswers = (v: Answers | ((a: Answers) => Answers)) => {
+    const nextVal = typeof v === 'function' ? v(answersRef.current) : v;
+    answersRef.current = nextVal;
+    setAnswersState(nextVal);
+  };
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [country, setCountry] = useState('55');
@@ -87,7 +95,7 @@ export const FormRunner = ({ config, mode, previewTarget, onStart, onStep, onSub
   const next = (override?: Answers) => {
     if (screen.kind === 'welcome') { setScreen({ kind: 'question', index: 0 }); return; }
     if (screen.kind !== 'question' || !current) return;
-    const final = override ?? answers;
+    const final = override ?? answersRef.current;
     const err = validateAnswer(current, final[current.id]);
     if (err) { setError(err); return; }
     markStarted();
@@ -107,35 +115,40 @@ export const FormRunner = ({ config, mode, previewTarget, onStart, onStep, onSub
 
   const pickOption = (q: Question, optionId: string) => {
     if (q.type === 'multi_choice') {
-      const prev = Array.isArray(answers[q.id]) ? answers[q.id] as string[] : [];
+      const cur = answersRef.current;
+      const prev = Array.isArray(cur[q.id]) ? cur[q.id] as string[] : [];
       setAnswer(q, prev.includes(optionId) ? prev.filter(x => x !== optionId) : [...prev, optionId]);
       return;
     }
-    const updated = { ...answers, [q.id]: optionId };
+    const updated = { ...answersRef.current, [q.id]: optionId };
     setAnswers(updated);
     setError(null);
     setTimeout(() => next(updated), 220);
   };
 
-  // Teclado: Enter continua; letras escolhem opções.
+  // Teclado: Enter continua; letras escolhem opções. O ouvinte é registrado
+  // uma vez e sempre lê o estado mais recente (sem versão antiga presa).
+  const latest = useRef({ next, pickOption, current, screen, submitting });
+  latest.current = { next, pickOption, current, screen, submitting };
   useEffect(() => {
     if (mode !== 'live') return;
     const onKey = (e: KeyboardEvent) => {
+      const L = latest.current;
       const target = e.target as HTMLElement;
       const typing = target.tagName === 'TEXTAREA' || (target.tagName === 'INPUT' && (target as HTMLInputElement).type !== 'checkbox');
       if (e.key === 'Enter' && !e.shiftKey && target.tagName !== 'TEXTAREA') {
         e.preventDefault();
-        if (screen.kind !== 'ending' && !submitting) next();
+        if (L.screen.kind !== 'ending' && !L.submitting) L.next();
         return;
       }
-      if (typing || !current || !isChoice(current.type)) return;
+      if (typing || !L.current || !isChoice(L.current.type)) return;
       const idx = LETTERS.indexOf(e.key.toUpperCase());
-      const opt = current.options?.[idx];
-      if (opt) pickOption(current, opt.id);
+      const opt = L.current.options?.[idx];
+      if (opt) L.pickOption(L.current, opt.id);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, [mode]);
 
   const ending = screen.kind === 'ending' ? config.endings.find(e => e.id === screen.endingId) ?? config.endings[0] : null;
 

@@ -62,12 +62,57 @@ const loadPixel = (pixelId: string) => {
   } as Fbq;
   f.push = f; f.loaded = true; f.version = '2.0'; f.queue = [];
   window.fbq = f; window._fbq = f;
-  const s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://connect.facebook.net/en_US/fbevents.js';
-  document.head.appendChild(s);
   window.fbq('init', pixelId);
+  // Os eventos ficam na fila; o script da Meta (~100 KB) só baixa depois que o
+  // formulário já está na tela, para não disputar a internet do celular.
+  const append = () => {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://connect.facebook.net/en_US/fbevents.js';
+    document.head.appendChild(s);
+  };
+  const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void }).requestIdleCallback;
+  if (ric) ric(append, { timeout: 1500 }); else setTimeout(append, 800);
 };
+
+// ─── Envio garantido ─────────────────────────────────────────────────────────
+// A tela de obrigado aparece na hora; o envio segue em segundo plano, com novas
+// tentativas. Se a internet cair, o envio fica guardado no aparelho e é
+// reenviado na próxima abertura. O servidor ignora repetições (mesmo eventId).
+const PENDING_KEY = 'gx_pending_submits';
+type Pending = { body: Record<string, unknown>; tries: number };
+const readPending = (): Pending[] => { try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch { return []; } };
+const writePending = (list: Pending[]) => { try { localStorage.setItem(PENDING_KEY, JSON.stringify(list.slice(-10))); } catch { /* sem storage */ } };
+
+const deliver = async (body: Record<string, unknown>): Promise<'ok' | 'retry' | 'drop'> => {
+  try {
+    const { ok, status } = await call('form-submit', body, true);
+    if (ok) return 'ok';
+    return status >= 500 || status === 429 ? 'retry' : 'drop';
+  } catch { return 'retry'; }
+};
+
+const sendWithRetry = async (body: Record<string, unknown>) => {
+  const id = String(body.eventId);
+  writePending([...readPending().filter(p => p.body.eventId !== id), { body, tries: 0 }]);
+  for (const wait of [0, 2000, 5000, 12000]) {
+    if (wait) await new Promise(res => setTimeout(res, wait));
+    const res = await deliver(body);
+    if (res !== 'retry') { writePending(readPending().filter(p => p.body.eventId !== id)); return; }
+  }
+};
+
+const flushPending = () => {
+  const list = readPending();
+  if (!list.length) return;
+  writePending([]);
+  for (const p of list) {
+    if (p.tries >= 5) continue;
+    void deliver(p.body).then(res => { if (res === 'retry') writePending([...readPending(), { body: p.body, tries: p.tries + 1 }]); });
+  }
+};
+
+const CACHE_PREFIX = 'gx_form:';
 
 export const PublicForm = () => {
   const [, , agency = '', formSlug = ''] = window.location.pathname.split('/');
@@ -106,28 +151,53 @@ export const PublicForm = () => {
       setState('ready');
     };
 
-    // Caminho rápido: o index.html já começou a buscar o formulário direto do
-    // banco. A visita (funil + API de Conversões) é registrada em segundo plano.
+    flushPending();
+    let shown = false;
+    const showFast = (form: PublicFormData) => {
+      if (shown) return;
+      shown = true;
+      const sessionId = crypto.randomUUID?.() ?? null;
+      show(form, sessionId);
+      if (sessionId) {
+        viewDone.current = call('form-event', {
+          type: 'view', sessionId, formId: form.id, tracking: tracking.current, device: device(),
+          eventId: pageViewId, sourceUrl: window.location.href, fbp: cookie('_fbp'), fbc: fbcValue(),
+        }, true).catch(() => {});
+      }
+    };
+
+    // Quem já abriu este formulário vê na hora (cópia guardada no aparelho);
+    // a versão do servidor substitui logo em seguida se algo mudou.
+    const cacheKey = `${CACHE_PREFIX}${agency}/${formSlug}`;
+    let cachedRaw: string | null = null;
+    try { cachedRaw = localStorage.getItem(cacheKey); } catch { /* sem storage */ }
+    if (cachedRaw) { try { const c = JSON.parse(cachedRaw) as PublicFormData; if (c?.id) showFast(c); } catch { /* cópia inválida */ } }
+
+    // Caminho rápido: o HTML já começou a buscar o formulário direto do banco.
+    // A visita (funil + API de Conversões) é registrada em segundo plano.
     const early = window.__gxForm ?? fetchPublicForm(agency, formSlug);
     early.then(async (form) => {
       if (!alive) return;
       if (form && form.id) {
-        const sessionId = crypto.randomUUID?.() ?? null;
-        show(form, sessionId);
-        if (sessionId) {
-          viewDone.current = call('form-event', {
-            type: 'view', sessionId, formId: form.id, tracking: tracking.current, device: device(),
-            eventId: pageViewId, sourceUrl: window.location.href, fbp: cookie('_fbp'), fbc: fbcValue(),
-          }, true).catch(() => {});
-        }
+        const fresh = JSON.stringify(form);
+        try { localStorage.setItem(cacheKey, fresh); } catch { /* sem storage */ }
+        if (!shown) showFast(form);
+        else if (fresh !== cachedRaw) setConfig(normalizeConfig(form.config));
         return;
       }
+      if (shown && form === null) {
+        // Formulário despublicado: some a cópia guardada
+        try { localStorage.removeItem(cacheKey); } catch { /* sem storage */ }
+      }
       // Reserva: função form-get (caso a migração rápida ainda não tenha sido rodada)
-      const { ok, data } = await call('form-get', { agency, form: formSlug, tracking: tracking.current, device: device(), pageViewEventId: pageViewId, sourceUrl: window.location.href, fbp: cookie('_fbp'), fbc: fbcValue() });
+      const { ok, status, data } = await call('form-get', { agency, form: formSlug, tracking: tracking.current, device: device(), pageViewEventId: pageViewId, sourceUrl: window.location.href, fbp: cookie('_fbp'), fbc: fbcValue() });
       if (!alive) return;
-      if (!ok || !data.form) { setState('missing'); document.title = 'Formulário indisponível'; return; }
-      show(data.form as PublicFormData, (data.sessionId as string) ?? null);
-    }).catch(() => alive && setState('missing'));
+      if (!ok || !data.form) {
+        if (shown && status !== 404) return; // sem internet: mantém a cópia guardada
+        setState('missing'); document.title = 'Formulário indisponível'; return;
+      }
+      if (!shown) show(data.form as PublicFormData, (data.sessionId as string) ?? null);
+    }).catch(() => { if (alive && !shown) setState('missing'); });
     return () => { alive = false; };
   }, [agency, formSlug]);
 
@@ -146,22 +216,17 @@ export const PublicForm = () => {
 
   const onSubmit = async (answers: Answers, outcome: Outcome, honeypot: string) => {
     const eventId = newEventId('ld');
-    try {
-      const { ok, status, data } = await call('form-submit', {
-        agency, form: formSlug, sessionId: session.current, answers, honeypot, eventId,
-        fbp: cookie('_fbp'), fbc: fbcValue(), sourceUrl: window.location.href, tracking: tracking.current,
-      });
-      if (!ok) {
-        return { error: status === 429 ? 'Muitos envios seguidos. Aguarde alguns minutos e tente de novo.' : (String(data.error ?? '') || 'Não foi possível enviar. Tente novamente.') };
-      }
-      if (pixel.current) {
-        if (outcome.outcome === 'qualified') window.fbq?.('track', submitEvent.current, {}, { eventID: eventId });
-        else window.fbq?.('trackCustom', 'LeadDisqualified', {}, { eventID: eventId });
-      }
-      return {};
-    } catch {
-      return { error: 'Sem conexão. Verifique a internet e tente de novo.' };
+    // As respostas já foram validadas na tela com as mesmas regras do servidor:
+    // mostra o obrigado na hora e envia em segundo plano, com novas tentativas.
+    void sendWithRetry({
+      agency, form: formSlug, sessionId: session.current, answers, honeypot, eventId,
+      fbp: cookie('_fbp'), fbc: fbcValue(), sourceUrl: window.location.href, tracking: tracking.current,
+    });
+    if (pixel.current) {
+      if (outcome.outcome === 'qualified') window.fbq?.('track', submitEvent.current, {}, { eventID: eventId });
+      else window.fbq?.('trackCustom', 'LeadDisqualified', {}, { eventID: eventId });
     }
+    return {};
   };
 
   if (state === 'loading') {

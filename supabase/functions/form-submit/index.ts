@@ -175,23 +175,12 @@ Deno.serve(async (req) => {
       destination: form.config?.destination ?? {},
     };
 
-    // ── Antispam ──
+    // ── Antispam: campo isca ──
     if (typeof body.honeypot === 'string' && body.honeypot.trim() !== '') {
       return json({ ok: true }); // robô: finge sucesso e não grava nada
     }
-    const ip = clientIp(req);
-    const ipHash = ip ? await sha256(`${ip}|${SUPABASE_URL}`) : null;
-    if (ipHash) {
-      const tenMin = new Date(Date.now() - 10 * 60_000).toISOString();
-      const hour = new Date(Date.now() - 3600_000).toISOString();
-      const [{ count: perForm }, { count: perHour }] = await Promise.all([
-        admin.from('form_submissions').select('id', { count: 'exact', head: true }).eq('ip_hash', ipHash).eq('form_id', form.id).gte('created_at', tenMin),
-        admin.from('form_submissions').select('id', { count: 'exact', head: true }).eq('ip_hash', ipHash).gte('created_at', hour),
-      ]);
-      if ((perForm ?? 0) >= 5 || (perHour ?? 0) >= 30) return json({ error: 'rate_limited' }, 429);
-    }
 
-    // ── Validação + resultado (recalculado no servidor) ──
+    // ── Validação + resultado (recalculado no servidor, sem consultar o banco) ──
     const answersIn = (body.answers && typeof body.answers === 'object' && !Array.isArray(body.answers)) ? body.answers as Answers : {};
     let stop = cfg.questions.length;
     let dqOption: Option | null = null;
@@ -216,36 +205,44 @@ Deno.serve(async (req) => {
     const email = first('email').toLowerCase();
     const phone = first('phone');
 
-    // ── Janela, etapa e tags (só da própria agência) ──
-    let boardId: string | null = null;
-    if (form.board_id && UUID_RE.test(form.board_id)) {
-      const { data: b } = await admin.from('lead_boards').select('id').eq('id', form.board_id).eq('company_id', companyId).maybeSingle();
-      boardId = (b as { id: string } | null)?.id ?? null;
-    }
-    if (!boardId) {
-      const { data: boards } = await admin.from('lead_boards').select('id, sources').eq('company_id', companyId).order('position');
-      const list = (boards ?? []) as { id: string; sources: string[] }[];
-      boardId = (list.find(b => (b.sources ?? []).includes('form')) ?? list[0])?.id ?? null;
-    }
-    let stage: { id: string; kind: string; legacy_status: string | null } | null = null;
-    if (boardId) {
-      const { data: st } = await admin.from('lead_stages').select('id, kind, legacy_status, position')
-        .eq('board_id', boardId).eq('company_id', companyId).order('position');
-      const stages = (st ?? []) as { id: string; kind: string; legacy_status: string | null }[];
-      const chosen = stages.find(s => s.id === form.stage_id) ?? stages.find(s => s.kind === 'open') ?? stages[0] ?? null;
-      stage = outcome === 'disqualified' ? (stages.find(s => s.kind === 'lost') ?? chosen) : chosen;
-    }
-    const status = stage?.legacy_status ?? (stage?.kind === 'won' ? 'client' : stage?.kind === 'lost' ? 'lost' : 'new');
-
     const wantedTags = [
       ...(outcome === 'qualified' ? cfg.destination?.qualifiedTagIds ?? [] : cfg.destination?.disqualifiedTagIds ?? []),
       ...(dqOption?.tagIds ?? []),
     ].filter(t => typeof t === 'string' && UUID_RE.test(t)).slice(0, 20);
-    let tagIds: string[] = [];
-    if (wantedTags.length) {
-      const { data: tags } = await admin.from('lead_tags').select('id').eq('company_id', companyId).in('id', wantedTags);
-      tagIds = [...new Set(((tags ?? []) as { id: string }[]).map(t => t.id))];
+    const eventId = typeof body.eventId === 'string' && /^ld_[a-z0-9]{8,64}$/i.test(body.eventId) ? body.eventId : `ld_${crypto.randomUUID().replace(/-/g, '')}`;
+
+    // ── Tudo o que depende do banco, de uma vez (em paralelo) ──
+    const ip = clientIp(req);
+    const ipHash = ip ? await sha256(`${ip}|${SUPABASE_URL}`) : null;
+    const tenMin = new Date(Date.now() - 10 * 60_000).toISOString();
+    const hour = new Date(Date.now() - 3600_000).toISOString();
+    const none = Promise.resolve({ count: 0, data: null as unknown });
+    const [dup, perForm, perHour, boardsRes, stagesRes, tagsRes] = await Promise.all([
+      // Reenvio do mesmo envio (nova tentativa do navegador): não duplica o lead
+      admin.from('form_submissions').select('id').eq('form_id', form.id).eq('event_id', eventId).limit(1),
+      ipHash ? admin.from('form_submissions').select('id', { count: 'exact', head: true }).eq('ip_hash', ipHash).eq('form_id', form.id).gte('created_at', tenMin) : none,
+      ipHash ? admin.from('form_submissions').select('id', { count: 'exact', head: true }).eq('ip_hash', ipHash).gte('created_at', hour) : none,
+      admin.from('lead_boards').select('id, sources').eq('company_id', companyId).order('position'),
+      admin.from('lead_stages').select('id, board_id, kind, legacy_status, position').eq('company_id', companyId).order('position'),
+      wantedTags.length ? admin.from('lead_tags').select('id').eq('company_id', companyId).in('id', wantedTags) : Promise.resolve({ data: [] }),
+    ]);
+    if (((dup as { data: unknown[] | null }).data ?? []).length) return json({ ok: true, outcome, endingId, duplicate: true });
+    if (((perForm as { count: number | null }).count ?? 0) >= 5 || ((perHour as { count: number | null }).count ?? 0) >= 30) {
+      return json({ error: 'rate_limited' }, 429);
     }
+
+    // ── Janela, etapa e tags (só da própria agência) ──
+    const boards = ((boardsRes as { data: unknown }).data ?? []) as { id: string; sources: string[] }[];
+    const boardId = (boards.find(b => b.id === form.board_id) ?? boards.find(b => (b.sources ?? []).includes('form')) ?? boards[0])?.id ?? null;
+    let stage: { id: string; kind: string; legacy_status: string | null } | null = null;
+    if (boardId) {
+      const stages = (((stagesRes as { data: unknown }).data ?? []) as { id: string; board_id: string; kind: string; legacy_status: string | null }[])
+        .filter(s => s.board_id === boardId);
+      const chosen = stages.find(s => s.id === form.stage_id) ?? stages.find(s => s.kind === 'open') ?? stages[0] ?? null;
+      stage = outcome === 'disqualified' ? (stages.find(s => s.kind === 'lost') ?? chosen) : chosen;
+    }
+    const status = stage?.legacy_status ?? (stage?.kind === 'won' ? 'client' : stage?.kind === 'lost' ? 'lost' : 'new');
+    const tagIds = [...new Set((((tagsRes as { data: unknown }).data ?? []) as { id: string }[]).map(t => t.id))];
 
     // ── Grava o lead ──
     const tracking: Record<string, string> = { ...cleanTracking(body.tracking), outcome, form: form.name };
@@ -279,14 +276,13 @@ Deno.serve(async (req) => {
     if (leadErr) return json({ error: 'Não foi possível salvar. Tente novamente.', code: leadErr.code ?? null }, 500);
 
     const sessionId = typeof body.sessionId === 'string' && UUID_RE.test(body.sessionId) ? body.sessionId : null;
-    const eventId = typeof body.eventId === 'string' && /^ld_[a-z0-9]{8,64}$/i.test(body.eventId) ? body.eventId : `ld_${crypto.randomUUID().replace(/-/g, '')}`;
     const { data: sub } = await admin.from('form_submissions').insert({
       form_id: form.id, company_id: companyId, session_id: sessionId, lead_id: leadId,
       answers, outcome, ending_id: endingId ?? null, tracking, ip_hash: ipHash, event_id: eventId,
     }).select('id').single();
     if (sessionId) {
-      await admin.from('form_sessions').update({ completed: true, completed_at: new Date().toISOString(), started: true, last_step: asked.length })
-        .eq('id', sessionId).eq('form_id', form.id);
+      background(Promise.resolve(admin.from('form_sessions').update({ completed: true, completed_at: new Date().toISOString(), started: true, last_step: asked.length })
+        .eq('id', sessionId).eq('form_id', form.id)));
     }
 
     // ── API de Conversões (mesmo eventID do Pixel) ──

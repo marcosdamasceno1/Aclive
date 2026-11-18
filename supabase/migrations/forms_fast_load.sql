@@ -43,3 +43,6 @@ GRANT EXECUTE ON FUNCTION public.get_public_form(TEXT, TEXT) TO anon, authentica
 
 -- Índice para achar a agência pelo apelido na hora
 CREATE INDEX IF NOT EXISTS forms_slug_published ON public.forms (slug) WHERE status = 'published';
+
+-- Reenvios do mesmo envio (novas tentativas do navegador) são achados na hora
+CREATE INDEX IF NOT EXISTS form_submissions_event ON public.form_submissions (form_id, event_id);

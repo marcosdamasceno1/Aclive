@@ -2,6 +2,8 @@ Options -MultiViews
 RewriteEngine On
 RewriteBase /
 RewriteRule ^index\.html$ - [L]
+# Formulário público: página própria e leve (form.html)
+RewriteRule ^f/[^/]+/[^/]+/?$ /form.html [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.html [L]
@@ -12,7 +14,7 @@ RewriteRule . /index.html [L]
 # do sistema mesmo após o deploy (causa clássica de "bug que já foi corrigido
 # mas continua acontecendo").
 <IfModule mod_headers.c>
-  <FilesMatch "^(index|404)\.html$">
+  <FilesMatch "^(index|404|form)\.html$">
     Header set Cache-Control "no-store, no-cache, must-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "0"

@@ -17,15 +17,6 @@ export const DEFAULT_KANBAN_STAGES: KanbanStage[] = [
   { id: 'paid',        label: 'Pago',      icon: '💰', color: 'text-slate-500', isTerminal: true },
 ];
 
-// Colunas padrão do quadro de Demandas (organização de gargalos).
-export const DEFAULT_BOARD_STAGES: KanbanStage[] = [
-  { id: 'backlog',  label: 'Backlog',      icon: '📥', color: 'text-slate-300' },
-  { id: 'todo',     label: 'A Fazer',      icon: '📌', color: 'text-blue-400' },
-  { id: 'doing',    label: 'Em Andamento', icon: '⚡', color: 'text-indigo-400' },
-  { id: 'blocked',  label: 'Bloqueado',    icon: '🚧', color: 'text-red-400' },
-  { id: 'done',     label: 'Concluído',    icon: '✅', color: 'text-green-400' },
-];
-
 interface CompanySettingsState {
   googleClientId: string;
   googleAccessToken: string | null;
@@ -44,7 +35,6 @@ interface CompanySettingsState {
   approvalNotifyPhone: string;    // telefone padrão para avisos de aprovação
   waStatus: string; // runtime: status da sessão WAHA central (WORKING, SCAN_QR_CODE...)
   kanbanStages: KanbanStage[];
-  demandBoardStages: KanbanStage[];
   loading: boolean;
 
   init: () => Promise<void>;
@@ -62,7 +52,6 @@ interface CompanySettingsState {
   saveCrmConfig: (apiKey: string, endpointUrl: string) => Promise<void>;
   clearCrmConfig: () => Promise<void>;
   saveKanbanStages: (stages: KanbanStage[]) => Promise<string | null>;
-  saveDemandBoardStages: (stages: KanbanStage[]) => Promise<string | null>;
   generateWaWebhookSecret: () => Promise<string | null>;
   setWaStatus: (status: string) => void;
   saveApprovalDefaults: (agencyName: string, notifyPhone: string) => Promise<void>;
@@ -118,7 +107,6 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
   approvalNotifyPhone: '',
   waStatus: 'UNKNOWN',
   kanbanStages: DEFAULT_KANBAN_STAGES,
-  demandBoardStages: DEFAULT_BOARD_STAGES,
   loading: false,
 
   init: async () => {
@@ -156,7 +144,6 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       agencyName:           (row?.agency_name             as string) || '',
       approvalNotifyPhone:  (row?.approval_notify_phone   as string) || '',
       kanbanStages:         (row?.kanban_stages           as KanbanStage[]) || DEFAULT_KANBAN_STAGES,
-      demandBoardStages:    (row?.demand_board_stages     as KanbanStage[]) || DEFAULT_BOARD_STAGES,
       loading: false,
     });
   },
@@ -250,12 +237,6 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
     return error?.message ?? null;
   },
 
-  saveDemandBoardStages: async (stages) => {
-    set({ demandBoardStages: stages }); // otimista — a tela reflete na hora
-    const { error } = await upsert({ demand_board_stages: stages });
-    if (error) console.error('[company-settings.saveDemandBoardStages]', error.message);
-    return error?.message ?? null;
-  },
 
   // Gera (uma única vez) o segredo que autentica os webhooks do Atendimento.
   // Se já existe, apenas retorna — trocar o segredo quebraria webhooks ativos.

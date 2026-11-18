@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users,
   Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
-  ChevronLeft, ChevronRight, CalendarDays, X, ClipboardList, Loader2, HardDrive, MessageCircle,
+  ChevronLeft, ChevronRight, CalendarDays, X, Loader2, HardDrive, MessageCircle,
 } from 'lucide-react';
 import { useWaInboxStore } from '../../store/waInboxStore';
 import { useAuthStore } from '../../store/authStore';
@@ -58,7 +58,6 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
 
   const generalItems: NavItemDef[] = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard',           pageKey: 'dashboard' },
-    { to: '/demands',   icon: ClipboardList,   label: 'Demandas',             pageKey: 'demands' },
     { to: '/kanban',    icon: Kanban,          label: 'Esteira de Produção',  pageKey: 'kanban' },
     { to: '/calendar',  icon: CalendarDays,    label: 'Calendário',           pageKey: 'calendar' },
     { to: '/leads',     icon: Target,          label: 'Leads',                pageKey: 'leads' },

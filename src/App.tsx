@@ -10,10 +10,9 @@ import { useFinancialStore } from './store/financialStore';
 import { useLeadsStore } from './store/leadsStore';
 import { useCalendarStore } from './store/calendarStore';
 import { useCompaniesStore } from './store/companiesStore';
-import { useDemandBoardStore } from './store/demandBoardStore';
 import { useWaInboxStore } from './store/waInboxStore';
 import { useApprovalsStore } from './store/approvalsStore';
-import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES, DEFAULT_BOARD_STAGES } from './store/companySettingsStore';
+import { useCompanySettingsStore, DEFAULT_KANBAN_STAGES } from './store/companySettingsStore';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -27,7 +26,6 @@ import { Settings } from './pages/Settings';
 import { Leads } from './pages/Leads';
 import { Calendar } from './pages/Calendar';
 import { Master } from './pages/Master';
-import { Demandas } from './pages/Demandas';
 import { Atendimento } from './pages/Atendimento';
 import { ApprovalPage } from './pages/ApprovalPage';
 import { Drive } from './pages/Drive';
@@ -61,7 +59,6 @@ function App() {
   const { init: initLeads } = useLeadsStore();
   const { init: initCalendar } = useCalendarStore();
   const { init: initCompanies } = useCompaniesStore();
-  const { init: initDemandBoard } = useDemandBoardStore();
   const { init: initWaInbox } = useWaInboxStore();
   const { init: initApprovals } = useApprovalsStore();
   const { init: initCompanySettings } = useCompanySettingsStore();
@@ -84,7 +81,7 @@ function App() {
         // todo o carregamento e a tela ficava sem dados.
         await Promise.allSettled([
           initProfessionals(), initClients(), initDemands(), initFinancial(),
-          initLeads(), initCalendar(), initDemandBoard(), initWaInbox(), initApprovals(), initCompanySettings(),
+          initLeads(), initCalendar(), initWaInbox(), initApprovals(), initCompanySettings(),
         ]);
       }
       useAuthStore.getState().loadUsers();
@@ -112,7 +109,6 @@ function App() {
       useDemandsStore.setState({ demands: [] });
       useFinancialStore.setState({ movements: [] });
       useCalendarStore.setState({ events: [] });
-      useDemandBoardStore.setState({ cards: [], dbError: null });
       useWaInboxStore.getState().teardown();
       useWaInboxStore.setState({ chats: [], messages: [], dbError: null });
       useApprovalsStore.setState({ approvals: [] });
@@ -123,7 +119,6 @@ function App() {
         metaAccessToken: '', metaPhoneNumberId: '', metaTemplateName: 'nova_demanda',
         metaLeadsPageId: '', metaLeadsPageToken: '', metaLeadsVerifyToken: '',
         kanbanStages: DEFAULT_KANBAN_STAGES,
-        demandBoardStages: DEFAULT_BOARD_STAGES,
       });
     };
 
@@ -203,13 +198,13 @@ function App() {
           <Route path="dashboard"    element={<AgencyRoute><Dashboard /></AgencyRoute>} />
           <Route path="clients"      element={<AgencyRoute><Clients /></AgencyRoute>} />
           <Route path="professionals" element={<AgencyRoute><Professionals /></AgencyRoute>} />
-          <Route path="demands"      element={<AgencyRoute><Demandas /></AgencyRoute>} />
+          <Route path="demands"      element={<Navigate to="/kanban" replace />} />
           <Route path="kanban"       element={<AgencyRoute><Kanban /></AgencyRoute>} />
           <Route path="financial"    element={<AgencyRoute><Financial /></AgencyRoute>} />
           <Route path="leads"        element={<AgencyRoute><Leads /></AgencyRoute>} />
           <Route path="atendimento"  element={<AgencyRoute><Atendimento /></AgencyRoute>} />
           <Route path="calendar"     element={<AgencyRoute><Calendar /></AgencyRoute>} />
-          <Route path="social"       element={<Navigate to="/demands" replace />} />
+          <Route path="social"       element={<Navigate to="/kanban" replace />} />
           <Route path="drive"        element={<AgencyRoute><Drive /></AgencyRoute>} />
           <Route path="reports"      element={<AgencyRoute><Reports /></AgencyRoute>} />
           <Route path="settings"     element={<AgencyRoute><Settings /></AgencyRoute>} />

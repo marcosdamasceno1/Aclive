@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, Kanban, CalendarDays, Target, DollarSign, Menu } from 'lucide-react';
+import { LayoutDashboard, Kanban, CalendarDays, Target, DollarSign, Menu } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { hasPageAccess } from '../../utils/permissions';
 import type { PageKey } from '../../utils/permissions';
@@ -7,7 +7,6 @@ import type { PageKey } from '../../utils/permissions';
 const CANDIDATES: { to: string; icon: React.ElementType; label: string; pageKey: PageKey }[] = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Início',     pageKey: 'dashboard' },
   { to: '/kanban',    icon: Kanban,          label: 'Esteira',    pageKey: 'kanban' },
-  { to: '/demands',   icon: ClipboardList,   label: 'Demandas',   pageKey: 'demands' },
   { to: '/calendar',  icon: CalendarDays,    label: 'Agenda',     pageKey: 'calendar' },
   { to: '/leads',     icon: Target,          label: 'Leads',      pageKey: 'leads' },
   { to: '/financial', icon: DollarSign,      label: 'Financeiro', pageKey: 'financial' },

@@ -153,9 +153,9 @@ export const Drive = () => {
         <DriveHeader />
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-5">
-            <HardDrive className="w-7 h-7 text-blue-400" />
+            <HardDrive className="w-7 h-7 text-blue-600" />
           </div>
-          <h2 className="text-lg font-bold text-slate-200 mb-2">Google Drive não configurado</h2>
+          <h2 className="text-lg font-bold text-slate-800 mb-2">Google Drive não configurado</h2>
           <p className="text-sm text-slate-500 max-w-sm mb-6">
             Configure o Client ID do Google Cloud nas Configurações para usar o Drive.
           </p>
@@ -179,8 +179,8 @@ export const Drive = () => {
       <div className="space-y-6">
         <DriveHeader />
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-4" />
-          <p className="text-sm text-slate-400">Reconectando ao Drive…</p>
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-4" />
+          <p className="text-sm text-slate-500">Reconectando ao Drive…</p>
         </div>
       </div>
     );
@@ -197,7 +197,7 @@ export const Drive = () => {
             <div className="w-14 h-14 bg-slate-500/10 rounded-2xl flex items-center justify-center mb-5">
               <Link2Off className="w-7 h-7 text-slate-500" />
             </div>
-            <h2 className="text-lg font-bold text-slate-200 mb-2">Drive desconectado</h2>
+            <h2 className="text-lg font-bold text-slate-800 mb-2">Drive desconectado</h2>
             <p className="text-sm text-slate-500 max-w-sm mb-6">
               A sessão do Google Drive expirou. Reconecte nas Configurações para que toda a equipe volte a ter acesso.
             </p>
@@ -211,7 +211,7 @@ export const Drive = () => {
                     if (!ok) setRefreshFailed(true);
                   });
                 }}
-                className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 Tentar reconexão silenciosa
@@ -225,7 +225,7 @@ export const Drive = () => {
               </button>
             </div>
             {refreshFailed && (
-              <p className="text-xs text-slate-600 mt-4 max-w-xs">
+              <p className="text-xs text-slate-400 mt-4 max-w-xs">
                 Reconexão automática falhou. Use o botão acima para reconectar manualmente.
               </p>
             )}
@@ -240,13 +240,13 @@ export const Drive = () => {
         <DriveHeader />
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-5">
-            <ShieldAlert className="w-7 h-7 text-amber-400" />
+            <ShieldAlert className="w-7 h-7 text-amber-700" />
           </div>
-          <h2 className="text-lg font-bold text-slate-200 mb-2">Drive temporariamente indisponível</h2>
+          <h2 className="text-lg font-bold text-slate-800 mb-2">Drive temporariamente indisponível</h2>
           <p className="text-sm text-slate-500 max-w-sm mb-3">
-            O acesso ao Google Drive expirou. Solicite ao <strong className="text-slate-400">administrador</strong> que reconecte o Drive nas Configurações.
+            O acesso ao Google Drive expirou. Solicite ao <strong className="text-slate-500">administrador</strong> que reconecte o Drive nas Configurações.
           </p>
-          <p className="text-xs text-slate-600 max-w-xs">
+          <p className="text-xs text-slate-400 max-w-xs">
             Após a reconexão, todos os usuários voltarão a ter acesso automaticamente.
           </p>
         </div>
@@ -259,19 +259,19 @@ export const Drive = () => {
     <div className="space-y-4">
       <DriveHeader />
 
-      <div className="bg-[#161b22] border border-white/[0.08] rounded-xl flex flex-col min-h-[calc(100vh-220px)]">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl flex flex-col min-h-[calc(100vh-220px)]">
 
         {/* Breadcrumb header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div className="flex items-center gap-2 min-w-0">
-            <FolderOpen className="w-4 h-4 text-blue-400 flex-shrink-0" />
-            <div className="flex items-center gap-1 text-sm text-slate-300 min-w-0 overflow-x-auto">
+            <FolderOpen className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <div className="flex items-center gap-1 text-sm text-slate-700 min-w-0 overflow-x-auto">
               {crumbs.map((c, i) => (
                 <span key={c.id} className="flex items-center gap-1 flex-shrink-0">
-                  {i > 0 && <ChevronRight className="w-3 h-3 text-slate-600" />}
+                  {i > 0 && <ChevronRight className="w-3 h-3 text-slate-400" />}
                   <button
                     onClick={() => goToCrumb(i)}
-                    className={`hover:text-white transition-colors ${i === crumbs.length - 1 ? 'text-white font-semibold' : 'text-slate-400'}`}
+                    className={`hover:text-slate-900 transition-colors ${i === crumbs.length - 1 ? 'text-slate-900 font-semibold' : 'text-slate-500'}`}
                   >
                     {c.name}
                   </button>
@@ -281,7 +281,7 @@ export const Drive = () => {
           </div>
           <button
             onClick={() => load()}
-            className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg ml-3"
+            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg ml-3"
             title="Atualizar"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -289,10 +289,10 @@ export const Drive = () => {
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.05]">
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-200">
           <button
             onClick={() => setShowNewFolder(s => !s)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
           >
             <FolderPlus className="w-3.5 h-3.5" />
             Nova Pasta
@@ -300,7 +300,7 @@ export const Drive = () => {
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
           >
             {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
             {uploading ? 'Enviando...' : 'Upload'}
@@ -311,7 +311,7 @@ export const Drive = () => {
           {isAdmin && (() => {
             const mins = minutesUntilExpiry();
             if (mins <= 15 && mins > 0) return (
-              <span className="ml-auto text-xs text-amber-400/70">
+              <span className="ml-auto text-xs text-amber-700/70">
                 Sessão expira em ~{mins} min
               </span>
             );
@@ -321,14 +321,14 @@ export const Drive = () => {
 
         {/* New folder input */}
         {showNewFolder && (
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.05] bg-[#0d1117]">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-200 bg-slate-50">
             <input
               autoFocus
               value={newFolderName}
               onChange={e => setNewFolderName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleCreateFolder()}
               placeholder="Nome da pasta"
-              className="flex-1 bg-[#21262d] border border-white/[0.08] rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <button
               onClick={handleCreateFolder}
@@ -337,14 +337,14 @@ export const Drive = () => {
             >
               {creatingFolder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Criar'}
             </button>
-            <button onClick={() => setShowNewFolder(false)} className="p-1.5 text-slate-500 hover:text-slate-300">
+            <button onClick={() => setShowNewFolder(false)} className="p-1.5 text-slate-500 hover:text-slate-700">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
 
         {error && (
-          <div className="mx-5 mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
+          <div className="mx-5 mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-600">
             {error}
           </div>
         )}
@@ -362,15 +362,15 @@ export const Drive = () => {
               {files.map(f => (
                 <div
                   key={f.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.03] group transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 group transition-colors"
                 >
                   {isFolder(f) ? (
                     <button
                       onClick={() => openFolder(f)}
                       className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     >
-                      <Folder className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                      <span className="text-sm text-slate-200 truncate">{f.name}</span>
+                      <Folder className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <span className="text-sm text-slate-800 truncate">{f.name}</span>
                     </button>
                   ) : (
                     <a
@@ -380,21 +380,21 @@ export const Drive = () => {
                       className="flex items-center gap-3 flex-1 min-w-0"
                     >
                       <span className="text-base flex-shrink-0">{fileEmoji(f) ?? <FileIcon className="w-4 h-4 text-slate-500" />}</span>
-                      <span className="text-sm text-slate-200 truncate">{f.name}</span>
+                      <span className="text-sm text-slate-800 truncate">{f.name}</span>
                     </a>
                   )}
                   <div className="flex items-center gap-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     {f.size && <span className="text-xs text-slate-500">{formatBytes(f.size)}</span>}
-                    <span className="text-xs text-slate-600">{fmt(f.modifiedTime)}</span>
+                    <span className="text-xs text-slate-400">{fmt(f.modifiedTime)}</span>
                     {!isFolder(f) && (
                       <a href={driveFileUrl(f.id)} target="_blank" rel="noopener noreferrer"
-                        className="p-1 text-slate-500 hover:text-slate-300">
+                        className="p-1 text-slate-500 hover:text-slate-700">
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     )}
                     <button
                       onClick={() => setDeleteTarget(f)}
-                      className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                      className="p-1 text-slate-500 hover:text-red-600 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -407,8 +407,8 @@ export const Drive = () => {
 
         {/* Delete confirm */}
         {deleteTarget && (
-          <div className="border-t border-white/[0.08] px-5 py-4 bg-red-500/5">
-            <p className="text-sm text-red-300 mb-3">
+          <div className="border-t border-slate-200 px-5 py-4 bg-red-500/5">
+            <p className="text-sm text-red-700 mb-3">
               Excluir <strong>"{deleteTarget.name}"</strong> do Drive?
             </p>
             <div className="flex gap-2">
@@ -417,7 +417,7 @@ export const Drive = () => {
                 Excluir
               </button>
               <button onClick={() => setDeleteTarget(null)}
-                className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white bg-white/5 rounded-lg transition-colors">
+                className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 bg-slate-100 rounded-lg transition-colors">
                 Cancelar
               </button>
             </div>
@@ -430,7 +430,7 @@ export const Drive = () => {
 
 const DriveHeader = () => (
   <div>
-    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Drive</h1>
-    <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Armazenamento de arquivos</p>
+    <h1 className="text-xl font-semibold tracking-tight text-slate-900">Drive</h1>
+    <p className="text-sm text-slate-500 mt-0.5">Armazenamento de arquivos</p>
   </div>
 );

@@ -16,9 +16,9 @@ const planLabel: Record<string, string> = {
 };
 
 const planBadge: Record<string, string> = {
-  basico: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
-  profissional: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  empresarial: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  basico: 'bg-slate-500/20 text-slate-700 border-slate-500/30',
+  profissional: 'bg-blue-500/20 text-blue-700 border-blue-500/30',
+  empresarial: 'bg-violet-500/20 text-violet-700 border-violet-500/30',
 };
 
 const fmt = (iso: string) =>
@@ -57,8 +57,8 @@ update calendar_events set company_id = 'COMPANY_ID' where company_id is null;`;
 /* ─────────────── SQL block component ─────────────── */
 const SqlBlock = ({ title, code }: { title: string; code: string }) => (
   <div className="mb-4">
-    <p className="text-xs font-semibold text-slate-400 mb-1">{title}</p>
-    <pre className="bg-[#0d1117] border border-white/[0.08] rounded-lg p-3 text-xs text-emerald-300 overflow-x-auto whitespace-pre-wrap">
+    <p className="text-xs font-semibold text-slate-500 mb-1">{title}</p>
+    <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-emerald-700 overflow-x-auto whitespace-pre-wrap">
       {code}
     </pre>
   </div>
@@ -67,10 +67,10 @@ const SqlBlock = ({ title, code }: { title: string; code: string }) => (
 /* ─────────────── modal wrapper ─────────────── */
 const Modal = ({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div className="bg-[#161b22] border border-white/[0.08] rounded-xl w-full max-w-lg max-h-[90dvh] overflow-y-auto shadow-2xl">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08]">
-        <h2 className="text-base font-semibold text-white">{title}</h2>
-        <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors">
+    <div className="bg-slate-50 border border-slate-200 rounded-xl w-full max-w-lg max-h-[90dvh] overflow-y-auto shadow-2xl">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -82,12 +82,12 @@ const Modal = ({ title, onClose, children }: { title: string; onClose: () => voi
 /* ─────────────── field ─────────────── */
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="mb-4">
-    <label className="block text-xs font-medium text-slate-400 mb-1.5">{label}</label>
+    <label className="block text-xs font-medium text-slate-500 mb-1.5">{label}</label>
     {children}
   </div>
 );
 
-const inputCls = 'w-full bg-[#21262d] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
+const inputCls = 'w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
 
 /* ─────────────── new company modal ─────────────── */
 interface NewCompanyModalProps {
@@ -172,8 +172,8 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
           </select>
         </Field>
 
-        <div className="border-t border-white/[0.08] my-5 pt-5">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Usuário Administrador</p>
+        <div className="border-t border-slate-200 my-5 pt-5">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Usuário Administrador</p>
           <Field label="Nome *">
             <input className={inputCls} value={form.adminName} onChange={set('adminName')} placeholder="Nome completo" />
           </Field>
@@ -185,10 +185,10 @@ const NewCompanyModal = ({ onClose, onSuccess }: NewCompanyModalProps) => {
           </Field>
         </div>
 
-        {error && <p className="text-sm text-red-400 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+        {error && <p className="text-sm text-red-600 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
 
         <div className="flex gap-3 justify-end">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
             Cancelar
           </button>
           <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg transition-colors">
@@ -257,10 +257,10 @@ const CreateUserModal = ({ company, onClose, onSuccess }: CreateUserModalProps) 
           </select>
         </Field>
 
-        {error && <p className="text-sm text-red-400 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+        {error && <p className="text-sm text-red-600 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
 
         <div className="flex gap-3 justify-end">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
             Cancelar
           </button>
           <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg transition-colors">
@@ -282,12 +282,12 @@ interface DeleteConfirmModalProps {
 
 const DeleteConfirmModal = ({ company, onClose, onConfirm }: DeleteConfirmModalProps) => (
   <Modal title="Excluir Agência" onClose={onClose}>
-    <p className="text-sm text-slate-300 mb-2">
-      Tem certeza que deseja excluir a agência <span className="font-semibold text-white">{company.name}</span>?
+    <p className="text-sm text-slate-700 mb-2">
+      Tem certeza que deseja excluir a agência <span className="font-semibold text-slate-900">{company.name}</span>?
     </p>
-    <p className="text-xs text-red-400 mb-6">Esta ação não pode ser desfeita. Os dados da agência permanecerão no banco de dados.</p>
+    <p className="text-xs text-red-600 mb-6">Esta ação não pode ser desfeita. Os dados da agência permanecerão no banco de dados.</p>
     <div className="flex gap-3 justify-end">
-      <button onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+      <button onClick={onClose} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
         Cancelar
       </button>
       <button onClick={onConfirm} className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors">
@@ -377,20 +377,20 @@ export const Master = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Painel Master</h1>
-          <p className="text-sm text-slate-400 mt-1">Gerencie as agências clientes</p>
+          <h1 className="text-2xl font-bold text-slate-900">Painel Master</h1>
+          <p className="text-sm text-slate-500 mt-1">Gerencie as agências clientes</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => { refreshUsers(); }}
             title="Atualizar lista de usuários"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white bg-[#21262d] hover:bg-white/5 border border-white/[0.08] rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loadingUsers ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={() => setShowSql(s => !s)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white bg-[#21262d] hover:bg-white/5 border border-white/[0.08] rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
           >
             SQL
           </button>
@@ -406,27 +406,27 @@ export const Master = () => {
 
       {/* Edge Function status banner */}
       {edgeStatus === 'error' && (
-        <div className="bg-[#161b22] border border-red-500/40 rounded-xl p-5 mb-6">
+        <div className="bg-slate-50 border border-red-500/40 rounded-xl p-5 mb-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-red-400 mb-1">
+              <p className="text-sm font-semibold text-red-600 mb-1">
                 Edge Function <code className="font-mono">admin-users</code> não está respondendo
               </p>
-              <p className="text-xs text-slate-400 mb-2">
+              <p className="text-xs text-slate-500 mb-2">
                 Sem ela, não é possível criar, listar ou excluir usuários.
                 {edgeError && <span className="ml-1 text-slate-500">Erro: {edgeError}</span>}
               </p>
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setShowEdgeDeploy(s => !s)}
-                  className="text-xs px-3 py-1.5 bg-red-500/15 hover:bg-red-500/25 text-red-300 rounded-lg transition-colors font-medium"
+                  className="text-xs px-3 py-1.5 bg-red-500/15 hover:bg-red-500/25 text-red-700 rounded-lg transition-colors font-medium"
                 >
                   {showEdgeDeploy ? 'Ocultar instruções' : 'Ver como publicar'}
                 </button>
                 <button
                   onClick={checkEdge}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Testar novamente
@@ -434,23 +434,23 @@ export const Master = () => {
               </div>
               {showEdgeDeploy && (
                 <div className="mt-4 space-y-3">
-                  <p className="text-xs font-semibold text-slate-300">
+                  <p className="text-xs font-semibold text-slate-700">
                     Opção 1 — Via painel Supabase (mais fácil):
                   </p>
-                  <ol className="text-xs text-slate-400 space-y-1 list-decimal list-inside">
-                    <li>Acesse <span className="text-slate-300 font-mono">supabase.com</span> → seu projeto → <strong className="text-slate-300">Edge Functions</strong></li>
-                    <li>Clique em <strong className="text-slate-300">New Function</strong> e nomeie como <code className="text-emerald-400 font-mono">admin-users</code></li>
-                    <li>Cole o código abaixo e clique <strong className="text-slate-300">Deploy</strong></li>
+                  <ol className="text-xs text-slate-500 space-y-1 list-decimal list-inside">
+                    <li>Acesse <span className="text-slate-700 font-mono">supabase.com</span> → seu projeto → <strong className="text-slate-700">Edge Functions</strong></li>
+                    <li>Clique em <strong className="text-slate-700">New Function</strong> e nomeie como <code className="text-emerald-600 font-mono">admin-users</code></li>
+                    <li>Cole o código abaixo e clique <strong className="text-slate-700">Deploy</strong></li>
                   </ol>
                   <div className="relative">
-                    <pre className="bg-[#0d1117] border border-white/[0.06] rounded-lg p-3 text-xs text-emerald-300 overflow-x-auto whitespace-pre-wrap break-all">
+                    <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-emerald-700 overflow-x-auto whitespace-pre-wrap break-all">
                       {EDGE_FN_CODE}
                     </pre>
                   </div>
-                  <p className="text-xs font-semibold text-slate-300 mt-2">
+                  <p className="text-xs font-semibold text-slate-700 mt-2">
                     Opção 2 — Via Supabase CLI:
                   </p>
-                  <pre className="bg-[#0d1117] border border-white/[0.06] rounded-lg p-3 text-xs text-emerald-300">
+                  <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-emerald-700">
 {`supabase functions deploy admin-users --project-ref nkxyecdxgaxpnezfjkap`}
                   </pre>
                 </div>
@@ -469,14 +469,14 @@ export const Master = () => {
 
       {/* Connection error banner (Supabase paused/slow — table exists but unreachable) */}
       {companiesLoadError && !setupNeeded && (
-        <div className="bg-[#161b22] border border-amber-500/40 rounded-xl p-5 mb-6">
+        <div className="bg-slate-50 border border-amber-500/40 rounded-xl p-5 mb-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-400 mb-1">Não foi possível carregar as agências</p>
-              <p className="text-xs text-slate-400 mb-2">O Supabase pode estar pausado ou com instabilidade. Verifique o painel do Supabase e tente novamente.</p>
+              <p className="text-sm font-semibold text-amber-700 mb-1">Não foi possível carregar as agências</p>
+              <p className="text-xs text-slate-500 mb-2">O Supabase pode estar pausado ou com instabilidade. Verifique o painel do Supabase e tente novamente.</p>
               <p className="text-xs text-slate-500">Detalhe: {companiesLoadError}</p>
-              <button onClick={() => initCompanies()} className="mt-2 text-xs px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 rounded-lg transition-colors font-medium">
+              <button onClick={() => initCompanies()} className="mt-2 text-xs px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 rounded-lg transition-colors font-medium">
                 Tentar novamente
               </button>
             </div>
@@ -486,16 +486,16 @@ export const Master = () => {
 
       {/* Setup required banner */}
       {setupNeeded && (
-        <div className="bg-[#161b22] border border-red-500/40 rounded-xl p-6 mb-8">
+        <div className="bg-slate-50 border border-red-500/40 rounded-xl p-6 mb-8">
           <div className="flex items-start gap-3 mb-5">
             <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Building2 className="w-4 h-4 text-red-400" />
+              <Building2 className="w-4 h-4 text-red-600" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-red-400 mb-1">Configuração necessária</h2>
-              <p className="text-xs text-slate-400">
-                A tabela <code className="text-emerald-400 font-mono">companies</code> não existe ainda no Supabase.
-                Execute o SQL abaixo no <strong className="text-slate-300">SQL Editor</strong> do Supabase para ativar o multi-tenancy.
+              <h2 className="text-sm font-semibold text-red-600 mb-1">Configuração necessária</h2>
+              <p className="text-xs text-slate-500">
+                A tabela <code className="text-emerald-600 font-mono">companies</code> não existe ainda no Supabase.
+                Execute o SQL abaixo no <strong className="text-slate-700">SQL Editor</strong> do Supabase para ativar o multi-tenancy.
               </p>
             </div>
           </div>
@@ -508,10 +508,10 @@ export const Master = () => {
 
       {/* SQL Info Panel */}
       {showSql && !setupNeeded && (
-        <div className="bg-[#161b22] border border-amber-500/30 rounded-xl p-6 mb-8">
+        <div className="bg-slate-50 border border-amber-500/30 rounded-xl p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-amber-400">Configuração Multi-tenancy — SQL</h2>
-            <button onClick={() => setShowSql(false)} className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors">
+            <h2 className="text-sm font-semibold text-amber-700">Configuração Multi-tenancy — SQL</h2>
+            <button onClick={() => setShowSql(false)} className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -524,17 +524,17 @@ export const Master = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {[
-          { label: 'Total Agências', value: companies.length, icon: Building2, color: 'text-blue-400' },
-          { label: 'Agências Ativas', value: activeCount, icon: CheckCircle, color: 'text-emerald-400' },
-          { label: 'Total Usuários', value: nonSuperUsers.length, icon: Users, color: 'text-violet-400' },
+          { label: 'Total Agências', value: companies.length, icon: Building2, color: 'text-blue-600' },
+          { label: 'Agências Ativas', value: activeCount, icon: CheckCircle, color: 'text-emerald-600' },
+          { label: 'Total Usuários', value: nonSuperUsers.length, icon: Users, color: 'text-violet-600' },
         ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-[#161b22] border border-white/[0.08] rounded-xl p-5 flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${color}`}>
+          <div key={label} className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center ${color}`}>
               <Icon className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{value}</p>
-              <p className="text-xs text-slate-400">{label}</p>
+              <p className="text-2xl font-bold text-slate-900">{value}</p>
+              <p className="text-xs text-slate-500">{label}</p>
             </div>
           </div>
         ))}
@@ -547,9 +547,9 @@ export const Master = () => {
         </div>
       ) : companies.length === 0 ? (
         <div className="text-center py-20">
-          <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm font-medium">Nenhuma agência cadastrada</p>
-          <p className="text-slate-600 text-xs mt-1 mb-4">Crie a primeira agência para começar a gerenciar clientes</p>
+          <Building2 className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+          <p className="text-slate-500 text-sm font-medium">Nenhuma agência cadastrada</p>
+          <p className="text-slate-400 text-xs mt-1 mb-4">Crie a primeira agência para começar a gerenciar clientes</p>
           <button
             onClick={() => setShowNewCompany(true)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
@@ -563,12 +563,12 @@ export const Master = () => {
           {companies.map(company => {
             const companyUsers = usersFor(company.id);
             return (
-              <div key={company.id} className="bg-[#161b22] border border-white/[0.08] rounded-xl p-5 flex flex-col gap-4">
+              <div key={company.id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col gap-4">
                 {/* Top */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-semibold text-white truncate">{company.name}</h3>
+                      <h3 className="text-sm font-semibold text-slate-900 truncate">{company.name}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${planBadge[company.plan] || planBadge.basico}`}>
                         {planLabel[company.plan] || company.plan}
                       </span>
@@ -576,17 +576,17 @@ export const Master = () => {
                     {company.email && (
                       <div className="flex items-center gap-1.5 mt-1">
                         <Mail className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                        <p className="text-xs text-slate-400 truncate">{company.email}</p>
+                        <p className="text-xs text-slate-500 truncate">{company.email}</p>
                       </div>
                     )}
                     {company.phone && (
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <Phone className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                        <p className="text-xs text-slate-400 truncate">{company.phone}</p>
+                        <p className="text-xs text-slate-500 truncate">{company.phone}</p>
                       </div>
                     )}
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${company.active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-500/15 text-slate-400'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${company.active ? 'bg-emerald-500/15 text-emerald-600' : 'bg-slate-500/15 text-slate-500'}`}>
                     {company.active ? 'Ativa' : 'Inativa'}
                   </span>
                 </div>
@@ -601,12 +601,12 @@ export const Master = () => {
                 </div>
 
                 {/* ID */}
-                <div className="bg-[#0d1117] rounded-lg px-3 py-1.5">
+                <div className="bg-slate-50 rounded-lg px-3 py-1.5">
                   <p className="text-xs text-slate-500 font-mono truncate" title={company.id}>{company.id}</p>
                 </div>
 
                 {/* Cota de prospecção (empresas Google/mês) */}
-                <div className="flex items-center justify-between bg-[#0d1117] rounded-lg px-3 py-1.5">
+                <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5">
                   <span className="text-xs text-slate-500">Empresas Google/mês</span>
                   <input
                     type="number"
@@ -619,7 +619,7 @@ export const Master = () => {
                       const val = raw === '' ? null : Math.max(0, parseInt(raw, 10) || 0);
                       updateCompany(company.id, { apifyMonthlyLimit: val });
                     }}
-                    className="w-20 bg-transparent border border-white/10 rounded px-2 py-0.5 text-xs text-right text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-20 bg-transparent border border-slate-200 rounded px-2 py-0.5 text-xs text-right text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -627,7 +627,7 @@ export const Master = () => {
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => setCreateUserFor(company)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                     Criar Usuário
@@ -635,14 +635,14 @@ export const Master = () => {
                   <button
                     onClick={() => updateCompany(company.id, { active: !company.active })}
                     title={company.active ? 'Desativar' : 'Ativar'}
-                    className={`p-1.5 rounded-lg transition-colors ${company.active ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'}`}
+                    className={`p-1.5 rounded-lg transition-colors ${company.active ? 'text-emerald-600 hover:bg-emerald-500/10' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}
                   >
                     <Power className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setDeleteTarget(company)}
                     title="Excluir agência"
-                    className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

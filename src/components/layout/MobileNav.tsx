@@ -19,7 +19,7 @@ export const MobileNav = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
   const items = CANDIDATES.filter(i => hasPageAccess(currentUser, i.pageKey)).slice(0, 4);
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[#0f172a]/95 backdrop-blur border-t border-white/[0.06] pb-safe">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 pb-safe">
       <div className="flex">
         {items.map(({ to, icon: Icon, label }) => (
           <NavLink
@@ -27,7 +27,7 @@ export const MobileNav = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
             to={to}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center gap-1 pt-2 pb-2.5 text-[11px] font-medium transition-colors ${
-                isActive ? 'text-blue-400' : 'text-slate-500 active:text-slate-300'
+                isActive ? 'text-blue-600' : 'text-slate-500 active:text-slate-700'
               }`
             }
           >
@@ -37,7 +37,7 @@ export const MobileNav = ({ onOpenMenu }: { onOpenMenu: () => void }) => {
         ))}
         <button
           onClick={onOpenMenu}
-          className="flex-1 flex flex-col items-center gap-1 pt-2 pb-2.5 text-[11px] font-medium text-slate-500 active:text-slate-300"
+          className="flex-1 flex flex-col items-center gap-1 pt-2 pb-2.5 text-[11px] font-medium text-slate-500 active:text-slate-700"
         >
           <Menu className="w-5 h-5" />
           Menu

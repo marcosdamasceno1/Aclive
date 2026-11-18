@@ -19,10 +19,10 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  admin: 'bg-purple-500/[0.1] text-purple-400',
-  manager: 'bg-blue-500/[0.1] text-blue-400',
-  professional: 'bg-green-500/[0.1] text-green-400',
-  financial: 'bg-orange-500/[0.1] text-orange-400',
+  admin: 'bg-purple-500/[0.1] text-purple-600',
+  manager: 'bg-blue-500/[0.1] text-blue-600',
+  professional: 'bg-green-500/[0.1] text-green-600',
+  financial: 'bg-orange-500/[0.1] text-orange-600',
 };
 
 const PROFESSIONS: ProfessionType[] = [
@@ -339,16 +339,16 @@ export const Settings = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Configurações</h1>
-        <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Gerenciamento do sistema</p>
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Configurações</h1>
+        <p className="text-sm text-slate-500 mt-0.5">Gerenciamento do sistema</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit max-w-full overflow-x-auto">
+      <div className="flex gap-1 bg-slate-50 p-1 rounded-xl w-fit max-w-full overflow-x-auto">
         <button
           onClick={() => setActiveTab('users')}
           className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'users' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+            activeTab === 'users' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -359,7 +359,7 @@ export const Settings = () => {
         <button
           onClick={() => setActiveTab('system')}
           className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'system' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+            activeTab === 'system' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -370,7 +370,7 @@ export const Settings = () => {
         <button
           onClick={() => setActiveTab('integrations')}
           className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'integrations' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+            activeTab === 'integrations' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -384,30 +384,30 @@ export const Settings = () => {
         <div className="space-y-4">
           {userNotifyStatus !== 'idle' && userNotifyMsg && (
             <div className={`flex items-start gap-3 rounded-xl p-4 border ${
-              userNotifyStatus === 'error' ? 'bg-[#161b22] border-red-500/30' : 'bg-[#161b22] border-emerald-500/30'
+              userNotifyStatus === 'error' ? 'bg-slate-50 border-red-500/30' : 'bg-slate-50 border-emerald-500/30'
             }`}>
               {userNotifyStatus === 'error'
-                ? <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                : <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />}
-              <p className={`text-sm ${userNotifyStatus === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>{userNotifyMsg}</p>
+                ? <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                : <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />}
+              <p className={`text-sm ${userNotifyStatus === 'error' ? 'text-red-600' : 'text-emerald-600'}`}>{userNotifyMsg}</p>
             </div>
           )}
           {usersError && (
-            <div className="flex items-start gap-3 bg-[#161b22] border border-red-500/30 rounded-xl p-4">
-              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 bg-slate-50 border border-red-500/30 rounded-xl p-4">
+              <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-red-400 mb-0.5">Edge Function não está respondendo</p>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm font-semibold text-red-600 mb-0.5">Edge Function não está respondendo</p>
+                <p className="text-xs text-slate-500">
                   A lista de usuários não pôde ser carregada e novos usuários não podem ser criados.
-                  Publique a função <code className="text-emerald-400 font-mono">admin-users</code> no Supabase.
-                  Acesse o <strong className="text-slate-300">Painel Master</strong> para ver as instruções completas.
+                  Publique a função <code className="text-emerald-600 font-mono">admin-users</code> no Supabase.
+                  Acesse o <strong className="text-slate-700">Painel Master</strong> para ver as instruções completas.
                 </p>
                 <p className="text-xs text-slate-500 mt-1">Detalhe: {usersError}</p>
               </div>
             </div>
           )}
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-100">Usuários do sistema</h2>
+            <h2 className="text-base font-bold text-slate-900">Usuários do sistema</h2>
             {isAdmin ? (
               <button
                 onClick={() => { setUserForm(emptyUserForm); setFormError(''); setShowUserModal(true); }}
@@ -417,36 +417,36 @@ export const Settings = () => {
                 Novo usuário
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500">
                 <Lock className="w-3.5 h-3.5" />
                 Apenas administradores podem criar usuários
               </div>
             )}
           </div>
 
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-x-auto">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-900">
+              <thead className="bg-slate-50">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Nome</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">E-mail</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Função</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Criado em</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Nome</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">E-mail</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Função</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Criado em</th>
                   {isAdmin && (
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Ação</th>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody className="divide-y divide-slate-200">
                 {users.map(user => (
-                  <tr key={user.id} className={`hover:bg-white/[0.04] transition-colors ${user.id === currentUser?.id ? 'bg-blue-500/[0.08]' : ''}`}>
+                  <tr key={user.id} className={`hover:bg-slate-100 transition-colors ${user.id === currentUser?.id ? 'bg-blue-500/[0.08]' : ''}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {user.name.charAt(0)}
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-slate-100">
+                          <span className="text-sm font-semibold text-slate-900">
                             {user.name}
                             {user.id === currentUser?.id && (
                               <span className="ml-2 text-xs text-blue-600 font-normal">(você)</span>
@@ -454,8 +454,8 @@ export const Settings = () => {
                           </span>
                           {user.professionalId && (
                             <div className="flex items-center gap-1 mt-0.5">
-                              <Briefcase className="w-3 h-3 text-slate-400" />
-                              <span className="text-xs text-slate-400">Profissional vinculado</span>
+                              <Briefcase className="w-3 h-3 text-slate-500" />
+                              <span className="text-xs text-slate-500">Profissional vinculado</span>
                             </div>
                           )}
                         </div>
@@ -475,7 +475,7 @@ export const Settings = () => {
                         <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => openEditUser(user)}
-                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-600/[0.12] rounded-lg transition-colors"
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-600/[0.12] rounded-lg transition-colors"
                             title="Editar usuário"
                           >
                             <Pencil className="w-4 h-4" />
@@ -483,7 +483,7 @@ export const Settings = () => {
                           {user.id !== currentUser?.id ? (
                             <button
                               onClick={() => setDeleteUserId(user.id)}
-                              className="p-1.5 text-red-400 hover:text-red-400 hover:bg-red-600/[0.12] rounded-lg transition-colors"
+                              className="p-1.5 text-red-600 hover:text-red-600 hover:bg-red-600/[0.12] rounded-lg transition-colors"
                               title="Excluir usuário"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -501,10 +501,10 @@ export const Settings = () => {
           </div>
 
           {/* Permission matrix */}
-          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
+          <div className="bg-white rounded-xl p-6 border border-slate-200">
             <div className="flex items-center gap-2 mb-4">
-              <Shield className="w-4 h-4 text-slate-400" />
-              <h3 className="text-sm font-bold text-slate-100">Matriz de permissões padrão</h3>
+              <Shield className="w-4 h-4 text-slate-500" />
+              <h3 className="text-sm font-bold text-slate-900">Matriz de permissões padrão</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -517,7 +517,7 @@ export const Settings = () => {
                     <th className="text-center py-2 px-3 font-semibold text-orange-600">Financeiro</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.05]">
+                <tbody className="divide-y divide-slate-200">
                   {[
                     { label: 'Dashboard completo', admin: true, manager: true, professional: true, financial: true },
                     { label: 'Gerenciar clientes', admin: true, manager: true, professional: false, financial: false },
@@ -529,14 +529,14 @@ export const Settings = () => {
                     { label: 'Ver relatórios', admin: true, manager: false, professional: false, financial: true },
                     { label: 'Configurações', admin: true, manager: false, professional: false, financial: false },
                   ].map(row => (
-                    <tr key={row.label} className="hover:bg-white/[0.04]">
+                    <tr key={row.label} className="hover:bg-slate-100">
                       <td className="py-2 pr-4 text-slate-500">{row.label}</td>
                       {(['admin', 'manager', 'professional', 'financial'] as const).map(role => (
                         <td key={role} className="py-2 px-3 text-center">
                           {row[role] ? (
                             <span className="text-green-500 font-bold">✓</span>
                           ) : (
-                            <span className="text-slate-200">—</span>
+                            <span className="text-slate-800">—</span>
                           )}
                         </td>
                       ))}
@@ -551,8 +551,8 @@ export const Settings = () => {
 
       {activeTab === 'system' && (
         <div className="space-y-4">
-          <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-4">
-            <h3 className="text-base font-bold text-slate-100">Informações do sistema</h3>
+          <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Informações do sistema</h3>
 
             <div className="grid grid-cols-2 gap-4">
               {[
@@ -561,15 +561,15 @@ export const Settings = () => {
                 { label: 'Banco de dados', value: 'Supabase (PostgreSQL)' },
                 { label: 'Tecnologia', value: 'React + TypeScript + Tailwind CSS' },
               ].map(({ label, value }) => (
-                <div key={label} className="p-3 bg-[#161b22] rounded-xl">
-                  <p className="text-xs text-slate-400 mb-0.5">{label}</p>
-                  <p className="text-sm font-semibold text-slate-200">{value}</p>
+                <div key={label} className="p-3 bg-slate-50 rounded-xl">
+                  <p className="text-xs text-slate-500 mb-0.5">{label}</p>
+                  <p className="text-sm font-semibold text-slate-800">{value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="border-t border-white/[0.05] pt-4">
-              <p className="text-sm font-semibold text-slate-200 mb-2">Regras do sistema</p>
+            <div className="border-t border-slate-200 pt-4">
+              <p className="text-sm font-semibold text-slate-800 mb-2">Regras do sistema</p>
               <ul className="space-y-2 text-sm text-slate-500">
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
@@ -637,11 +637,11 @@ export const Settings = () => {
                 onClick={() => setIntegrationTab(tab.key as typeof integrationTab)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                   integrationTab === tab.key
-                    ? 'bg-[#21262d] border-white/[0.15] text-slate-100 shadow-sm'
-                    : 'border-white/[0.05] text-slate-500 hover:text-slate-300 hover:border-white/[0.1]'
+                    ? 'bg-white border-slate-300 text-slate-900 shadow-sm'
+                    : 'border-slate-200 text-slate-500 hover:text-slate-700 hover:border-slate-200'
                 }`}
               >
-                <span className={integrationTab === tab.key ? (tab.color === 'green' ? 'text-green-400' : tab.color === 'purple' ? 'text-purple-400' : 'text-blue-400') : 'text-slate-500'}>
+                <span className={integrationTab === tab.key ? (tab.color === 'green' ? 'text-green-600' : tab.color === 'purple' ? 'text-purple-600' : 'text-blue-600') : 'text-slate-500'}>
                   {tab.icon}
                 </span>
                 {tab.label}
@@ -656,19 +656,19 @@ export const Settings = () => {
           {integrationTab === 'whatsapp' && (
             <div className="space-y-4">
               <WhatsAppConnect />
-              <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+              <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <MessageCircle className="w-5 h-5 text-green-400" />
+                  <MessageCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-100">WhatsApp — Notificações</h3>
+                  <h3 className="text-sm font-bold text-slate-900">WhatsApp — Notificações</h3>
                   <p className="text-xs text-slate-500">Notificações automáticas para profissionais ao criar demandas</p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Provedor ativo</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Provedor ativo</label>
                 <div className="flex gap-2">
                   {([
                     { id: 'waha', label: 'WAHA', desc: 'Self-hosted · WhatsApp HTTP API' },
@@ -680,16 +680,16 @@ export const Settings = () => {
                       onClick={() => handleProviderChange(p.id)}
                       className={`flex-1 flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
                         whatsappProvider === p.id
-                          ? 'border-blue-500/50 bg-blue-500/10 text-blue-300'
-                          : 'border-white/[0.08] text-slate-400 hover:border-white/20 hover:text-slate-300'
+                          ? 'border-blue-500/50 bg-blue-500/10 text-blue-700'
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-0.5">
-                        <div className={`w-2 h-2 rounded-full ${whatsappProvider === p.id ? 'bg-blue-400' : 'bg-slate-600'}`} />
+                        <div className={`w-2 h-2 rounded-full ${whatsappProvider === p.id ? 'bg-blue-400' : 'bg-slate-200'}`} />
                         <span className="text-sm font-semibold">{p.label}</span>
-                        {p.id === 'waha' && wahaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
-                        {p.id === 'meta' && metaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
-                        {p.id === 'crm' && crmIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
+                        {p.id === 'waha' && wahaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
+                        {p.id === 'meta' && metaIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
+                        {p.id === 'crm' && crmIsConfigured && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
                       </div>
                       <span className="text-xs text-slate-500 pl-4">{p.desc}</span>
                     </button>
@@ -700,40 +700,40 @@ export const Settings = () => {
               {whatsappProvider === 'waha' && (
                 <div className="space-y-3 pt-1">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do servidor</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">URL do servidor</label>
                     <input
                       type="text"
                       value={wahaUrl}
                       onChange={e => setWahaUrl(e.target.value)}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="https://waha.seudominio.com"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
                       API Key
-                      <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(se configurada no servidor)</span>
+                      <span className="ml-1 text-slate-400 font-normal normal-case tracking-normal">(se configurada no servidor)</span>
                     </label>
                     <div className="relative">
                       <input
                         type={wahaShowKey ? 'text' : 'password'}
                         value={wahaApiKey}
                         onChange={e => setWahaApiKey(e.target.value)}
-                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Valor de WHATSAPP_API_KEY"
                       />
-                      <button onClick={() => setWahaShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      <button onClick={() => setWahaShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700">
                         {wahaShowKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Nome da sessão</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Nome da sessão</label>
                     <input
                       type="text"
                       value={wahaSession}
                       onChange={e => setWahaSession(e.target.value)}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="default"
                     />
                   </div>
@@ -747,15 +747,15 @@ export const Settings = () => {
                       {wahaSaved ? 'Salvo!' : 'Salvar'}
                     </button>
                     {wahaIsConfigured && (
-                      <button onClick={() => { clearWahaConfig(); setWahaUrl(''); setWahaApiKey(''); setWahaSession('default'); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                      <button onClick={() => { clearWahaConfig(); setWahaUrl(''); setWahaApiKey(''); setWahaSession('default'); }} className="text-xs text-slate-500 hover:text-red-600 transition-colors">
                         Remover configuração
                       </button>
                     )}
                   </div>
-                  <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                    <p>• WAHA é self-hosted: instale com Docker — <strong className="text-slate-400">docker run -p 3000:3000 devlikeapro/waha</strong></p>
+                  <div className="border-t border-slate-200 pt-3 text-xs text-slate-500 space-y-1">
+                    <p>• WAHA é self-hosted: instale com Docker — <strong className="text-slate-500">docker run -p 3000:3000 devlikeapro/waha</strong></p>
                     <p>• Conecte seu WhatsApp escaneando o QR code no painel do WAHA (Dashboard → Sessions)</p>
-                    <p>• Documentação completa em <strong className="text-slate-400">waha.devlike.pro</strong></p>
+                    <p>• Documentação completa em <strong className="text-slate-500">waha.devlike.pro</strong></p>
                     <p>• A URL precisa ser acessível pelo navegador (HTTPS se o sistema estiver em HTTPS)</p>
                   </div>
                 </div>
@@ -764,46 +764,46 @@ export const Settings = () => {
               {whatsappProvider === 'meta' && (
                 <div className="space-y-3 pt-1">
                   <div className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2.5">
-                    <AlertTriangle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-blue-300">
+                    <AlertTriangle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700">
                       Requer conta no <strong>Meta Business Manager</strong> com WhatsApp Business API ativado e um template de mensagem aprovado pela Meta.
                     </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Access Token</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Access Token</label>
                     <div className="relative">
                       <input
                         type={metaShowToken ? 'text' : 'password'}
                         value={metaToken}
                         onChange={e => setMetaToken(e.target.value)}
-                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="EAAxxxxxxxx..."
                       />
-                      <button onClick={() => setMetaShowToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      <button onClick={() => setMetaShowToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700">
                         {metaShowToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Phone Number ID</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Phone Number ID</label>
                     <input
                       type="text"
                       value={metaPhoneId}
                       onChange={e => setMetaPhoneId(e.target.value)}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="1234567890"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
                       Nome do Template
-                      <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(aprovado pela Meta)</span>
+                      <span className="ml-1 text-slate-400 font-normal normal-case tracking-normal">(aprovado pela Meta)</span>
                     </label>
                     <input
                       type="text"
                       value={metaTemplate}
                       onChange={e => setMetaTemplate(e.target.value)}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="nova_demanda"
                     />
                   </div>
@@ -817,13 +817,13 @@ export const Settings = () => {
                       {metaSaved ? 'Salvo!' : 'Salvar'}
                     </button>
                     {metaIsConfigured && (
-                      <button onClick={() => { clearMetaConfig(); setMetaToken(''); setMetaPhoneId(''); setMetaTemplate('nova_demanda'); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                      <button onClick={() => { clearMetaConfig(); setMetaToken(''); setMetaPhoneId(''); setMetaTemplate('nova_demanda'); }} className="text-xs text-slate-500 hover:text-red-600 transition-colors">
                         Remover configuração
                       </button>
                     )}
                   </div>
-                  <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                    <p>• Access Token e Phone Number ID em <strong className="text-slate-400">business.facebook.com</strong> → WhatsApp → API Setup</p>
+                  <div className="border-t border-slate-200 pt-3 text-xs text-slate-500 space-y-1">
+                    <p>• Access Token e Phone Number ID em <strong className="text-slate-500">business.facebook.com</strong> → WhatsApp → API Setup</p>
                     <p>• O template deve ter 5 variáveis: profissional, demanda, cliente, prazo, prioridade</p>
                     <p>• Crie e aprove o template em WhatsApp Manager → Message Templates</p>
                   </div>
@@ -833,29 +833,29 @@ export const Settings = () => {
               {whatsappProvider === 'crm' && (
                 <div className="space-y-3 pt-1">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Endpoint (URL do endereço no Acta)</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Endpoint (URL do endereço no Acta)</label>
                     <input
                       type="text"
                       value={crmEndpoint}
                       onChange={e => setCrmEndpoint(e.target.value)}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="https://..."
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
                       Token
-                      <span className="ml-1 text-slate-600 font-normal normal-case tracking-normal">(segredo do endereço no Acta)</span>
+                      <span className="ml-1 text-slate-400 font-normal normal-case tracking-normal">(segredo do endereço no Acta)</span>
                     </label>
                     <div className="relative">
                       <input
                         type={crmShowKey ? 'text' : 'password'}
                         value={crmKey}
                         onChange={e => setCrmKey(e.target.value)}
-                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="whk_..."
                       />
-                      <button onClick={() => setCrmShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      <button onClick={() => setCrmShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700">
                         {crmShowKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
@@ -870,31 +870,31 @@ export const Settings = () => {
                       {crmSaved ? 'Salvo!' : 'Salvar'}
                     </button>
                     {crmIsConfigured && (
-                      <button onClick={() => { clearCrmConfig(); setCrmKey(''); setCrmEndpoint(''); }} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                      <button onClick={() => { clearCrmConfig(); setCrmKey(''); setCrmEndpoint(''); }} className="text-xs text-slate-500 hover:text-red-600 transition-colors">
                         Remover configuração
                       </button>
                     )}
                   </div>
-                  <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                    <p>• No Acta, o endereço deve usar <strong className="text-slate-400">chave no cabeçalho</strong> com o nome <strong className="text-slate-400">Authorization</strong></p>
-                    <p>• Campos do corpo enviados: <strong className="text-slate-400">phone</strong>, <strong className="text-slate-400">name</strong> e <strong className="text-slate-400">message</strong></p>
+                  <div className="border-t border-slate-200 pt-3 text-xs text-slate-500 space-y-1">
+                    <p>• No Acta, o endereço deve usar <strong className="text-slate-500">chave no cabeçalho</strong> com o nome <strong className="text-slate-500">Authorization</strong></p>
+                    <p>• Campos do corpo enviados: <strong className="text-slate-500">phone</strong>, <strong className="text-slate-500">name</strong> e <strong className="text-slate-500">message</strong></p>
                     <p>• O token fica guardado com segurança no servidor — nunca é exposto ao navegador</p>
                   </div>
                 </div>
               )}
 
               {/* ── Atendimento (inbox) — webhook de recepção ── */}
-              <div className="border-t border-white/[0.08] pt-5 space-y-3">
+              <div className="border-t border-slate-200 pt-5 space-y-3">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-100">Atendimento (receber mensagens no painel)</h4>
+                  <h4 className="text-sm font-bold text-slate-900">Atendimento (receber mensagens no painel)</h4>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Para as mensagens dos clientes aparecerem na aba Atendimento, configure o webhook do provedor ativo.
                   </p>
                 </div>
                 {whatsappProvider === 'crm' ? (
-                  <div className="flex items-start gap-2 bg-slate-500/10 border border-white/[0.08] rounded-lg px-3 py-2.5">
-                    <Info className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-400">
+                  <div className="flex items-start gap-2 bg-slate-500/10 border border-slate-200 rounded-lg px-3 py-2.5">
+                    <Info className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-500">
                       O Acta é usado só para enviar notificações — não há webhook de recepção para este provedor.
                     </p>
                   </div>
@@ -909,41 +909,41 @@ export const Settings = () => {
                   </button>
                 ) : whatsappProvider === 'waha' ? (
                   <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">URL do webhook (configure no WAHA)</label>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">URL do webhook (configure no WAHA)</label>
                     <div className="flex gap-2">
-                      <input readOnly value={wahaHookUrl} className="flex-1 border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-300 bg-[#161b22] font-mono" />
-                      <button onClick={() => copyToClipboard(wahaHookUrl, setCopiedWaHook)} className="flex items-center gap-1.5 border border-white/[0.08] text-slate-300 hover:border-white/20 px-3 rounded-lg text-xs font-semibold">
-                        {copiedWaHook ? <CheckCircle className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <input readOnly value={wahaHookUrl} className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-700 bg-slate-50 font-mono" />
+                      <button onClick={() => copyToClipboard(wahaHookUrl, setCopiedWaHook)} className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:border-slate-300 px-3 rounded-lg text-xs font-semibold">
+                        {copiedWaHook ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
                         {copiedWaHook ? 'Copiado' : 'Copiar'}
                       </button>
                     </div>
                     <div className="text-xs text-slate-500 space-y-1 pt-1">
-                      <p>• No container do WAHA, defina: <strong className="text-slate-400">WHATSAPP_HOOK_URL</strong> = a URL acima</p>
-                      <p>• E <strong className="text-slate-400">WHATSAPP_HOOK_EVENTS=message</strong> (somente "message" — não use "message.any")</p>
+                      <p>• No container do WAHA, defina: <strong className="text-slate-500">WHATSAPP_HOOK_URL</strong> = a URL acima</p>
+                      <p>• E <strong className="text-slate-500">WHATSAPP_HOOK_EVENTS=message</strong> (somente "message" — não use "message.any")</p>
                       <p>• Reinicie o container do WAHA após alterar as variáveis</p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Callback URL (configure no app da Meta)</label>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Callback URL (configure no app da Meta)</label>
                     <div className="flex gap-2">
-                      <input readOnly value={metaHookUrl} className="flex-1 border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-300 bg-[#161b22] font-mono" />
-                      <button onClick={() => copyToClipboard(metaHookUrl, setCopiedWaHook)} className="flex items-center gap-1.5 border border-white/[0.08] text-slate-300 hover:border-white/20 px-3 rounded-lg text-xs font-semibold">
-                        {copiedWaHook ? <CheckCircle className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <input readOnly value={metaHookUrl} className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-700 bg-slate-50 font-mono" />
+                      <button onClick={() => copyToClipboard(metaHookUrl, setCopiedWaHook)} className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:border-slate-300 px-3 rounded-lg text-xs font-semibold">
+                        {copiedWaHook ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
                         {copiedWaHook ? 'Copiado' : 'Copiar'}
                       </button>
                     </div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide pt-1">Verify token</label>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide pt-1">Verify token</label>
                     <div className="flex gap-2">
-                      <input readOnly value={waWebhookSecret} className="flex-1 border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-300 bg-[#161b22] font-mono" />
-                      <button onClick={() => copyToClipboard(waWebhookSecret, setCopiedWaSecret)} className="flex items-center gap-1.5 border border-white/[0.08] text-slate-300 hover:border-white/20 px-3 rounded-lg text-xs font-semibold">
-                        {copiedWaSecret ? <CheckCircle className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <input readOnly value={waWebhookSecret} className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-700 bg-slate-50 font-mono" />
+                      <button onClick={() => copyToClipboard(waWebhookSecret, setCopiedWaSecret)} className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:border-slate-300 px-3 rounded-lg text-xs font-semibold">
+                        {copiedWaSecret ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
                         {copiedWaSecret ? 'Copiado' : 'Copiar'}
                       </button>
                     </div>
                     <div className="text-xs text-slate-500 space-y-1 pt-1">
-                      <p>• Em <strong className="text-slate-400">developers.facebook.com</strong> → seu app → WhatsApp → Configuration → Webhook</p>
-                      <p>• Cole a Callback URL e o Verify token acima, e assine o campo <strong className="text-slate-400">messages</strong></p>
+                      <p>• Em <strong className="text-slate-500">developers.facebook.com</strong> → seu app → WhatsApp → Configuration → Webhook</p>
+                      <p>• Cole a Callback URL e o Verify token acima, e assine o campo <strong className="text-slate-500">messages</strong></p>
                     </div>
                   </div>
                 )}
@@ -954,48 +954,48 @@ export const Settings = () => {
 
           {/* ── Google Drive ── */}
           {integrationTab === 'drive' && (
-            <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+            <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <HardDrive className="w-5 h-5 text-blue-400" />
+                    <HardDrive className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-100">Google Drive</h3>
+                    <h3 className="text-sm font-bold text-slate-900">Google Drive</h3>
                     <p className="text-xs text-slate-500">Armazene e organize arquivos da agência diretamente no Drive</p>
                   </div>
                 </div>
                 {isConnected() && (
-                  <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                  <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
                     <CheckCircle className="w-3.5 h-3.5" /> Conectado
                   </span>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Client ID (Google Cloud)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Client ID (Google Cloud)</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={driveClientId}
                     onChange={e => setDriveClientId(e.target.value)}
                     placeholder="xxxxxxxxxxxx-xxxxxxxx.apps.googleusercontent.com"
-                    className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={handleSaveClientId}
                     disabled={!driveClientId.trim() || driveClientId === googleClientId}
-                    className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white rounded-lg transition-colors"
+                    className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-white rounded-lg transition-colors"
                   >
-                    {driveSaved ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : 'Salvar'}
+                    {driveSaved ? <CheckCircle className="w-4 h-4 text-emerald-600" /> : 'Salvar'}
                   </button>
                 </div>
               </div>
 
               {driveError && (
                 <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                  <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-400">{driveError}</p>
+                  <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-600">{driveError}</p>
                 </div>
               )}
 
@@ -1012,7 +1012,7 @@ export const Settings = () => {
                 ) : (
                   <button
                     onClick={handleDisconnectDrive}
-                    className="flex items-center gap-2 text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    className="flex items-center gap-2 text-slate-500 hover:text-red-600 bg-slate-100 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                   >
                     <Link2Off className="w-4 h-4" />
                     Desconectar
@@ -1020,71 +1020,71 @@ export const Settings = () => {
                 )}
               </div>
 
-              <div className="border-t border-white/[0.05] pt-4 text-xs text-slate-500 space-y-1">
-                <p>• Acesse <strong className="text-slate-400">console.cloud.google.com</strong> → crie um projeto → ative a <strong className="text-slate-400">Google Drive API</strong></p>
-                <p>• Em Credenciais → crie OAuth 2.0 → tipo <strong className="text-slate-400">Aplicativo da Web</strong> → adicione o domínio do app em "Origens autorizadas"</p>
-                <p>• Copie o <strong className="text-slate-400">Client ID</strong> gerado e cole acima</p>
+              <div className="border-t border-slate-200 pt-4 text-xs text-slate-500 space-y-1">
+                <p>• Acesse <strong className="text-slate-500">console.cloud.google.com</strong> → crie um projeto → ative a <strong className="text-slate-500">Google Drive API</strong></p>
+                <p>• Em Credenciais → crie OAuth 2.0 → tipo <strong className="text-slate-500">Aplicativo da Web</strong> → adicione o domínio do app em "Origens autorizadas"</p>
+                <p>• Copie o <strong className="text-slate-500">Client ID</strong> gerado e cole acima</p>
               </div>
             </div>
           )}
 
           {/* ── Meta Lead Ads ── */}
           {integrationTab === 'site' && (
-            <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+            <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-purple-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Globe className="w-5 h-5 text-purple-400" />
+                  <Globe className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-100">Formulário do Site — Webhook</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Formulário do Site — Webhook</h3>
                   <p className="text-xs text-slate-500">Leads enviados pelo formulário do seu site chegam automaticamente na aba Leads</p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       readOnly
                       value={siteWebhookFullUrl}
-                      className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-500 font-mono focus:outline-none"
                     />
                     <button
                       onClick={() => copyToClipboard(siteWebhookFullUrl, setCopiedSiteUrl)}
-                      className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                      className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
                     >
-                      {copiedSiteUrl ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedSiteUrl ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedSiteUrl ? 'Copiado!' : 'Copiar'}
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Envie um <strong className="text-slate-400">POST</strong> com JSON para esta URL a partir do formulário do seu site</p>
+                  <p className="text-xs text-slate-500 mt-1">Envie um <strong className="text-slate-500">POST</strong> com JSON para esta URL a partir do formulário do seu site</p>
                 </div>
 
-                <div className="rounded-lg bg-[#161b22] border border-white/[0.06] p-4">
-                  <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Campos aceitos no body (JSON)</p>
+                <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
+                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Campos aceitos no body (JSON)</p>
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="text-left text-slate-500 border-b border-white/[0.05]">
+                      <tr className="text-left text-slate-500 border-b border-slate-200">
                         <th className="pb-1.5 font-medium">Campo</th>
                         <th className="pb-1.5 font-medium">Tipo</th>
                         <th className="pb-1.5 font-medium">Obrigatório</th>
                       </tr>
                     </thead>
-                    <tbody className="text-slate-300 divide-y divide-white/[0.03]">
-                      <tr><td className="py-1 font-mono text-purple-300">name</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-red-400">sim</td></tr>
-                      <tr><td className="py-1 font-mono text-purple-300">email</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
-                      <tr><td className="py-1 font-mono text-purple-300">phone</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
-                      <tr><td className="py-1 font-mono text-purple-300">notes</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
-                      <tr><td className="py-1 font-mono text-purple-300">message</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não (alias de notes)</td></tr>
+                    <tbody className="text-slate-700 divide-y divide-slate-200">
+                      <tr><td className="py-1 font-mono text-purple-700">name</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-red-600">sim</td></tr>
+                      <tr><td className="py-1 font-mono text-purple-700">email</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                      <tr><td className="py-1 font-mono text-purple-700">phone</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                      <tr><td className="py-1 font-mono text-purple-700">notes</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não</td></tr>
+                      <tr><td className="py-1 font-mono text-purple-700">message</td><td className="py-1 text-slate-500">string</td><td className="py-1 text-slate-500">não (alias de notes)</td></tr>
                     </tbody>
                   </table>
                 </div>
 
-                <div className="rounded-lg bg-[#0d1117] border border-white/[0.06] p-4 overflow-x-auto">
-                  <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Exemplo — fetch JavaScript</p>
-                  <pre className="text-xs text-slate-300 whitespace-pre font-mono leading-relaxed">{`fetch("${siteWebhookFullUrl}", {
+                <div className="rounded-lg bg-slate-50 border border-slate-200 p-4 overflow-x-auto">
+                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Exemplo — fetch JavaScript</p>
+                  <pre className="text-xs text-slate-700 whitespace-pre font-mono leading-relaxed">{`fetch("${siteWebhookFullUrl}", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -1097,39 +1097,39 @@ export const Settings = () => {
                 </div>
               </div>
 
-              <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                <p>• O lead entra com status <strong className="text-slate-400">Novo</strong> e badge <strong className="text-slate-400">Site</strong></p>
+              <div className="border-t border-slate-200 pt-3 text-xs text-slate-500 space-y-1">
+                <p>• O lead entra com status <strong className="text-slate-500">Novo</strong> e badge <strong className="text-slate-500">Site</strong></p>
                 <p>• A URL já está pronta — não precisa de configuração adicional</p>
               </div>
             </div>
           )}
 
           {integrationTab === 'meta-leads' && (
-            <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08] space-y-5">
+            <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Target className="w-5 h-5 text-blue-400" />
+                  <Target className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-100">Meta Lead Ads — Captação automática</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Meta Lead Ads — Captação automática</h3>
                   <p className="text-xs text-slate-500">Leads dos formulários do Facebook/Instagram chegam automaticamente na aba Leads</p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">URL do Webhook</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     readOnly
                     value={WEBHOOK_URL}
-                    className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-500 font-mono focus:outline-none"
                   />
                   <button
                     onClick={() => copyToClipboard(WEBHOOK_URL, setCopiedWebhook)}
-                    className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                    className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
                   >
-                    {copiedWebhook ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedWebhook ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedWebhook ? 'Copiado!' : 'Copiar'}
                   </button>
                 </div>
@@ -1137,26 +1137,26 @@ export const Settings = () => {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Page ID</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Page ID</label>
                   <input
                     type="text"
                     value={leadsPageId}
                     onChange={e => setLeadsPageId(e.target.value)}
-                    className="w-full bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="ID da sua Página do Facebook"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Page Access Token</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Page Access Token</label>
                   <div className="relative">
                     <input
                       type={leadsShowPageToken ? 'text' : 'password'}
                       value={leadsPageToken}
                       onChange={e => setLeadsPageToken(e.target.value)}
-                      className="w-full bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="EAAxxxxxxxx..."
                     />
-                    <button onClick={() => setLeadsShowPageToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                    <button onClick={() => setLeadsShowPageToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700">
                       {leadsShowPageToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -1164,19 +1164,19 @@ export const Settings = () => {
 
                 {metaLeadsVerifyToken && (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Verify Token</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Verify Token</label>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         readOnly
                         value={metaLeadsVerifyToken}
-                        className="flex-1 bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-slate-400 font-mono focus:outline-none"
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-500 font-mono focus:outline-none"
                       />
                       <button
                         onClick={() => copyToClipboard(metaLeadsVerifyToken, setCopiedVerifyToken)}
-                        className="px-3 py-2 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                        className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
                       >
-                        {copiedVerifyToken ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedVerifyToken ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                         {copiedVerifyToken ? 'Copiado!' : 'Copiar'}
                       </button>
                     </div>
@@ -1197,17 +1197,17 @@ export const Settings = () => {
                 {(metaLeadsPageId || metaLeadsPageToken) && (
                   <button
                     onClick={() => { clearMetaLeadsConfig(); setLeadsPageId(''); setLeadsPageToken(''); }}
-                    className="text-xs text-slate-500 hover:text-red-400 transition-colors"
+                    className="text-xs text-slate-500 hover:text-red-600 transition-colors"
                   >
                     Remover configuração
                   </button>
                 )}
               </div>
 
-              <div className="border-t border-white/[0.05] pt-3 text-xs text-slate-500 space-y-1">
-                <p>• Acesse <strong className="text-slate-400">business.facebook.com</strong> → Configurações → Webhooks → adicione a URL acima</p>
-                <p>• Inscreva-se no objeto <strong className="text-slate-400">page</strong>, campo <strong className="text-slate-400">leadgen</strong>, usando o Verify Token gerado</p>
-                <p>• Page ID e Page Access Token: <strong className="text-slate-400">Meta Business Manager → Configurações → Páginas</strong></p>
+              <div className="border-t border-slate-200 pt-3 text-xs text-slate-500 space-y-1">
+                <p>• Acesse <strong className="text-slate-500">business.facebook.com</strong> → Configurações → Webhooks → adicione a URL acima</p>
+                <p>• Inscreva-se no objeto <strong className="text-slate-500">page</strong>, campo <strong className="text-slate-500">leadgen</strong>, usando o Verify Token gerado</p>
+                <p>• Page ID e Page Access Token: <strong className="text-slate-500">Meta Business Manager → Configurações → Páginas</strong></p>
               </div>
             </div>
           )}
@@ -1216,43 +1216,43 @@ export const Settings = () => {
 
       {/* Create User Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] sticky top-0 bg-[#21262d] z-10">
-              <h2 className="text-lg font-bold text-slate-100">Novo usuário</h2>
-              <button onClick={() => setShowUserModal(false)} className="text-slate-400 hover:text-slate-500 p-1 rounded-lg hover:bg-white/[0.06]">
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
+              <h2 className="text-lg font-bold text-slate-900">Novo usuário</h2>
+              <button onClick={() => setShowUserModal(false)} className="text-slate-500 hover:text-slate-500 p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               {/* Basic info */}
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Nome completo *</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Nome completo *</label>
                 <input
                   type="text"
                   value={userForm.name}
                   onChange={e => setUserForm({ ...userForm, name: e.target.value })}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nome do usuário"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">E-mail *</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">E-mail *</label>
                 <input
                   type="email"
                   value={userForm.email}
                   onChange={e => setUserForm({ ...userForm, email: e.target.value })}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="email@agencia.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Função *</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Função *</label>
                 <select
                   value={userForm.role}
                   onChange={e => handleRoleChange(e.target.value as UserRole)}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
                     <option key={role} value={role}>{label}</option>
@@ -1260,24 +1260,24 @@ export const Settings = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Senha *</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Senha *</label>
                 <input
                   type="password"
                   value={userForm.password}
                   onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">
                   Telefone <span className="text-slate-500 font-normal">(WhatsApp — opcional)</span>
                 </label>
                 <input
                   type="text"
                   value={userForm.phone}
                   onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="(11) 99999-9999"
                 />
                 <p className="text-xs text-slate-500 mt-1">Se preenchido, o usuário recebe o login e a senha por WhatsApp assim que for criado.</p>
@@ -1285,19 +1285,19 @@ export const Settings = () => {
 
               {/* Permissions */}
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2">
+                <label className="block text-sm font-medium text-slate-800 mb-2">
                   <div className="flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-slate-400" />
+                    <Shield className="w-4 h-4 text-slate-500" />
                     Acessos permitidos
                   </div>
                 </label>
                 {userForm.role === 'admin' ? (
-                  <div className="bg-purple-500/[0.1] border border-purple-500/[0.3] rounded-lg px-3 py-2.5 text-sm text-purple-400 flex items-center gap-2">
+                  <div className="bg-purple-500/[0.1] border border-purple-500/[0.3] rounded-lg px-3 py-2.5 text-sm text-purple-600 flex items-center gap-2">
                     <Shield className="w-4 h-4 flex-shrink-0" />
                     Administradores têm acesso completo a todos os módulos.
                   </div>
                 ) : (
-                  <div className="border border-white/[0.08] rounded-lg p-3 grid grid-cols-2 gap-2">
+                  <div className="border border-slate-200 rounded-lg p-3 grid grid-cols-2 gap-2">
                     {PAGE_PERMISSIONS.filter(p => p.key !== 'settings').map(p => (
                       <label key={p.key} className="flex items-center gap-2.5 cursor-pointer group">
                         <input
@@ -1306,7 +1306,7 @@ export const Settings = () => {
                           onChange={() => togglePermission(p.key)}
                           className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
-                        <span className="text-sm text-slate-200 group-hover:text-white">{p.label}</span>
+                        <span className="text-sm text-slate-800 group-hover:text-slate-900">{p.label}</span>
                       </label>
                     ))}
                   </div>
@@ -1314,7 +1314,7 @@ export const Settings = () => {
               </div>
 
               {/* Professional profile */}
-              <div className="border-t border-white/[0.05] pt-4">
+              <div className="border-t border-slate-200 pt-4">
                 <label className="flex items-center gap-2.5 cursor-pointer mb-3">
                   <input
                     type="checkbox"
@@ -1323,19 +1323,19 @@ export const Settings = () => {
                     className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                   <div className="flex items-center gap-1.5">
-                    <Briefcase className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-200">Criar perfil de profissional vinculado</span>
+                    <Briefcase className="w-4 h-4 text-slate-500" />
+                    <span className="text-sm font-medium text-slate-800">Criar perfil de profissional vinculado</span>
                   </div>
                 </label>
 
                 {userForm.createProfessional && (
-                  <div className="space-y-3 pl-6 border-l-2 border-white/[0.05]">
+                  <div className="space-y-3 pl-6 border-l-2 border-slate-200">
                     <div>
-                      <label className="block text-sm font-medium text-slate-200 mb-1.5">Profissão *</label>
+                      <label className="block text-sm font-medium text-slate-800 mb-1.5">Profissão *</label>
                       <select
                         value={userForm.profession}
                         onChange={e => setUserForm({ ...userForm, profession: e.target.value as ProfessionType })}
-                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         {PROFESSIONS.map(p => (
                           <option key={p} value={p}>{getProfessionLabel(p)}</option>
@@ -1343,12 +1343,12 @@ export const Settings = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-200 mb-1.5">Chave PIX</label>
+                      <label className="block text-sm font-medium text-slate-800 mb-1.5">Chave PIX</label>
                       <input
                         type="text"
                         value={userForm.pixKey}
                         onChange={e => setUserForm({ ...userForm, pixKey: e.target.value })}
-                        className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="CPF, e-mail ou telefone"
                       />
                     </div>
@@ -1363,8 +1363,8 @@ export const Settings = () => {
               </div>
             )}
 
-            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05] sticky bottom-0 bg-[#21262d]">
-              <button onClick={() => setShowUserModal(false)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-200 sticky bottom-0 bg-white">
+              <button onClick={() => setShowUserModal(false)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">
                 Cancelar
               </button>
               <button
@@ -1381,32 +1381,32 @@ export const Settings = () => {
 
       {/* Edit User Modal */}
       {editUserId && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] sticky top-0 bg-[#21262d] z-10">
-              <h2 className="text-lg font-bold text-slate-100">Editar usuário</h2>
-              <button onClick={() => setEditUserId(null)} className="text-slate-400 hover:text-slate-500 p-1 rounded-lg hover:bg-white/[0.06]">
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
+              <h2 className="text-lg font-bold text-slate-900">Editar usuário</h2>
+              <button onClick={() => setEditUserId(null)} className="text-slate-500 hover:text-slate-500 p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Nome completo *</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Nome completo *</label>
                 <input
                   type="text"
                   value={editForm.name}
                   onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Função</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Função</label>
                 <select
                   value={editForm.role}
                   onChange={e => handleEditRoleChange(e.target.value as UserRole)}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
                     <option key={role} value={role}>{label}</option>
@@ -1415,19 +1415,19 @@ export const Settings = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2">
+                <label className="block text-sm font-medium text-slate-800 mb-2">
                   <div className="flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-slate-400" />
+                    <Shield className="w-4 h-4 text-slate-500" />
                     Acessos permitidos
                   </div>
                 </label>
                 {editForm.role === 'admin' ? (
-                  <div className="bg-purple-500/[0.1] border border-purple-500/[0.3] rounded-lg px-3 py-2.5 text-sm text-purple-400 flex items-center gap-2">
+                  <div className="bg-purple-500/[0.1] border border-purple-500/[0.3] rounded-lg px-3 py-2.5 text-sm text-purple-600 flex items-center gap-2">
                     <Shield className="w-4 h-4 flex-shrink-0" />
                     Administradores têm acesso completo a todos os módulos.
                   </div>
                 ) : (
-                  <div className="border border-white/[0.08] rounded-lg p-3 grid grid-cols-2 gap-2">
+                  <div className="border border-slate-200 rounded-lg p-3 grid grid-cols-2 gap-2">
                     {PAGE_PERMISSIONS.filter(p => p.key !== 'settings').map(p => (
                       <label key={p.key} className="flex items-center gap-2.5 cursor-pointer group">
                         <input
@@ -1436,17 +1436,17 @@ export const Settings = () => {
                           onChange={() => toggleEditPermission(p.key)}
                           className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
-                        <span className="text-sm text-slate-200 group-hover:text-white">{p.label}</span>
+                        <span className="text-sm text-slate-800 group-hover:text-slate-900">{p.label}</span>
                       </label>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-white/[0.05] pt-4">
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">
+              <div className="border-t border-slate-200 pt-4">
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">
                   <div className="flex items-center gap-1.5">
-                    <Lock className="w-4 h-4 text-slate-400" />
+                    <Lock className="w-4 h-4 text-slate-500" />
                     Nova senha
                     <span className="text-xs text-slate-500 font-normal">(deixe em branco para não alterar)</span>
                   </div>
@@ -1455,7 +1455,7 @@ export const Settings = () => {
                   type="password"
                   value={editForm.newPassword}
                   onChange={e => setEditForm(f => ({ ...f, newPassword: e.target.value }))}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
@@ -1467,8 +1467,8 @@ export const Settings = () => {
               </div>
             )}
 
-            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05] sticky bottom-0 bg-[#21262d]">
-              <button onClick={() => setEditUserId(null)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-200 sticky bottom-0 bg-white">
+              <button onClick={() => setEditUserId(null)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">
                 Cancelar
               </button>
               <button
@@ -1485,12 +1485,12 @@ export const Settings = () => {
 
       {/* Delete user confirmation */}
       {deleteUserId && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-slate-100 mb-2">Confirmar exclusão</h3>
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Confirmar exclusão</h3>
             <p className="text-slate-500 text-sm mb-6">Deseja excluir este usuário? O acesso ao sistema será revogado imediatamente.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteUserId(null)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">Cancelar</button>
+              <button onClick={() => setDeleteUserId(null)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">Cancelar</button>
               <button onClick={handleDeleteUser} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold">Excluir</button>
             </div>
           </div>

@@ -13,12 +13,13 @@ import { formatCurrency, getStatusLabel, isOverdue, getPriorityColor, getPriorit
 
 const COLORS = ['#1d4ed8', '#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#14b8a6', '#64748b'];
 
-const StatCard = ({ label, value, accent, sub }: { label: string; value: string | number; accent: string; sub?: string }) => (
-  <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
-    <div className={`inline-block w-1 h-6 rounded-full mb-3 ${accent}`} />
-    <p className="text-3xl font-extrabold text-white tracking-tight leading-none">{value}</p>
-    <p className="text-xs font-medium text-slate-500 mt-2 uppercase tracking-wide">{label}</p>
-    {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+const TONE = { default: 'text-slate-900', red: 'text-red-600', green: 'text-emerald-600', orange: 'text-orange-600' };
+
+const StatCard = ({ label, value, tone = 'default', sub }: { label: string; value: string | number; tone?: keyof typeof TONE; sub?: string }) => (
+  <div className="bg-white rounded-xl px-4 py-3.5 border border-slate-200">
+    <p className="text-sm text-slate-500">{label}</p>
+    <p className={`text-2xl font-semibold tracking-tight mt-1 ${TONE[tone]}`}>{value}</p>
+    {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
   </div>
 );
 
@@ -87,29 +88,29 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Dashboard</h1>
-        <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
+        <p className="text-sm text-slate-500 mt-0.5">
           {now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Demandas abertas" value={stats.open} accent="bg-blue-600" />
-        <StatCard label="Atrasadas" value={stats.overdue} accent="bg-red-500/[0.1]0" />
-        <StatCard label="Concluídas este mês" value={stats.completedThisMonth} accent="bg-emerald-500/[0.1]0" />
-        <StatCard label="Clientes ativos" value={stats.activeClients} accent="bg-violet-500" />
+        <StatCard label="Demandas abertas" value={stats.open} />
+        <StatCard label="Atrasadas" value={stats.overdue} tone={stats.overdue > 0 ? 'red' : 'default'} />
+        <StatCard label="Concluídas este mês" value={stats.completedThisMonth} tone="green" />
+        <StatCard label="Clientes ativos" value={stats.activeClients} />
       </div>
 
       {isAdmin && (
         <div className="grid grid-cols-2 gap-4">
-          <StatCard label="Valores a pagar" value={formatCurrency(stats.pendingPayment)} accent="bg-orange-500" />
-          <StatCard label="Pagamentos este mês" value={formatCurrency(stats.paidThisMonth)} accent="bg-green-600" />
+          <StatCard label="Valores a pagar" value={formatCurrency(stats.pendingPayment)} tone="orange" />
+          <StatCard label="Pagamentos este mês" value={formatCurrency(stats.paidThisMonth)} />
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
-          <h3 className="text-base font-semibold text-slate-100 mb-4">Demandas por Status</h3>
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
+          <h3 className="text-base font-semibold text-slate-900 mb-4">Demandas por Status</h3>
           {demandsByStatus.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={demandsByStatus} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -121,14 +122,14 @@ export const Dashboard = () => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[220px] flex items-center justify-center text-slate-400 text-sm">
+            <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
               Nenhuma demanda cadastrada ainda
             </div>
           )}
         </div>
 
-        <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
-          <h3 className="text-base font-semibold text-slate-100 mb-4">Demandas por Profissional</h3>
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
+          <h3 className="text-base font-semibold text-slate-900 mb-4">Demandas por Profissional</h3>
           {demandsByProfessional.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -149,37 +150,37 @@ export const Dashboard = () => {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[220px] flex items-center justify-center text-slate-400 text-sm">
+            <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
               Nenhuma demanda cadastrada ainda
             </div>
           )}
         </div>
       </div>
 
-      <div className="bg-[#21262d] rounded-xl border border-white/[0.08]">
-        <div className="px-6 py-4 border-b border-white/[0.05] flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-100">Demandas Recentes</h3>
-          <span className="text-xs text-slate-400">{recentDemands.length} demanda(s)</span>
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-slate-900">Demandas Recentes</h3>
+          <span className="text-xs text-slate-500">{recentDemands.length} demanda(s)</span>
         </div>
         {recentDemands.length === 0 ? (
           <div className="p-12 text-center">
             <ClipboardList className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm">Nenhuma demanda cadastrada ainda.</p>
+            <p className="text-slate-500 text-sm">Nenhuma demanda cadastrada ainda.</p>
           </div>
         ) : (
-          <div className="divide-y divide-white/[0.05]">
+          <div className="divide-y divide-slate-200">
             {recentDemands.map(demand => {
               const prof = professionals.find(p => p.id === demand.professionalId);
               const client = clients.find(c => c.id === demand.clientId);
               const overdue = isOverdue(demand.deadline, demand.status);
               return (
-                <div key={demand.id} className="px-6 py-3 flex items-center gap-4 hover:bg-white/[0.04] transition-colors">
+                <div key={demand.id} className="px-6 py-3 flex items-center gap-4 hover:bg-slate-100 transition-colors">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-100 truncate">{demand.title}</p>
+                    <p className="text-sm font-medium text-slate-900 truncate">{demand.title}</p>
                     <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
                       {client?.companyName || '—'} · {prof?.name || '—'}
                       {demand.comments.length > 0 && (
-                        <span className="flex items-center gap-0.5 text-slate-400 ml-1">
+                        <span className="flex items-center gap-0.5 text-slate-500 ml-1">
                           <MessageSquare className="w-3 h-3" />
                           {demand.comments.length}
                         </span>
@@ -189,10 +190,10 @@ export const Dashboard = () => {
                   <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${getPriorityColor(demand.priority)}`}>
                     {getPriorityLabel(demand.priority)}
                   </span>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${overdue ? 'bg-red-100 text-red-400' : 'bg-[#0d1117] text-slate-500'}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${overdue ? 'bg-red-100 text-red-600' : 'bg-slate-50 text-slate-500'}`}>
                     {overdue ? 'Atrasada' : getStatusLabel(demand.status)}
                   </span>
-                  <div className="text-sm font-bold text-slate-200 flex-shrink-0">{formatCurrency(demand.value)}</div>
+                  <div className="text-sm font-bold text-slate-800 flex-shrink-0">{formatCurrency(demand.value)}</div>
                 </div>
               );
             })}

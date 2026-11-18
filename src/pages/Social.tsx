@@ -40,12 +40,12 @@ const AVATAR_COLORS = ['pink', 'purple', 'blue', 'orange', 'green', 'yellow'] as
 type AvatarColor = (typeof AVATAR_COLORS)[number];
 
 const colorClasses: Record<string, { bg: string; text: string; border: string; stripe: string; pill: string }> = {
-  pink:   { bg: 'bg-pink-500/20',   text: 'text-pink-400',   border: 'border-pink-500/40',   stripe: 'bg-pink-500',   pill: 'bg-pink-500/15 border-pink-500/30 text-pink-300' },
-  purple: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/40', stripe: 'bg-purple-500', pill: 'bg-purple-500/15 border-purple-500/30 text-purple-300' },
-  blue:   { bg: 'bg-blue-500/20',   text: 'text-blue-400',   border: 'border-blue-500/40',   stripe: 'bg-blue-500',   pill: 'bg-blue-500/15 border-blue-500/30 text-blue-300' },
-  orange: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/40', stripe: 'bg-orange-500', pill: 'bg-orange-500/15 border-orange-500/30 text-orange-300' },
-  green:  { bg: 'bg-emerald-500/20',text: 'text-emerald-400',border: 'border-emerald-500/40',stripe: 'bg-emerald-500',pill: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' },
-  yellow: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/40', stripe: 'bg-yellow-500', pill: 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300' },
+  pink:   { bg: 'bg-pink-500/20',   text: 'text-pink-600',   border: 'border-pink-500/40',   stripe: 'bg-pink-500',   pill: 'bg-pink-500/15 border-pink-500/30 text-pink-700' },
+  purple: { bg: 'bg-purple-500/20', text: 'text-purple-600', border: 'border-purple-500/40', stripe: 'bg-purple-500', pill: 'bg-purple-500/15 border-purple-500/30 text-purple-700' },
+  blue:   { bg: 'bg-blue-500/20',   text: 'text-blue-600',   border: 'border-blue-500/40',   stripe: 'bg-blue-500',   pill: 'bg-blue-500/15 border-blue-500/30 text-blue-700' },
+  orange: { bg: 'bg-orange-500/20', text: 'text-orange-600', border: 'border-orange-500/40', stripe: 'bg-orange-500', pill: 'bg-orange-500/15 border-orange-500/30 text-orange-700' },
+  green:  { bg: 'bg-emerald-500/20',text: 'text-emerald-600',border: 'border-emerald-500/40',stripe: 'bg-emerald-500',pill: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700' },
+  yellow: { bg: 'bg-yellow-500/20', text: 'text-yellow-700', border: 'border-yellow-500/40', stripe: 'bg-yellow-500', pill: 'bg-yellow-500/15 border-yellow-500/30 text-yellow-700' },
 };
 
 const colorDotClass: Record<string, string> = {
@@ -81,21 +81,21 @@ const formatShortDay = (date: Date) =>
 
 /* ─── Status badge ──────────────────────────────────────────────────────────── */
 const statusConfig: Record<PostStatus, { label: string; cls: string }> = {
-  scheduled:  { label: 'Agendado',  cls: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-  published:  { label: 'Publicado', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-  cancelled:  { label: 'Cancelado', cls: 'bg-slate-500/15 text-slate-400 border-slate-500/30' },
+  scheduled:  { label: 'Agendado',  cls: 'bg-blue-500/15 text-blue-600 border-blue-500/30' },
+  published:  { label: 'Publicado', cls: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
+  cancelled:  { label: 'Cancelado', cls: 'bg-slate-500/15 text-slate-500 border-slate-500/30' },
 };
 
 /* ─── Common input class ─────────────────────────────────────────────────────── */
-const inputCls = 'w-full bg-[#21262d] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
+const inputCls = 'w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
 
 /* ─── Modal wrapper ─────────────────────────────────────────────────────────── */
 const Modal = ({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div className={`bg-[#161b22] border border-white/[0.08] rounded-xl w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} max-h-[90dvh] overflow-y-auto shadow-2xl`}>
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08]">
-        <h2 className="text-base font-semibold text-white">{title}</h2>
-        <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors">
+    <div className={`bg-slate-50 border border-slate-200 rounded-xl w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} max-h-[90dvh] overflow-y-auto shadow-2xl`}>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -107,7 +107,7 @@ const Modal = ({ title, onClose, children, wide }: { title: string; onClose: () 
 /* ─── Field ──────────────────────────────────────────────────────────────────── */
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="mb-4">
-    <label className="block text-xs font-medium text-slate-400 mb-1.5">{label}</label>
+    <label className="block text-xs font-medium text-slate-500 mb-1.5">{label}</label>
     {children}
   </div>
 );
@@ -141,12 +141,12 @@ const ManageAccountsModal = ({ onClose }: ManageAccountsModalProps) => {
           {accounts.map(acc => {
             const c = getColor(acc.avatarColor);
             return (
-              <div key={acc.id} className="flex items-center gap-3 p-3 bg-[#21262d] rounded-lg border border-white/[0.05]">
+              <div key={acc.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200">
                 <div className={`w-8 h-8 rounded-full ${c.bg} flex items-center justify-center flex-shrink-0`}>
                   <Camera className={`w-4 h-4 ${c.text}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">@{acc.username}</p>
+                  <p className="text-sm font-medium text-slate-900 truncate">@{acc.username}</p>
                   <span className="text-xs text-slate-500 capitalize">{acc.platform}</span>
                 </div>
                 {/* Active toggle */}
@@ -155,15 +155,15 @@ const ManageAccountsModal = ({ onClose }: ManageAccountsModalProps) => {
                   title={acc.active ? 'Desativar' : 'Ativar'}
                   className={`text-xs px-2 py-0.5 rounded-full font-medium border transition-colors ${
                     acc.active
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
-                      : 'bg-slate-500/15 text-slate-400 border-slate-500/30 hover:bg-slate-500/25'
+                      ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/25'
+                      : 'bg-slate-500/15 text-slate-500 border-slate-500/30 hover:bg-slate-500/25'
                   }`}
                 >
                   {acc.active ? 'Ativa' : 'Inativa'}
                 </button>
                 <button
                   onClick={() => deleteAccount(acc.id)}
-                  className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -174,11 +174,11 @@ const ManageAccountsModal = ({ onClose }: ManageAccountsModalProps) => {
       )}
 
       {/* Add new */}
-      <div className="border-t border-white/[0.08] pt-5">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Nova Conta</p>
+      <div className="border-t border-slate-200 pt-5">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Nova Conta</p>
         <Field label="Username (Camera)">
           <div className="flex">
-            <span className="inline-flex items-center px-3 bg-[#21262d] border border-r-0 border-white/[0.08] rounded-l-lg text-slate-400 text-sm">@</span>
+            <span className="inline-flex items-center px-3 bg-white border border-r-0 border-slate-200 rounded-l-lg text-slate-500 text-sm">@</span>
             <input
               className={`${inputCls} rounded-l-none`}
               placeholder="seuusername"
@@ -314,7 +314,7 @@ const PostFormModal = ({ post, onClose }: PostFormModalProps) => {
               <img
                 src={form.imageUrl}
                 alt="Preview"
-                className="h-20 w-20 object-cover rounded-lg border border-white/[0.08]"
+                className="h-20 w-20 object-cover rounded-lg border border-slate-200"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
@@ -335,11 +335,11 @@ const PostFormModal = ({ post, onClose }: PostFormModalProps) => {
           <label className="flex items-center gap-3 cursor-pointer">
             <div
               onClick={() => setForm(f => ({ ...f, notifyWhatsapp: !f.notifyWhatsapp }))}
-              className={`relative w-9 h-5 rounded-full transition-colors ${form.notifyWhatsapp ? 'bg-blue-600' : 'bg-slate-600'}`}
+              className={`relative w-9 h-5 rounded-full transition-colors ${form.notifyWhatsapp ? 'bg-blue-600' : 'bg-slate-200'}`}
             >
               <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.notifyWhatsapp ? 'translate-x-4' : ''}`} />
             </div>
-            <span className="text-sm text-slate-300">Notificar via WhatsApp</span>
+            <span className="text-sm text-slate-700">Notificar via WhatsApp</span>
           </label>
         </div>
 
@@ -356,7 +356,7 @@ const PostFormModal = ({ post, onClose }: PostFormModalProps) => {
         )}
 
         <div className="flex gap-3 justify-end pt-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
             Cancelar
           </button>
           <button type="submit" className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
@@ -384,7 +384,7 @@ const PostCard = ({ post, account, onEdit, onDelete, onMarkPublished }: PostCard
   const tags = post.hashtags.split(' ').filter(Boolean);
 
   return (
-    <div className="bg-[#161b22] border border-white/[0.08] rounded-xl overflow-hidden flex">
+    <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden flex">
       {/* Color stripe */}
       <div className={`w-1 flex-shrink-0 ${c.stripe}`} />
 
@@ -399,13 +399,13 @@ const PostCard = ({ post, account, onEdit, onDelete, onMarkPublished }: PostCard
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {post.notifyWhatsapp && <Bell className="w-3.5 h-3.5 text-emerald-400" />}
+            {post.notifyWhatsapp && <Bell className="w-3.5 h-3.5 text-emerald-600" />}
             <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.cls}`}>{status.label}</span>
           </div>
         </div>
 
         {post.caption && (
-          <p className="text-sm text-slate-300 mt-2 leading-relaxed">
+          <p className="text-sm text-slate-700 mt-2 leading-relaxed">
             {post.caption.length > 80 ? post.caption.slice(0, 80) + '...' : post.caption}
           </p>
         )}
@@ -418,7 +418,7 @@ const PostCard = ({ post, account, onEdit, onDelete, onMarkPublished }: PostCard
           <img
             src={post.imageUrl}
             alt="thumb"
-            className="mt-2 h-12 w-12 object-cover rounded-lg border border-white/[0.08]"
+            className="mt-2 h-12 w-12 object-cover rounded-lg border border-slate-200"
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         )}
@@ -427,7 +427,7 @@ const PostCard = ({ post, account, onEdit, onDelete, onMarkPublished }: PostCard
           {post.status === 'scheduled' && (
             <button
               onClick={onMarkPublished}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors"
             >
               <CheckCircle className="w-3.5 h-3.5" />
               Marcar publicado
@@ -435,14 +435,14 @@ const PostCard = ({ post, account, onEdit, onDelete, onMarkPublished }: PostCard
           )}
           <button
             onClick={onEdit}
-            className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
             title="Editar"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
             title="Excluir"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -554,13 +554,13 @@ export const Social = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Calendário Editorial</h1>
-          <p className="text-sm text-slate-400 mt-1">{scheduledCount} post{scheduledCount !== 1 ? 's' : ''} agendado{scheduledCount !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-slate-900">Calendário Editorial</h1>
+          <p className="text-sm text-slate-500 mt-1">{scheduledCount} post{scheduledCount !== 1 ? 's' : ''} agendado{scheduledCount !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => setShowAccounts(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white bg-[#21262d] hover:bg-white/5 border border-white/[0.08] rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
           >
             <Camera className="w-4 h-4" />
             Gerenciar Contas
@@ -577,21 +577,21 @@ export const Social = () => {
 
       {/* Setup banner */}
       {setupNeeded && (
-        <div className="bg-[#161b22] border border-red-500/40 rounded-xl p-6 mb-8">
+        <div className="bg-slate-50 border border-red-500/40 rounded-xl p-6 mb-8">
           <div className="flex items-start gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <CalendarDays className="w-4 h-4 text-red-400" />
+              <CalendarDays className="w-4 h-4 text-red-600" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-red-400 mb-1">Configuração necessária</h2>
-              <p className="text-xs text-slate-400">
-                As tabelas <code className="text-emerald-400 font-mono">social_accounts</code> e{' '}
-                <code className="text-emerald-400 font-mono">scheduled_posts</code> não existem ainda.
-                Execute o SQL abaixo no <strong className="text-slate-300">SQL Editor</strong> do Supabase.
+              <h2 className="text-sm font-semibold text-red-600 mb-1">Configuração necessária</h2>
+              <p className="text-xs text-slate-500">
+                As tabelas <code className="text-emerald-600 font-mono">social_accounts</code> e{' '}
+                <code className="text-emerald-600 font-mono">scheduled_posts</code> não existem ainda.
+                Execute o SQL abaixo no <strong className="text-slate-700">SQL Editor</strong> do Supabase.
               </p>
             </div>
           </div>
-          <pre className="bg-[#0d1117] border border-white/[0.08] rounded-lg p-3 text-xs text-emerald-300 overflow-x-auto whitespace-pre-wrap">
+          <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-emerald-700 overflow-x-auto whitespace-pre-wrap">
             {SQL_SETUP}
           </pre>
           <p className="text-xs text-slate-500 mt-2">Após rodar o SQL, faça logout e login novamente para recarregar.</p>
@@ -614,8 +614,8 @@ export const Social = () => {
                 onClick={() => setSelectedAccountId(null)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                   selectedAccountId === null
-                    ? 'bg-white/10 text-white border-white/20'
-                    : 'bg-transparent text-slate-400 border-white/[0.08] hover:text-slate-200 hover:bg-white/5'
+                    ? 'bg-slate-200 text-slate-900 border-slate-300'
+                    : 'bg-transparent text-slate-500 border-slate-200 hover:text-slate-800 hover:bg-slate-100'
                 }`}
               >
                 Todos
@@ -628,7 +628,7 @@ export const Social = () => {
                     key={acc.id}
                     onClick={() => setSelectedAccountId(isSelected ? null : acc.id)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                      isSelected ? c.pill : 'bg-transparent text-slate-400 border-white/[0.08] hover:text-slate-200 hover:bg-white/5'
+                      isSelected ? c.pill : 'bg-transparent text-slate-500 border-slate-200 hover:text-slate-800 hover:bg-slate-100'
                     }`}
                   >
                     <Camera className="w-3 h-3" />
@@ -640,13 +640,13 @@ export const Social = () => {
           )}
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 bg-[#161b22] border border-white/[0.08] rounded-lg w-fit max-w-full overflow-x-auto mb-6">
+          <div className="flex gap-1 p-1 bg-slate-50 border border-slate-200 rounded-lg w-fit max-w-full overflow-x-auto mb-6">
             {(['upcoming', 'calendar'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  tab === t ? 'bg-[#21262d] text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+                  tab === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 {t === 'upcoming' ? 'Próximos' : 'Calendário'}
@@ -659,11 +659,11 @@ export const Social = () => {
             <div className="space-y-8">
               {grouped.length === 0 ? (
                 <div className="text-center py-20">
-                  <CalendarDays className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400 text-sm">Nenhum post agendado</p>
+                  <CalendarDays className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                  <p className="text-slate-500 text-sm">Nenhum post agendado</p>
                   <button
                     onClick={() => setShowPostForm(true)}
-                    className="mt-4 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+                    className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
                   >
                     Criar primeiro post
                   </button>
@@ -672,8 +672,8 @@ export const Social = () => {
                 grouped.map(([dateKey, dayPosts]) => (
                   <div key={dateKey}>
                     <div className="flex items-center gap-3 mb-3">
-                      <h2 className="text-sm font-semibold text-white capitalize">{formatDateLabel(dateKey)}</h2>
-                      <div className="h-px flex-1 bg-white/[0.06]" />
+                      <h2 className="text-sm font-semibold text-slate-900 capitalize">{formatDateLabel(dateKey)}</h2>
+                      <div className="h-px flex-1 bg-slate-100" />
                       <span className="text-xs text-slate-500">{dayPosts.length} post{dayPosts.length !== 1 ? 's' : ''}</span>
                     </div>
                     <div className="space-y-3">
@@ -701,23 +701,23 @@ export const Social = () => {
               <div className="flex items-center gap-3 mb-4">
                 <button
                   onClick={() => setWeekOffset(0)}
-                  className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white bg-[#21262d] hover:bg-white/5 border border-white/[0.08] rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
                 >
                   Hoje
                 </button>
                 <button
                   onClick={() => setWeekOffset(o => o - 1)}
-                  className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setWeekOffset(o => o + 1)}
-                  className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
-                <span className="text-sm text-slate-400">
+                <span className="text-sm text-slate-500">
                   {weekDays[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} – {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
@@ -731,12 +731,12 @@ export const Social = () => {
                   return (
                     <div
                       key={key}
-                      className={`min-h-[180px] bg-[#161b22] border rounded-xl p-2 flex flex-col gap-1.5 ${
-                        isToday ? 'border-blue-500/40' : 'border-white/[0.08]'
+                      className={`min-h-[180px] bg-slate-50 border rounded-xl p-2 flex flex-col gap-1.5 ${
+                        isToday ? 'border-blue-500/40' : 'border-slate-200'
                       }`}
                     >
                       {/* Day header */}
-                      <div className={`text-center mb-1 ${isToday ? 'text-blue-400' : 'text-slate-400'}`}>
+                      <div className={`text-center mb-1 ${isToday ? 'text-blue-600' : 'text-slate-500'}`}>
                         <p className="text-xs font-medium capitalize">{formatShortDay(day)}</p>
                       </div>
 
@@ -751,7 +751,7 @@ export const Social = () => {
                             className={`w-full text-left p-1.5 rounded-lg border ${c.border} ${c.bg} hover:brightness-110 transition-all`}
                           >
                             <p className={`text-xs font-medium ${c.text} truncate`}>{formatTime(post.scheduledAt)}</p>
-                            <p className="text-xs text-slate-400 truncate">@{acc?.username ?? '?'}</p>
+                            <p className="text-xs text-slate-500 truncate">@{acc?.username ?? '?'}</p>
                             {post.caption && (
                               <p className="text-xs text-slate-500 truncate">{post.caption.slice(0, 25)}</p>
                             )}

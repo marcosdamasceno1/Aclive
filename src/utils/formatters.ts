@@ -94,7 +94,7 @@ export const getStatusLabel = (status: string): string => {
 
 export const getStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
-    new: 'bg-slate-100 text-slate-700',
+    new: 'bg-slate-100 text-slate-600',
     briefing: 'bg-blue-100 text-blue-700',
     production: 'bg-indigo-100 text-indigo-700',
     review: 'bg-purple-100 text-purple-700',

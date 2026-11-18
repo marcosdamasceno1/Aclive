@@ -21,7 +21,7 @@ const Logo = () => (
 const ChoiceBtn = ({ active, tone, onClick, children }: { active: boolean; tone: 'ok' | 'warn'; onClick: () => void; children: React.ReactNode }) => {
   const base = 'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border transition-colors';
   const on = tone === 'ok' ? 'bg-green-600 border-green-500 text-white' : 'bg-amber-600 border-amber-500 text-white';
-  const off = 'bg-transparent border-white/[0.12] text-slate-300 hover:border-white/30';
+  const off = 'bg-transparent border-slate-300 text-slate-700 hover:border-slate-300';
   return <button onClick={onClick} className={`${base} ${active ? on : off}`}>{children}</button>;
 };
 
@@ -96,10 +96,10 @@ export const ApprovalPage = () => {
   }, [directUrl]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-slate-100" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
-      <header className="border-b border-white/[0.06] px-5 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50 text-slate-900" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
+      <header className="border-b border-slate-200 px-5 py-4 flex items-center justify-between">
         <Logo />
-        {data?.agencyName && <span className="text-sm text-slate-400 font-medium truncate ml-3">{data.agencyName}</span>}
+        {data?.agencyName && <span className="text-sm text-slate-500 font-medium truncate ml-3">{data.agencyName}</span>}
       </header>
 
       <main className="max-w-2xl mx-auto px-5 py-8">
@@ -111,33 +111,33 @@ export const ApprovalPage = () => {
 
         {!loading && error && (
           <div className="text-center py-24">
-            <p className="text-lg font-semibold text-slate-200">{error}</p>
+            <p className="text-lg font-semibold text-slate-800">{error}</p>
             <p className="text-sm text-slate-500 mt-2">Verifique o link com a agência.</p>
           </div>
         )}
 
         {!loading && !error && data && done && (
           <div className="text-center py-20">
-            <PartyPopper className="w-12 h-12 text-green-400 mx-auto mb-4" />
+            <PartyPopper className="w-12 h-12 text-green-600 mx-auto mb-4" />
             <h1 className="text-2xl font-bold">Resposta enviada!</h1>
-            <p className="text-slate-400 mt-2">Obrigado. A agência já foi avisada e cuidará do próximo passo.</p>
+            <p className="text-slate-500 mt-2">Obrigado. A agência já foi avisada e cuidará do próximo passo.</p>
           </div>
         )}
 
         {!loading && !error && data && !done && (
           <div className="space-y-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-1">Aprovação</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-1">Aprovação</p>
               <h1 className="text-2xl font-bold">{data.title || 'Revisão de conteúdo'}</h1>
-              <p className="text-sm text-slate-400 mt-1">Revise o vídeo e a legenda abaixo e envie sua resposta.</p>
+              <p className="text-sm text-slate-500 mt-1">Revise o vídeo e a legenda abaixo e envie sua resposta.</p>
             </div>
 
             {/* Vídeo */}
             <section className="space-y-3">
-              <h2 className="text-sm font-bold text-slate-200">🎬 Vídeo</h2>
+              <h2 className="text-sm font-bold text-slate-800">🎬 Vídeo</h2>
               <div className="flex justify-center">
                 <div
-                  className="relative rounded-xl overflow-hidden border border-white/[0.08] bg-black"
+                  className="relative rounded-xl overflow-hidden border border-slate-200 bg-black"
                   style={{ aspectRatio: '9 / 16', width: 'min(100%, calc(min(70vh, 620px) * 9 / 16))' }}
                 >
                   {directUrl && videoMode === 'native' ? (
@@ -163,7 +163,7 @@ export const ApprovalPage = () => {
                 Toque em play e aguarde: os controles somem sozinhos. Para ampliar, toque no ícone de tela cheia no canto do vídeo.
               </p>
               {data.videoUrl && (
-                <a href={data.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300">
+                <a href={data.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700">
                   <ExternalLink className="w-3 h-3" /> Abrir no Google Drive
                 </a>
               )}
@@ -177,24 +177,24 @@ export const ApprovalPage = () => {
               </div>
               <textarea value={videoObs} onChange={e => setVideoObs(e.target.value)} rows={2}
                 placeholder="Observações sobre o vídeo (opcional)"
-                className="w-full bg-[#161b22] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
             </section>
 
             {/* Legenda */}
             <section className="space-y-3">
-              <h2 className="text-sm font-bold text-slate-200">📝 Legenda</h2>
+              <h2 className="text-sm font-bold text-slate-800">📝 Legenda</h2>
               <p className="text-xs text-slate-500">Escolha a legenda que você prefere:</p>
               <div className="space-y-2">
                 {data.captions.map((c, i) => (
                   <button key={c.id} onClick={() => setCaptionChoice(c.id)}
-                    className={`w-full text-left rounded-xl border p-3 transition-colors ${captionChoice === c.id ? 'border-blue-500 bg-blue-500/10' : 'border-white/[0.08] bg-[#161b22] hover:border-white/20'}`}>
+                    className={`w-full text-left rounded-xl border p-3 transition-colors ${captionChoice === c.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-200 bg-slate-50 hover:border-slate-300'}`}>
                     <div className="flex items-start gap-2.5">
                       <span className={`mt-0.5 w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${captionChoice === c.id ? 'border-blue-500 bg-blue-500' : 'border-slate-500'}`}>
                         {captionChoice === c.id && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </span>
                       <div>
                         <span className="text-[11px] font-semibold text-slate-500">Opção {i + 1}</span>
-                        <p className="text-sm text-slate-200 whitespace-pre-wrap">{c.text}</p>
+                        <p className="text-sm text-slate-800 whitespace-pre-wrap">{c.text}</p>
                       </div>
                     </div>
                   </button>
@@ -210,16 +210,16 @@ export const ApprovalPage = () => {
               </div>
               <textarea value={captionObs} onChange={e => setCaptionObs(e.target.value)} rows={2}
                 placeholder="Observações sobre a legenda (opcional)"
-                className="w-full bg-[#161b22] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
             </section>
 
-            {submitError && <p className="text-sm text-red-400">{submitError}</p>}
+            {submitError && <p className="text-sm text-red-600">{submitError}</p>}
 
             <button onClick={handleSubmit} disabled={submitting}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3.5 rounded-xl text-base font-bold transition-colors flex items-center justify-center gap-2">
               {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Enviando…</> : 'Enviar resposta'}
             </button>
-            <p className="text-center text-[11px] text-slate-600">Você não precisa de conta. Sua resposta vai direto para a agência.</p>
+            <p className="text-center text-[11px] text-slate-400">Você não precisa de conta. Sua resposta vai direto para a agência.</p>
           </div>
         )}
       </main>

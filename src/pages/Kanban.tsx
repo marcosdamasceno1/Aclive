@@ -30,18 +30,18 @@ import { ApprovalSection } from '../components/ApprovalSection';
 // ─── Stage color presets ───────────────────────────────────────────────────────
 
 const STAGE_COLORS: { cls: string; dot: string; label: string }[] = [
-  { cls: 'text-slate-300',  dot: 'bg-slate-300',  label: 'Cinza'    },
-  { cls: 'text-blue-400',   dot: 'bg-blue-400',   label: 'Azul'     },
-  { cls: 'text-indigo-400', dot: 'bg-indigo-400', label: 'Índigo'   },
-  { cls: 'text-purple-400', dot: 'bg-purple-400', label: 'Roxo'     },
-  { cls: 'text-orange-400', dot: 'bg-orange-400', label: 'Laranja'  },
-  { cls: 'text-green-400',  dot: 'bg-green-400',  label: 'Verde'    },
-  { cls: 'text-emerald-400',dot: 'bg-emerald-400',label: 'Esmeralda'},
-  { cls: 'text-red-400',    dot: 'bg-red-400',    label: 'Vermelho' },
-  { cls: 'text-pink-400',   dot: 'bg-pink-400',   label: 'Rosa'     },
-  { cls: 'text-yellow-400', dot: 'bg-yellow-400', label: 'Amarelo'  },
-  { cls: 'text-cyan-400',   dot: 'bg-cyan-400',   label: 'Ciano'    },
-  { cls: 'text-teal-400',   dot: 'bg-teal-400',   label: 'Teal'     },
+  { cls: 'text-slate-700',  dot: 'bg-slate-300',  label: 'Cinza'    },
+  { cls: 'text-blue-600',   dot: 'bg-blue-400',   label: 'Azul'     },
+  { cls: 'text-indigo-600', dot: 'bg-indigo-400', label: 'Índigo'   },
+  { cls: 'text-purple-600', dot: 'bg-purple-400', label: 'Roxo'     },
+  { cls: 'text-orange-600', dot: 'bg-orange-400', label: 'Laranja'  },
+  { cls: 'text-green-600',  dot: 'bg-green-400',  label: 'Verde'    },
+  { cls: 'text-emerald-600',dot: 'bg-emerald-400',label: 'Esmeralda'},
+  { cls: 'text-red-600',    dot: 'bg-red-400',    label: 'Vermelho' },
+  { cls: 'text-pink-600',   dot: 'bg-pink-400',   label: 'Rosa'     },
+  { cls: 'text-yellow-700', dot: 'bg-yellow-400', label: 'Amarelo'  },
+  { cls: 'text-cyan-600',   dot: 'bg-cyan-400',   label: 'Ciano'    },
+  { cls: 'text-teal-600',   dot: 'bg-teal-400',   label: 'Teal'     },
   { cls: 'text-slate-500',  dot: 'bg-slate-500',  label: 'Escuro'   },
 ];
 
@@ -105,13 +105,13 @@ const DraggableCard = ({ demand, clientName, professionalName, onOpen, didDrag }
       {...attributes}
       {...listeners}
       onClick={() => { if (!didDrag.current) onOpen(demand.id); }}
-      className={`group bg-[#161b22] border rounded-xl p-3 cursor-grab active:cursor-grabbing select-none [-webkit-touch-callout:none] transition-all hover:border-white/20 ${
-        overdue ? 'border-red-500/30' : 'border-white/[0.06]'
+      className={`group bg-slate-50 border rounded-xl p-3 cursor-grab active:cursor-grabbing select-none [-webkit-touch-callout:none] transition-all hover:border-slate-300 ${
+        overdue ? 'border-red-500/30' : 'border-slate-200'
       }`}
     >
       <div className="flex items-start gap-2 mb-2.5">
         <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${priorityDot[demand.priority] || 'bg-slate-500'}`} />
-        <p className="text-xs font-semibold text-slate-100 leading-tight flex-1 min-w-0">{demand.title}</p>
+        <p className="text-xs font-semibold text-slate-900 leading-tight flex-1 min-w-0">{demand.title}</p>
       </div>
       <p className="text-xs text-slate-500 mb-2.5 truncate pl-3.5">{clientName}</p>
       <div className="flex items-center justify-between pl-3.5">
@@ -119,17 +119,17 @@ const DraggableCard = ({ demand, clientName, professionalName, onOpen, didDrag }
           <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
             {professionalName.charAt(0)}
           </div>
-          <span className="text-[11px] text-slate-600 truncate max-w-16">{professionalName.split(' ')[0]}</span>
+          <span className="text-[11px] text-slate-400 truncate max-w-16">{professionalName.split(' ')[0]}</span>
         </div>
         <div className="flex items-center gap-2">
           {(demand.comments?.length ?? 0) > 0 && (
-            <div className="flex items-center gap-0.5 text-[11px] text-slate-600">
+            <div className="flex items-center gap-0.5 text-[11px] text-slate-400">
               <MessageSquare className="w-3 h-3" />
               {demand.comments.length}
             </div>
           )}
           {overdue && <AlertTriangle className="w-3 h-3 text-red-500" />}
-          <div className={`flex items-center gap-0.5 text-[11px] ${overdue ? 'text-red-400' : 'text-slate-600'}`}>
+          <div className={`flex items-center gap-0.5 text-[11px] ${overdue ? 'text-red-600' : 'text-slate-400'}`}>
             <Calendar className="w-3 h-3" />
             {demand.deadline
               ? parseLocalDate(demand.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
@@ -142,10 +142,10 @@ const DraggableCard = ({ demand, clientName, professionalName, onOpen, didDrag }
 };
 
 const OverlayCard = ({ demand, clientName }: { demand: Demand; clientName: string }) => (
-  <div className="bg-[#161b22] border border-blue-500/40 rounded-xl p-3 shadow-2xl rotate-2 w-56">
-    <p className="text-xs font-semibold text-slate-100 truncate">{demand.title}</p>
+  <div className="bg-slate-50 border border-blue-500/40 rounded-xl p-3 shadow-2xl rotate-2 w-56">
+    <p className="text-xs font-semibold text-slate-900 truncate">{demand.title}</p>
     <p className="text-xs text-slate-500 mt-1 truncate">{clientName}</p>
-    <p className="text-xs font-bold text-slate-300 mt-1.5">{formatCurrency(demand.value)}</p>
+    <p className="text-xs font-bold text-slate-700 mt-1.5">{formatCurrency(demand.value)}</p>
   </div>
 );
 
@@ -165,11 +165,11 @@ const KanbanColumn = ({ stage, demands, clients, professionals, isLast, onOpen, 
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   return (
-    <div className={`flex flex-col flex-shrink-0 w-[80vw] max-w-[18rem] snap-start sm:w-56 sm:max-w-none ${!isLast ? 'border-r border-white/[0.05]' : ''}`}>
+    <div className={`flex flex-col flex-shrink-0 w-[80vw] max-w-[18rem] snap-start sm:w-56 sm:max-w-none ${!isLast ? 'border-r border-slate-200' : ''}`}>
       <div className={`flex items-center gap-2 px-3 py-3 transition-colors ${isOver ? 'bg-blue-500/5' : ''}`}>
         <span className="text-sm leading-none">{stage.icon}</span>
         <span className={`text-xs font-bold uppercase tracking-widest ${stage.color}`}>{stage.label}</span>
-        <span className="ml-auto text-xs font-bold text-slate-600 bg-white/[0.04] px-1.5 py-0.5 rounded-full min-w-5 text-center">
+        <span className="ml-auto text-xs font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full min-w-5 text-center">
           {demands.length}
         </span>
       </div>
@@ -197,9 +197,9 @@ const KanbanColumn = ({ stage, demands, clients, professionals, isLast, onOpen, 
         </SortableContext>
         {demands.length === 0 && (
           <div className={`h-16 rounded-xl border border-dashed flex items-center justify-center transition-colors ${
-            isOver ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/[0.04]'
+            isOver ? 'border-blue-500/40 bg-blue-500/5' : 'border-slate-200'
           }`}>
-            <p className="text-xs text-slate-700">solte aqui</p>
+            <p className="text-xs text-slate-600">solte aqui</p>
           </div>
         )}
       </div>
@@ -256,7 +256,7 @@ export const Kanban = () => {
   const [editingStages, setEditingStages]   = useState<KanbanStage[]>([]);
   const [stageEditId, setStageEditId]       = useState<string | null>(null);
   const [stageForm, setStageForm]           = useState({ label: '', icon: '', color: '' });
-  const [newStageForm, setNewStageForm]     = useState({ label: '', icon: '📌', color: 'text-blue-400' });
+  const [newStageForm, setNewStageForm]     = useState({ label: '', icon: '📌', color: 'text-blue-600' });
   const [stageSaving, setStageSaving]       = useState(false);
   const [stageDeleteWarn, setStageDeleteWarn] = useState<string | null>(null);
 
@@ -485,7 +485,7 @@ export const Kanban = () => {
     const parts = text.split(new RegExp(`(@(?:${pattern}))(?=\\s|$)`, 'g'));
     return parts.map((part, i) =>
       names.some(n => part === `@${n}`)
-        ? <span key={i} className="text-blue-400 font-semibold">{part}</span>
+        ? <span key={i} className="text-blue-600 font-semibold">{part}</span>
         : part,
     );
   };
@@ -548,7 +548,7 @@ export const Kanban = () => {
     setEditingStages(columns.map(s => ({ ...s })));
     setStageEditId(null);
     setStageDeleteWarn(null);
-    setNewStageForm({ label: '', icon: '📌', color: 'text-blue-400' });
+    setNewStageForm({ label: '', icon: '📌', color: 'text-blue-600' });
     setShowStagesModal(true);
   };
 
@@ -595,7 +595,7 @@ export const Kanban = () => {
       icon:  newStageForm.icon || '📌',
       color: newStageForm.color,
     }]);
-    setNewStageForm({ label: '', icon: '📌', color: 'text-blue-400' });
+    setNewStageForm({ label: '', icon: '📌', color: 'text-blue-600' });
   };
 
   const saveStages = async () => {
@@ -615,10 +615,10 @@ export const Kanban = () => {
     <div className="flex flex-col h-full -mx-4 -mt-4 sm:-mx-6 sm:-mt-6">
 
       {/* ── Top bar ── */}
-      <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-white/[0.05] bg-[#0d1117] flex-shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
         <div>
-          <h1 className="text-base font-bold text-slate-100 leading-none">Esteira de Produção</h1>
-          <p className="text-xs text-slate-600 mt-0.5">
+          <h1 className="text-base font-bold text-slate-900 leading-none">Esteira de Produção</h1>
+          <p className="text-xs text-slate-400 mt-0.5">
             {openCount} em aberto · {completedCount} concluída(s)
           </p>
         </div>
@@ -628,7 +628,7 @@ export const Kanban = () => {
         {isAdmin && (
           <button
             onClick={openStagesModal}
-            className="flex items-center gap-1.5 border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/20 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
             title="Gerenciar etapas"
           >
             <Settings2 className="w-3.5 h-3.5" />
@@ -642,23 +642,23 @@ export const Kanban = () => {
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Nova<span className="hidden sm:inline">&nbsp;Demanda</span>
+            <span>Nova<span className="hidden sm:inline"> Demanda</span></span>
           </button>
         )}
 
         {/* Client filter dropdown — no celular as pílulas abaixo já filtram */}
         <div className="relative group hidden sm:block">
-          <button className="flex items-center gap-2 bg-[#21262d] border border-white/[0.08] text-slate-300 px-3 py-2 rounded-lg text-xs font-semibold hover:border-white/20 transition-colors">
+          <button className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold hover:border-slate-300 transition-colors">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
             {selectedClientName}
             <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
           </button>
-          <div className="absolute right-0 top-full mt-1.5 bg-[#21262d] border border-white/[0.08] rounded-xl shadow-2xl z-20 min-w-48 overflow-hidden opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto group-hover:opacity-100 group-hover:pointer-events-auto transition-all">
+          <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-20 min-w-48 overflow-hidden opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto group-hover:opacity-100 group-hover:pointer-events-auto transition-all">
             <div className="py-1.5">
               <button
                 onClick={() => setClientFilter('all')}
                 className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors ${
-                  clientFilter === 'all' ? 'text-blue-400 bg-blue-500/10' : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+                  clientFilter === 'all' ? 'text-blue-600 bg-blue-500/10' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
                 }`}
               >
                 Todos os clientes
@@ -666,7 +666,7 @@ export const Kanban = () => {
               {visibleClients.map(c => (
                 <button key={c.id} onClick={() => setClientFilter(c.id)}
                   className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors ${
-                    clientFilter === c.id ? 'text-blue-400 bg-blue-500/10' : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+                    clientFilter === c.id ? 'text-blue-600 bg-blue-500/10' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
                   }`}
                 >
                   {c.companyName}
@@ -677,18 +677,18 @@ export const Kanban = () => {
         </div>
 
         {!canMove && (
-          <span className="text-xs text-slate-600 border border-white/[0.05] px-3 py-1.5 rounded-lg">
+          <span className="text-xs text-slate-400 border border-slate-200 px-3 py-1.5 rounded-lg">
             Somente visualização
           </span>
         )}
       </div>
 
       {/* ── Client pills ── */}
-      <div className="flex items-center gap-1.5 px-4 sm:px-6 py-2.5 overflow-x-auto flex-shrink-0 bg-[#0d1117] border-b border-white/[0.04]">
+      <div className="flex items-center gap-1.5 px-4 sm:px-6 py-2.5 overflow-x-auto flex-shrink-0 bg-slate-50 border-b border-slate-200">
         <button
           onClick={() => setClientFilter('all')}
           className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-            clientFilter === 'all' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+            clientFilter === 'all' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
           }`}
         >
           Todos
@@ -696,7 +696,7 @@ export const Kanban = () => {
         {visibleClients.map(c => (
           <button key={c.id} onClick={() => setClientFilter(c.id)}
             className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-              clientFilter === c.id ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+              clientFilter === c.id ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
             }`}
           >
             {c.companyName}
@@ -705,7 +705,7 @@ export const Kanban = () => {
       </div>
 
       {/* ── Board ── */}
-      <div className="flex-1 overflow-x-auto snap-x snap-mandatory sm:snap-none scroll-px-4 bg-[#0d1117]">
+      <div className="flex-1 overflow-x-auto snap-x snap-mandatory sm:snap-none scroll-px-4 bg-slate-50">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -740,9 +740,9 @@ export const Kanban = () => {
       {/* ── WhatsApp toast ── */}
       {whatsappStatus !== 'idle' && (
         <div className={`fixed bottom-24 lg:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-[70] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-semibold transition-all ${
-          whatsappStatus === 'sending' ? 'bg-[#21262d] border-white/10 text-slate-300' :
-          whatsappStatus === 'ok'     ? 'bg-green-500/15 border-green-500/30 text-green-300' :
-                                        'bg-red-500/15 border-red-500/30 text-red-300'
+          whatsappStatus === 'sending' ? 'bg-white border-slate-200 text-slate-700' :
+          whatsappStatus === 'ok'     ? 'bg-green-500/15 border-green-500/30 text-green-700' :
+                                        'bg-red-500/15 border-red-500/30 text-red-700'
         }`}>
           {whatsappStatus === 'sending' && <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
           {whatsappStatus === 'ok'      && <CheckCircle className="w-4 h-4" />}
@@ -754,13 +754,13 @@ export const Kanban = () => {
       {/* ── Stages Management Modal ── */}
       {showStagesModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] flex-shrink-0">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
               <div>
-                <h2 className="text-base font-bold text-slate-100">Gerenciar Etapas</h2>
+                <h2 className="text-base font-bold text-slate-900">Gerenciar Etapas</h2>
                 <p className="text-xs text-slate-500 mt-0.5">Arranje, renomeie ou crie novas etapas para sua esteira</p>
               </div>
-              <button onClick={() => setShowStagesModal(false)} className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-white/[0.06]">
+              <button onClick={() => setShowStagesModal(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -770,7 +770,7 @@ export const Kanban = () => {
                 <div key={stage.id}>
                   {stageEditId === stage.id ? (
                     /* ── Inline edit form ── */
-                    <div className="bg-[#161b22] border border-blue-500/30 rounded-xl p-3 space-y-3">
+                    <div className="bg-slate-50 border border-blue-500/30 rounded-xl p-3 space-y-3">
                       <div className="grid grid-cols-[3rem_1fr] gap-2">
                         <div>
                           <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wide">Ícone</label>
@@ -779,7 +779,7 @@ export const Kanban = () => {
                             value={stageForm.icon}
                             onChange={e => setStageForm(f => ({ ...f, icon: e.target.value }))}
                             maxLength={4}
-                            className="w-full bg-[#0d1117] border border-white/[0.08] rounded-lg px-2 py-2 text-base text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-base text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div>
@@ -789,7 +789,7 @@ export const Kanban = () => {
                             value={stageForm.label}
                             onChange={e => setStageForm(f => ({ ...f, label: e.target.value }))}
                             autoFocus
-                            className="w-full bg-[#0d1117] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Nome da etapa"
                           />
                         </div>
@@ -812,7 +812,7 @@ export const Kanban = () => {
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={() => setStageEditId(null)}
-                          className="flex-1 border border-white/[0.08] text-slate-500 py-1.5 rounded-lg text-xs font-medium hover:bg-white/[0.04]"
+                          className="flex-1 border border-slate-200 text-slate-500 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100"
                         >
                           Cancelar
                         </button>
@@ -827,40 +827,40 @@ export const Kanban = () => {
                     </div>
                   ) : (
                     /* ── Stage row ── */
-                    <div className="flex items-center gap-2 bg-[#161b22] border border-white/[0.06] rounded-xl px-3 py-2.5 group hover:border-white/[0.12] transition-colors">
-                      <GripVertical className="w-3.5 h-3.5 text-slate-700 flex-shrink-0" />
+                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 group hover:border-slate-300 transition-colors">
+                      <GripVertical className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
                       <span className="text-base leading-none flex-shrink-0">{stage.icon}</span>
                       <span className={`text-sm font-semibold flex-1 ${stage.color}`}>{stage.label}</span>
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         {stage.triggersFinancial && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold mr-1">Financeiro</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-semibold mr-1">Financeiro</span>
                         )}
                         {stage.isTerminal && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 font-semibold mr-1">Terminal</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-500 font-semibold mr-1">Terminal</span>
                         )}
                         <button
                           onClick={() => moveStageUp(idx)}
                           disabled={idx === 0}
-                          className="p-1 text-slate-600 hover:text-slate-300 disabled:opacity-20 rounded transition-colors"
+                          className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20 rounded transition-colors"
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => moveStageDown(idx)}
                           disabled={idx === editingStages.length - 1}
-                          className="p-1 text-slate-600 hover:text-slate-300 disabled:opacity-20 rounded transition-colors"
+                          className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20 rounded transition-colors"
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => startEditStage(stage)}
-                          className="p-1 text-slate-600 hover:text-blue-400 rounded transition-colors"
+                          className="p-1 text-slate-400 hover:text-blue-600 rounded transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => tryDeleteStage(stage.id)}
-                          className="p-1 text-slate-600 hover:text-red-400 rounded transition-colors"
+                          className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -870,10 +870,10 @@ export const Kanban = () => {
 
                   {/* Delete warning */}
                   {stageDeleteWarn === stage.id && (
-                    <div className="mt-1 flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 text-xs text-orange-400">
+                    <div className="mt-1 flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 text-xs text-orange-600">
                       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                       <span className="flex-1">Esta etapa tem demandas. Mova-as primeiro.</span>
-                      <button onClick={() => setStageDeleteWarn(null)} className="text-orange-300 hover:text-white">
+                      <button onClick={() => setStageDeleteWarn(null)} className="text-orange-700 hover:text-slate-900">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -882,22 +882,22 @@ export const Kanban = () => {
               ))}
 
               {/* ── Add new stage ── */}
-              <div className="border-t border-white/[0.05] pt-4 space-y-2">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Nova etapa</p>
+              <div className="border-t border-slate-200 pt-4 space-y-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Nova etapa</p>
                 <div className="grid grid-cols-[3rem_1fr] gap-2">
                   <input
                     type="text"
                     value={newStageForm.icon}
                     onChange={e => setNewStageForm(f => ({ ...f, icon: e.target.value }))}
                     maxLength={4}
-                    className="bg-[#161b22] border border-white/[0.08] rounded-lg px-2 py-2 text-base text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-base text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="text"
                     value={newStageForm.label}
                     onChange={e => setNewStageForm(f => ({ ...f, label: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && addNewStage()}
-                    className="bg-[#161b22] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Nome da etapa"
                   />
                 </div>
@@ -916,17 +916,17 @@ export const Kanban = () => {
                 <button
                   onClick={addNewStage}
                   disabled={!newStageForm.label.trim()}
-                  className="w-full flex items-center justify-center gap-2 border border-dashed border-white/[0.1] text-slate-500 hover:text-slate-300 hover:border-white/20 disabled:opacity-30 py-2 rounded-xl text-sm font-medium transition-colors"
+                  className="w-full flex items-center justify-center gap-2 border border-dashed border-slate-200 text-slate-500 hover:text-slate-700 hover:border-slate-300 disabled:opacity-30 py-2 rounded-xl text-sm font-medium transition-colors"
                 >
                   <Plus className="w-4 h-4" /> Adicionar etapa
                 </button>
               </div>
             </div>
 
-            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05] flex-shrink-0">
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-200 flex-shrink-0">
               <button
                 onClick={() => setShowStagesModal(false)}
-                className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]"
+                className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100"
               >
                 Cancelar
               </button>
@@ -946,32 +946,32 @@ export const Kanban = () => {
       {/* ── Add / Edit Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
-            <div className="sticky top-0 bg-[#21262d] flex items-center justify-between px-6 py-4 border-b border-white/[0.05] z-10">
-              <h2 className="text-lg font-bold text-slate-100">{editingId ? 'Editar Demanda' : 'Nova Demanda'}</h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-300 p-1 rounded-lg hover:bg-white/[0.06]">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
+            <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-200 z-10">
+              <h2 className="text-lg font-bold text-slate-900">{editingId ? 'Editar Demanda' : 'Nova Demanda'}</h2>
+              <button onClick={() => setShowModal(false)} className="text-slate-500 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Título da tarefa *</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Título da tarefa *</label>
                 <input
                   autoFocus
                   type="text"
                   value={form.title}
                   onChange={e => setForm({ ...form, title: e.target.value })}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Ex: Criação de post para Instagram"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Cliente *</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Cliente *</label>
                   <select
                     value={form.clientId}
                     onChange={e => setForm({ ...form, clientId: e.target.value })}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#21262d]"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">Selecionar cliente</option>
                     {clients.filter(c => c.status === 'active').map(c => (
@@ -980,21 +980,21 @@ export const Kanban = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Tipo de tarefa</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Tipo de tarefa</label>
                   <select
                     value={form.taskType}
                     onChange={e => setForm({ ...form, taskType: e.target.value as TaskType })}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#21262d]"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {TASK_TYPES.map(t => <option key={t} value={t}>{getTaskTypeLabel(t)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Profissional responsável *</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Profissional responsável *</label>
                   <select
                     value={form.professionalId}
                     onChange={e => setForm({ ...form, professionalId: e.target.value })}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#21262d]"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">Selecionar profissional</option>
                     {professionals.filter(p => p.status === 'active').map(p => (
@@ -1003,7 +1003,7 @@ export const Kanban = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">
                     Valor (R$){' '}
                     {form.professionalId && form.taskType && (
                       <span className="text-xs text-blue-500 font-normal">(auto)</span>
@@ -1012,34 +1012,34 @@ export const Kanban = () => {
                   <input
                     type="number" min="0" step="0.01" value={form.value}
                     onChange={e => setForm({ ...form, value: parseFloat(e.target.value) || 0 })}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Prazo</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Prazo</label>
                   <input
                     type="date" value={form.deadline}
                     onChange={e => setForm({ ...form, deadline: e.target.value })}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Prioridade</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Prioridade</label>
                   <select
                     value={form.priority}
                     onChange={e => setForm({ ...form, priority: e.target.value as Priority })}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#21262d]"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {PRIORITIES.map(p => <option key={p} value={p}>{getPriorityLabel(p)}</option>)}
                   </select>
                 </div>
                 {editingId && (
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-slate-200 mb-1.5">Status</label>
+                    <label className="block text-sm font-medium text-slate-800 mb-1.5">Status</label>
                     <select
                       value={form.status}
                       onChange={e => setForm({ ...form, status: e.target.value })}
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#21262d]"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       {columns.map(s => (
                         <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
@@ -1049,12 +1049,12 @@ export const Kanban = () => {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Descrição</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Descrição</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm({ ...form, description: e.target.value })}
                   rows={3}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Descreva os detalhes da tarefa..."
                 />
               </div>
@@ -1064,7 +1064,7 @@ export const Kanban = () => {
                   className={`flex items-start gap-3 rounded-xl px-4 py-3 border transition-colors cursor-pointer ${
                     form.notifyWhatsapp
                       ? 'bg-green-500/10 border-green-500/30'
-                      : 'bg-white/[0.03] border-white/[0.08] hover:border-white/20'
+                      : 'bg-slate-50 border-slate-200 hover:border-slate-300'
                   }`}
                   onClick={() => setForm(f => ({ ...f, notifyWhatsapp: !f.notifyWhatsapp }))}
                 >
@@ -1077,11 +1077,11 @@ export const Kanban = () => {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-slate-100">Notificar profissional via WhatsApp</span>
+                      <MessageCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-slate-900">Notificar profissional via WhatsApp</span>
                     </div>
                     {!whatsappConfigured ? (
-                      <p className="text-xs text-amber-400 mt-0.5">WhatsApp não configurado — configure em Configurações → Integrações</p>
+                      <p className="text-xs text-amber-700 mt-0.5">WhatsApp não configurado — configure em Configurações → Integrações</p>
                     ) : (
                       <p className="text-xs text-slate-500 mt-0.5">
                         {form.professionalId
@@ -1093,8 +1093,8 @@ export const Kanban = () => {
                 </div>
               )}
             </div>
-            <div className="sticky bottom-0 bg-[#21262d] flex gap-3 px-6 py-4 border-t border-white/[0.05]">
-              <button onClick={() => setShowModal(false)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+            <div className="sticky bottom-0 bg-white flex gap-3 px-6 py-4 border-t border-slate-200">
+              <button onClick={() => setShowModal(false)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">
                 Cancelar
               </button>
               <button
@@ -1112,21 +1112,21 @@ export const Kanban = () => {
       {/* ── View / Comment Modal ── */}
       {showViewModal && viewingDemand && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
-            <div className="sticky top-0 bg-[#21262d] flex items-center justify-between px-6 py-4 border-b border-white/[0.05] z-10">
-              <h2 className="text-base font-bold text-slate-100 truncate flex-1 mr-4">{viewingDemand.title}</h2>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
+            <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-200 z-10">
+              <h2 className="text-base font-bold text-slate-900 truncate flex-1 mr-4">{viewingDemand.title}</h2>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {canEditDemand(viewingDemand) && (
                   <>
                     <button
                       onClick={() => { setShowViewModal(false); openEdit(viewingDemand); }}
-                      className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      className="p-1.5 text-blue-600 hover:bg-blue-500/10 rounded-lg transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setDeleteId(viewingDemand.id)}
-                      className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-1.5 text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1134,7 +1134,7 @@ export const Kanban = () => {
                 )}
                 <button
                   onClick={() => { setShowViewModal(false); setCommentText(''); }}
-                  className="p-1.5 text-slate-400 hover:text-slate-300 rounded-lg hover:bg-white/[0.06]"
+                  className="p-1.5 text-slate-500 hover:text-slate-700 rounded-lg hover:bg-slate-100"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1146,7 +1146,7 @@ export const Kanban = () => {
                 {(() => {
                   const stage = stageMap[viewingDemand.status];
                   return stage ? (
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold bg-white/[0.06] ${stage.color}`}>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold bg-slate-100 ${stage.color}`}>
                       {stage.icon} {stage.label}
                     </span>
                   ) : null;
@@ -1154,37 +1154,37 @@ export const Kanban = () => {
                 <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getPriorityColor(viewingDemand.priority)}`}>
                   {getPriorityLabel(viewingDemand.priority)}
                 </span>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-[#0d1117] text-slate-500 font-semibold">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 font-semibold">
                   {getTaskTypeLabel(viewingDemand.taskType)}
                 </span>
                 {isOverdue(viewingDemand.deadline, viewingDemand.status) && (
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 font-semibold flex items-center gap-1">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-red-500/10 text-red-600 font-semibold flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" /> Atrasada
                   </span>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-xs text-slate-400 font-medium mb-0.5">Cliente</p>
-                  <p className="text-slate-200 font-semibold">{viewingClient?.companyName || '—'}</p>
+                  <p className="text-xs text-slate-500 font-medium mb-0.5">Cliente</p>
+                  <p className="text-slate-800 font-semibold">{viewingClient?.companyName || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 font-medium mb-0.5">Profissional</p>
-                  <p className="text-slate-200 font-semibold">{viewingProfessional?.name || '—'}</p>
+                  <p className="text-xs text-slate-500 font-medium mb-0.5">Profissional</p>
+                  <p className="text-slate-800 font-semibold">{viewingProfessional?.name || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 font-medium mb-0.5">Prazo</p>
-                  <p className="text-slate-200 font-semibold">{formatDate(viewingDemand.deadline)}</p>
+                  <p className="text-xs text-slate-500 font-medium mb-0.5">Prazo</p>
+                  <p className="text-slate-800 font-semibold">{formatDate(viewingDemand.deadline)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 font-medium mb-0.5">Valor</p>
-                  <p className="text-emerald-400 font-bold text-base">{formatCurrency(viewingDemand.value)}</p>
+                  <p className="text-xs text-slate-500 font-medium mb-0.5">Valor</p>
+                  <p className="text-emerald-600 font-bold text-base">{formatCurrency(viewingDemand.value)}</p>
                 </div>
               </div>
               {viewingDemand.description && (
                 <div>
-                  <p className="text-xs text-slate-400 font-medium mb-2">Descrição</p>
-                  <div className="p-3 bg-[#161b22] rounded-xl text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-xs text-slate-500 font-medium mb-2">Descrição</p>
+                  <div className="p-3 bg-slate-50 rounded-xl text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                     {viewingDemand.description}
                   </div>
                 </div>
@@ -1197,8 +1197,8 @@ export const Kanban = () => {
 
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <MessageSquare className="w-4 h-4 text-slate-400" />
-                  <p className="text-sm font-semibold text-slate-200">Comentários ({viewingDemand.comments.length})</p>
+                  <MessageSquare className="w-4 h-4 text-slate-500" />
+                  <p className="text-sm font-semibold text-slate-800">Comentários ({viewingDemand.comments.length})</p>
                 </div>
                 {viewingDemand.comments.length === 0 ? (
                   <p className="text-xs text-slate-500 italic">Nenhum comentário ainda.</p>
@@ -1209,12 +1209,12 @@ export const Kanban = () => {
                         <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {comment.authorName.charAt(0)}
                         </div>
-                        <div className="flex-1 bg-[#161b22] rounded-lg p-3">
+                        <div className="flex-1 bg-slate-50 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-semibold text-slate-200">{comment.authorName}</span>
+                            <span className="text-xs font-semibold text-slate-800">{comment.authorName}</span>
                             <span className="text-xs text-slate-500">{formatDateTime(comment.createdAt)}</span>
                           </div>
-                          <p className="text-sm text-slate-400">{renderCommentText(comment.text)}</p>
+                          <p className="text-sm text-slate-500">{renderCommentText(comment.text)}</p>
                         </div>
                       </div>
                     ))}
@@ -1223,13 +1223,13 @@ export const Kanban = () => {
                 <div className="flex gap-2 mt-3">
                   <div className="relative flex-1">
                     {mentionCandidates.length > 0 && (
-                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-[#21262d] border border-white/[0.08] rounded-lg shadow-lg overflow-hidden z-10">
+                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden z-10">
                         {mentionCandidates.map(p => (
                           <button
                             key={p.id}
                             type="button"
                             onMouseDown={e => { e.preventDefault(); handleSelectMention(p.name); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-slate-200 hover:bg-blue-500/10 transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-blue-500/10 transition-colors"
                           >
                             <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
                               {p.name.charAt(0)}
@@ -1245,7 +1245,7 @@ export const Kanban = () => {
                       onChange={e => setCommentText(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleAddComment()}
                       placeholder="Comentar… (@ para mencionar)"
-                      className="w-full border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <button
@@ -1265,11 +1265,11 @@ export const Kanban = () => {
       {/* ── Delete Modal ── */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-[#21262d] border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-base font-bold text-slate-100 mb-2">Confirmar exclusão</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-2">Confirmar exclusão</h3>
             <p className="text-slate-500 text-sm mb-6">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-xl text-sm font-medium hover:bg-white/[0.04]">
+              <button onClick={() => setDeleteId(null)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100">
                 Cancelar
               </button>
               <button onClick={handleDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold">
@@ -1283,20 +1283,20 @@ export const Kanban = () => {
       {/* ── Confirm completion (financial) Modal ── */}
       {confirmMove && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-sm p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <DollarSign className="w-5 h-5 text-emerald-400" />
+                <DollarSign className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-100">Registrar conclusão</h3>
+                <h3 className="text-base font-bold text-slate-900">Registrar conclusão</h3>
                 <p className="text-xs text-slate-500">Gera movimentação financeira automática</p>
               </div>
             </div>
             <div className="bg-emerald-500/[0.07] rounded-xl p-4 mb-5 border border-emerald-500/20">
-              <p className="text-sm text-slate-200 leading-relaxed">
+              <p className="text-sm text-slate-800 leading-relaxed">
                 Mover para <strong>{confirmMove.stageLabel}</strong> vai registrar{' '}
-                <span className="text-emerald-400 font-bold">{formatCurrency(confirmMove.value)}</span>{' '}
+                <span className="text-emerald-600 font-bold">{formatCurrency(confirmMove.value)}</span>{' '}
                 no saldo de <strong>{confirmMove.professionalName}</strong>.
               </p>
               <p className="text-xs text-slate-500 mt-2">Esta ação só pode ser feita uma vez por tarefa.</p>
@@ -1304,7 +1304,7 @@ export const Kanban = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => { setConfirmMove(null); setPendingMove(null); }}
-                className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-xl text-sm font-medium hover:bg-white/[0.04]"
+                className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100"
               >
                 Cancelar
               </button>

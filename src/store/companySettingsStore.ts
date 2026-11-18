@@ -7,15 +7,24 @@ import type { WhatsAppProvider } from '../utils/whatsapp';
 import type { KanbanStage } from '../types';
 
 export const DEFAULT_KANBAN_STAGES: KanbanStage[] = [
-  { id: 'new',         label: 'Nova',      icon: '🚀', color: 'text-slate-300' },
-  { id: 'briefing',    label: 'Briefing',  icon: '📋', color: 'text-blue-400' },
-  { id: 'production',  label: 'Produção',  icon: '⚡', color: 'text-indigo-400' },
-  { id: 'review',      label: 'Revisão',   icon: '🔍', color: 'text-purple-400' },
-  { id: 'adjustments', label: 'Ajustes',   icon: '🔧', color: 'text-orange-400' },
-  { id: 'approved',    label: 'Aprovado',  icon: '✅', color: 'text-green-400' },
-  { id: 'completed',   label: 'Concluído', icon: '🎯', color: 'text-emerald-400', triggersFinancial: true, isTerminal: true },
+  { id: 'new',         label: 'Nova',      icon: '🚀', color: 'text-slate-700' },
+  { id: 'briefing',    label: 'Briefing',  icon: '📋', color: 'text-blue-600' },
+  { id: 'production',  label: 'Produção',  icon: '⚡', color: 'text-indigo-600' },
+  { id: 'review',      label: 'Revisão',   icon: '🔍', color: 'text-purple-600' },
+  { id: 'adjustments', label: 'Ajustes',   icon: '🔧', color: 'text-orange-600' },
+  { id: 'approved',    label: 'Aprovado',  icon: '✅', color: 'text-green-600' },
+  { id: 'completed',   label: 'Concluído', icon: '🎯', color: 'text-emerald-600', triggersFinancial: true, isTerminal: true },
   { id: 'paid',        label: 'Pago',      icon: '💰', color: 'text-slate-500', isTerminal: true },
 ];
+
+// Etapas salvas antes do tema claro guardam tons 300/400 (feitos para fundo escuro).
+const toLightStageColor = (cls: string) =>
+  cls
+    .replace(/^text-slate-(?:100|200|300)$/, 'text-slate-700')
+    .replace(/^text-slate-400$/, 'text-slate-500')
+    .replace(/^text-(yellow|amber)-(?:300|400)$/, 'text-$1-700')
+    .replace(/^text-([a-z]+)-300$/, 'text-$1-700')
+    .replace(/^text-([a-z]+)-400$/, 'text-$1-600');
 
 interface CompanySettingsState {
   googleClientId: string;
@@ -143,7 +152,7 @@ export const useCompanySettingsStore = create<CompanySettingsState>()((set, get)
       waWebhookSecret:      (row?.wa_webhook_secret       as string) || '',
       agencyName:           (row?.agency_name             as string) || '',
       approvalNotifyPhone:  (row?.approval_notify_phone   as string) || '',
-      kanbanStages:         (row?.kanban_stages           as KanbanStage[]) || DEFAULT_KANBAN_STAGES,
+      kanbanStages:         ((row?.kanban_stages as KanbanStage[]) || DEFAULT_KANBAN_STAGES).map(st => ({ ...st, color: toLightStageColor(st.color) })),
       loading: false,
     });
   },

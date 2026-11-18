@@ -70,12 +70,12 @@ const ProfessionalView = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Meu Financeiro</h1>
-          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Acompanhe seus ganhos</p>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Meu Financeiro</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Acompanhe seus ganhos</p>
         </div>
-        <div className="bg-[#21262d] rounded-xl border border-white/[0.08] p-12 text-center">
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
           <DollarSign className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">Sua conta ainda não está vinculada a um perfil profissional.</p>
+          <p className="text-slate-500 text-sm">Sua conta ainda não está vinculada a um perfil profissional.</p>
           <p className="text-slate-500 text-xs mt-1">Fale com o administrador.</p>
         </div>
       </div>
@@ -86,13 +86,13 @@ const ProfessionalView = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Meu Financeiro</h1>
-          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Acompanhe seus ganhos</p>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Meu Financeiro</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Acompanhe seus ganhos</p>
         </div>
         <select
           value={selectedMonth}
           onChange={e => setSelectedMonth(e.target.value)}
-          className="border border-white/[0.08] rounded-lg px-3 py-2 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {MONTHS.map(m => (
             <option key={m.value} value={m.value}>{m.label}</option>
@@ -101,33 +101,33 @@ const ProfessionalView = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="bg-[#21262d] rounded-xl p-4 sm:p-5 border border-white/[0.08]">
+        <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200">
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center">
-              <ArrowDownCircle className="w-4 h-4 text-orange-400" />
+              <ArrowDownCircle className="w-4 h-4 text-orange-600" />
             </div>
           </div>
-          <p className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.pending)}</p>
+          <p className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(totals.pending)}</p>
           <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">A Receber</p>
           <p className="text-xs text-slate-500 mt-0.5">{myMovements.filter(m => m.status === 'pending').length} demanda(s)</p>
         </div>
-        <div className="bg-[#21262d] rounded-xl p-4 sm:p-5 border border-white/[0.08]">
+        <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200">
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <div className="w-8 h-8 bg-emerald-500/[0.12] rounded-lg flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             </div>
           </div>
-          <p className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.paid)}</p>
+          <p className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(totals.paid)}</p>
           <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Recebido</p>
           <p className="text-xs text-slate-500 mt-0.5">{myMovements.filter(m => m.status === 'paid').length} pagamento(s)</p>
         </div>
-        <div className="bg-[#21262d] rounded-xl p-4 sm:p-5 border border-white/[0.08]">
+        <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200">
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-blue-400" />
+              <BarChart3 className="w-4 h-4 text-blue-600" />
             </div>
           </div>
-          <p className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{formatCurrency(totals.total)}</p>
+          <p className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(totals.total)}</p>
           <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Total do Mês</p>
           <p className="text-xs text-slate-500 mt-0.5">{myMovements.length} tarefa(s) concluída(s)</p>
         </div>
@@ -141,7 +141,7 @@ const ProfessionalView = () => {
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
               statusFilter === s
                 ? 'bg-blue-600 text-white'
-                : 'bg-[#21262d] text-slate-400 hover:text-slate-200 border border-white/[0.08]'
+                : 'bg-white text-slate-500 hover:text-slate-800 border border-slate-200'
             }`}
           >
             {s === 'all' ? 'Todos' : s === 'pending' ? 'A Receber' : 'Recebido'}
@@ -149,18 +149,18 @@ const ProfessionalView = () => {
         ))}
       </div>
 
-      <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-x-auto">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-slate-900">
+          <thead className="bg-slate-50">
             <tr>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Demanda</th>
-              <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
-              <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Conclusão</th>
-              <th className="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
-              <th className="text-center px-3 sm:px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Demanda</th>
+              <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Cliente</th>
+              <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Conclusão</th>
+              <th className="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Valor</th>
+              <th className="text-center px-3 sm:px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.05]">
+          <tbody className="divide-y divide-slate-200">
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-12 text-center text-slate-500 text-sm">
@@ -168,23 +168,23 @@ const ProfessionalView = () => {
                 </td>
               </tr>
             ) : filtered.map(m => (
-              <tr key={m.id} className="hover:bg-white/[0.04] transition-colors">
+              <tr key={m.id} className="hover:bg-slate-100 transition-colors">
                 <td className="px-3 sm:px-4 py-3">
-                  <p className="text-sm font-semibold text-slate-100">{m.demandTitle}</p>
+                  <p className="text-sm font-semibold text-slate-900">{m.demandTitle}</p>
                   <p className="sm:hidden text-xs text-slate-500 mt-0.5">{m.clientName} · {formatDate(m.completedAt)}</p>
                 </td>
-                <td className="hidden sm:table-cell px-4 py-3 text-sm text-slate-400">{m.clientName}</td>
-                <td className="hidden sm:table-cell px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
+                <td className="hidden sm:table-cell px-4 py-3 text-sm text-slate-500">{m.clientName}</td>
+                <td className="hidden sm:table-cell px-4 py-3 text-sm text-slate-500">{formatDate(m.completedAt)}</td>
                 <td className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">
-                  <span className="text-sm font-bold text-slate-100">{formatCurrency(m.value)}</span>
+                  <span className="text-sm font-bold text-slate-900">{formatCurrency(m.value)}</span>
                 </td>
                 <td className="px-3 sm:px-4 py-3 text-center">
                   {m.status === 'paid' ? (
-                    <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/[0.1] text-emerald-400 inline-flex items-center gap-1">
+                    <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/[0.1] text-emerald-600 inline-flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" /> Pago
                     </span>
                   ) : (
-                    <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-orange-500/[0.1] text-orange-400">
+                    <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-orange-500/[0.1] text-orange-600">
                       Aguardando
                     </span>
                   )}
@@ -370,12 +370,12 @@ const AdminView = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Financeiro</h1>
-          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Gestão financeira completa</p>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Financeiro</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Gestão financeira completa</p>
         </div>
         <button
           onClick={() => setShowAuditLog(true)}
-          className="flex items-center gap-2 border border-white/[0.08] text-slate-400 hover:bg-white/[0.04] px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 border border-slate-200 text-slate-500 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           <History className="w-4 h-4" />
           Histórico
@@ -383,13 +383,13 @@ const AdminView = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl w-fit max-w-full overflow-x-auto">
+      <div className="flex gap-1 bg-slate-50 p-1 rounded-xl w-fit max-w-full overflow-x-auto">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
             className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap flex-shrink-0 text-sm font-medium transition-all ${
-              activeTab === key ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+              activeTab === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -402,59 +402,59 @@ const AdminView = () => {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+            <div className="bg-white rounded-xl p-5 border border-slate-200">
               <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-3">
-                <DollarSign className="w-4 h-4 text-orange-400" />
+                <DollarSign className="w-4 h-4 text-orange-600" />
               </div>
-              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.pendingPro)}</p>
+              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(summary.pendingPro)}</p>
               <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">A Pagar (Profissionais)</p>
             </div>
-            <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+            <div className="bg-white rounded-xl p-5 border border-slate-200">
               <div className="w-8 h-8 bg-emerald-500/[0.12] rounded-lg flex items-center justify-center mb-3">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               </div>
-              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.paidPro)}</p>
+              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(summary.paidPro)}</p>
               <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Pago (Profissionais)</p>
             </div>
-            <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+            <div className="bg-white rounded-xl p-5 border border-slate-200">
               <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center mb-3">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
+                <TrendingUp className="w-4 h-4 text-blue-600" />
               </div>
-              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.paidIncome)}</p>
+              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(summary.paidIncome)}</p>
               <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Entradas Realizadas</p>
               {summary.pendingIncome > 0 && (
-                <p className="text-xs text-orange-400 mt-0.5">+ {formatCurrency(summary.pendingIncome)} previsto</p>
+                <p className="text-xs text-orange-600 mt-0.5">+ {formatCurrency(summary.pendingIncome)} previsto</p>
               )}
             </div>
-            <div className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+            <div className="bg-white rounded-xl p-5 border border-slate-200">
               <div className="w-8 h-8 bg-red-500/[0.12] rounded-lg flex items-center justify-center mb-3">
-                <TrendingDown className="w-4 h-4 text-red-400" />
+                <TrendingDown className="w-4 h-4 text-red-600" />
               </div>
-              <p className="text-2xl font-extrabold text-white tracking-tight">{formatCurrency(summary.paidExpense)}</p>
+              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{formatCurrency(summary.paidExpense)}</p>
               <p className="text-xs font-medium text-slate-500 mt-1.5 uppercase tracking-wide">Saídas Realizadas</p>
               {summary.pendingExpense > 0 && (
-                <p className="text-xs text-orange-400 mt-0.5">+ {formatCurrency(summary.pendingExpense)} previsto</p>
+                <p className="text-xs text-orange-600 mt-0.5">+ {formatCurrency(summary.pendingExpense)} previsto</p>
               )}
             </div>
           </div>
 
           {/* Saldo */}
           <div className={`rounded-xl p-5 border ${summary.balance >= 0 ? 'bg-emerald-500/[0.06] border-emerald-500/[0.2]' : 'bg-red-500/[0.06] border-red-500/[0.2]'}`}>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Saldo Operacional (Entradas − Saídas − A Pagar Prof.)</p>
-            <p className={`text-3xl font-extrabold tracking-tight ${summary.balance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Saldo Operacional (Entradas − Saídas − A Pagar Prof.)</p>
+            <p className={`text-3xl font-semibold tracking-tight ${summary.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {formatCurrency(summary.balance)}
             </p>
           </div>
 
           {/* Recent demand movements */}
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/[0.05]">
-              <h3 className="text-sm font-bold text-slate-100">Últimas movimentações de demandas</h3>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200">
+              <h3 className="text-sm font-bold text-slate-900">Últimas movimentações de demandas</h3>
             </div>
             {movements.filter(m => m.type === 'credit').length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">Nenhuma movimentação registrada</div>
             ) : (
-              <div className="divide-y divide-white/[0.05]">
+              <div className="divide-y divide-slate-200">
                 {movements.filter(m => m.type === 'credit')
                   .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
                   .slice(0, 5)
@@ -463,12 +463,12 @@ const AdminView = () => {
                     return (
                       <div key={m.id} className="px-6 py-3 flex items-center gap-4">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-100 truncate">{m.demandTitle}</p>
+                          <p className="text-sm font-medium text-slate-900 truncate">{m.demandTitle}</p>
                           <p className="text-xs text-slate-500">{prof?.name || '—'} · {m.clientName}</p>
                         </div>
-                        <span className="text-sm font-bold text-slate-100 flex-shrink-0">{formatCurrency(m.value)}</span>
+                        <span className="text-sm font-bold text-slate-900 flex-shrink-0">{formatCurrency(m.value)}</span>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${
-                          m.status === 'paid' ? 'bg-emerald-500/[0.1] text-emerald-400' : 'bg-orange-500/[0.1] text-orange-400'
+                          m.status === 'paid' ? 'bg-emerald-500/[0.1] text-emerald-600' : 'bg-orange-500/[0.1] text-orange-600'
                         }`}>
                           {m.status === 'paid' ? 'Pago' : 'Pendente'}
                         </span>
@@ -483,35 +483,35 @@ const AdminView = () => {
 
       {/* ── Professionals Tab ── */}
       {activeTab === 'professionals' && (
-        <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/[0.05]">
-            <h3 className="text-base font-bold text-slate-100">Saldo por Profissional</h3>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h3 className="text-base font-bold text-slate-900">Saldo por Profissional</h3>
           </div>
           {professionalsWithBalance.length === 0 ? (
             <div className="p-12 text-center text-slate-500 text-sm">Nenhum profissional com saldo registrado</div>
           ) : (
-            <div className="divide-y divide-white/[0.05]">
+            <div className="divide-y divide-slate-200">
               {professionalsWithBalance.map(pro => (
-                <div key={pro.id} className="px-6 py-4 flex items-center gap-4 hover:bg-white/[0.04] transition-colors">
+                <div key={pro.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-100 transition-colors">
                   <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                     {pro.name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-100">{pro.name}</p>
+                    <p className="text-sm font-semibold text-slate-900">{pro.name}</p>
                     <p className="text-xs text-slate-500">Pix: {pro.pixKey || 'Não cadastrado'}</p>
                   </div>
                   <div className="flex items-center gap-6 text-right">
                     <div>
                       <p className="text-xs text-slate-500">Pendente</p>
-                      <p className="text-sm font-bold text-orange-400">{formatCurrency(pro.balance.pending)}</p>
+                      <p className="text-sm font-bold text-orange-600">{formatCurrency(pro.balance.pending)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500">Pago</p>
-                      <p className="text-sm font-bold text-emerald-400">{formatCurrency(pro.balance.paid)}</p>
+                      <p className="text-sm font-bold text-emerald-600">{formatCurrency(pro.balance.paid)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500">Total</p>
-                      <p className="text-sm font-bold text-slate-100">{formatCurrency(pro.balance.total)}</p>
+                      <p className="text-sm font-bold text-slate-900">{formatCurrency(pro.balance.total)}</p>
                     </div>
                   </div>
                 </div>
@@ -526,19 +526,19 @@ const AdminView = () => {
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-52">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="text"
                 placeholder="Buscar por demanda ou cliente..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-white/[0.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">Todos os status</option>
               <option value="pending">Pendentes</option>
@@ -547,28 +547,28 @@ const AdminView = () => {
             <select
               value={professionalFilter}
               onChange={e => setProfessionalFilter(e.target.value)}
-              className="border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">Todos os profissionais</option>
               {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
 
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-x-auto">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-900">
+                <thead className="bg-slate-50">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Demanda</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Profissional</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Conclusão</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Demanda</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Profissional</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Cliente</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Conclusão</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Valor</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Status</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Ação</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.05]">
+                <tbody className="divide-y divide-slate-200">
                   {demandMovements.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-4 py-12 text-center text-slate-500 text-sm">
@@ -579,20 +579,20 @@ const AdminView = () => {
                     const prof = professionals.find(p => p.id === m.professionalId);
                     const client = clients.find(c => c.id === m.clientId);
                     return (
-                      <tr key={m.id} className="hover:bg-white/[0.04] transition-colors">
+                      <tr key={m.id} className="hover:bg-slate-100 transition-colors">
                         <td className="px-4 py-3">
-                          <p className="text-sm font-semibold text-slate-100">{m.demandTitle}</p>
+                          <p className="text-sm font-semibold text-slate-900">{m.demandTitle}</p>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                               {(prof?.name || '?').charAt(0)}
                             </div>
-                            <span className="text-sm text-slate-400">{prof?.name || '—'}</span>
+                            <span className="text-sm text-slate-500">{prof?.name || '—'}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-400">{client?.companyName || m.clientName}</td>
-                        <td className="px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
+                        <td className="px-4 py-3 text-sm text-slate-500">{client?.companyName || m.clientName}</td>
+                        <td className="px-4 py-3 text-sm text-slate-500">{formatDate(m.completedAt)}</td>
                         <td className="px-4 py-3 text-right">
                           {editingValue?.id === m.id ? (
                             <div className="flex items-center justify-end gap-2">
@@ -604,14 +604,14 @@ const AdminView = () => {
                                 autoFocus
                                 onKeyDown={e => { if (e.key === 'Enter') handleUpdateValue(); if (e.key === 'Escape') setEditingValue(null); }}
                               />
-                              <button onClick={handleUpdateValue} className="text-emerald-400 hover:text-emerald-300"><CheckCircle2 className="w-4 h-4" /></button>
-                              <button onClick={() => setEditingValue(null)} className="text-slate-400 hover:text-slate-300"><X className="w-4 h-4" /></button>
+                              <button onClick={handleUpdateValue} className="text-emerald-600 hover:text-emerald-700"><CheckCircle2 className="w-4 h-4" /></button>
+                              <button onClick={() => setEditingValue(null)} className="text-slate-500 hover:text-slate-700"><X className="w-4 h-4" /></button>
                             </div>
                           ) : (
                             <div className="flex items-center justify-end gap-2">
-                              <span className="text-sm font-bold text-slate-100">{formatCurrency(m.value)}</span>
+                              <span className="text-sm font-bold text-slate-900">{formatCurrency(m.value)}</span>
                               {m.status === 'pending' && (
-                                <button onClick={() => setEditingValue({ id: m.id, value: String(m.value) })} className="text-slate-500 hover:text-slate-300 transition-colors" title="Corrigir valor">
+                                <button onClick={() => setEditingValue({ id: m.id, value: String(m.value) })} className="text-slate-500 hover:text-slate-700 transition-colors" title="Corrigir valor">
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                               )}
@@ -620,7 +620,7 @@ const AdminView = () => {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                            m.status === 'paid' ? 'bg-emerald-500/[0.1] text-emerald-400' : 'bg-orange-500/[0.1] text-orange-400'
+                            m.status === 'paid' ? 'bg-emerald-500/[0.1] text-emerald-600' : 'bg-orange-500/[0.1] text-orange-600'
                           }`}>
                             {m.status === 'paid' ? 'Pago' : 'Pendente'}
                           </span>
@@ -655,17 +655,17 @@ const AdminView = () => {
         <div className="space-y-4">
           {/* Sub-tabs + action button */}
           <div className="flex items-center justify-between">
-            <div className="flex gap-1 bg-[#0d1117] p-1 rounded-xl">
+            <div className="flex gap-1 bg-slate-50 p-1 rounded-xl">
               <button
                 onClick={() => setEntriesSubTab('income')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  entriesSubTab === 'income' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+                  entriesSubTab === 'income' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <ArrowUpCircle className="w-4 h-4 text-blue-400" />
+                <ArrowUpCircle className="w-4 h-4 text-blue-600" />
                 Entradas
                 {summary.pendingIncome > 0 && (
-                  <span className="ml-1 text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-1 text-xs bg-orange-500/20 text-orange-600 px-1.5 py-0.5 rounded-full">
                     {entriesByType.income.filter(m => m.status === 'pending').length}
                   </span>
                 )}
@@ -673,13 +673,13 @@ const AdminView = () => {
               <button
                 onClick={() => setEntriesSubTab('expense')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  entriesSubTab === 'expense' ? 'bg-[#21262d] text-slate-100 shadow-sm' : 'text-slate-500 hover:text-slate-200'
+                  entriesSubTab === 'expense' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <ArrowDownCircle className="w-4 h-4 text-red-400" />
+                <ArrowDownCircle className="w-4 h-4 text-red-600" />
                 Saídas
                 {summary.pendingExpense > 0 && (
-                  <span className="ml-1 text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-1 text-xs bg-orange-500/20 text-orange-600 px-1.5 py-0.5 rounded-full">
                     {entriesByType.expense.filter(m => m.status === 'pending').length}
                   </span>
                 )}
@@ -687,7 +687,7 @@ const AdminView = () => {
             </div>
             <button
               onClick={() => openEntryModal(entriesSubTab)}
-              className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex items-center gap-2 text-slate-900 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 entriesSubTab === 'income' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'
               }`}
             >
@@ -699,75 +699,75 @@ const AdminView = () => {
           {/* Summary cards */}
           {entriesSubTab === 'income' ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-[#21262d] rounded-xl p-4 border border-orange-500/20">
+              <div className="bg-white rounded-xl p-4 border border-orange-500/20">
                 <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <Clock className="w-4 h-4 text-orange-400" />
+                  <Clock className="w-4 h-4 text-orange-600" />
                 </div>
-                <p className="text-lg font-bold text-orange-400">{formatCurrency(summary.pendingIncome)}</p>
+                <p className="text-lg font-bold text-orange-600">{formatCurrency(summary.pendingIncome)}</p>
                 <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">A Receber</p>
-                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.income.filter(m => m.status === 'pending').length} lançamento(s)</p>
+                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.income.filter(m => m.status === 'pending').length} lançamento(s)</p>
               </div>
-              <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+              <div className="bg-white rounded-xl p-4 border border-slate-200">
                 <div className="w-8 h-8 bg-blue-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
                 </div>
-                <p className="text-lg font-bold text-blue-400">{formatCurrency(summary.paidIncome)}</p>
+                <p className="text-lg font-bold text-blue-600">{formatCurrency(summary.paidIncome)}</p>
                 <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Recebido</p>
-                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.income.filter(m => m.status === 'paid').length} lançamento(s)</p>
+                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.income.filter(m => m.status === 'paid').length} lançamento(s)</p>
               </div>
-              <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+              <div className="bg-white rounded-xl p-4 border border-slate-200">
                 <div className="w-8 h-8 bg-slate-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <TrendingUp className="w-4 h-4 text-slate-400" />
+                  <TrendingUp className="w-4 h-4 text-slate-500" />
                 </div>
-                <p className="text-lg font-bold text-slate-100">{formatCurrency(summary.income)}</p>
+                <p className="text-lg font-bold text-slate-900">{formatCurrency(summary.income)}</p>
                 <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Total</p>
-                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.income.length} lançamento(s)</p>
+                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.income.length} lançamento(s)</p>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-[#21262d] rounded-xl p-4 border border-orange-500/20">
+              <div className="bg-white rounded-xl p-4 border border-orange-500/20">
                 <div className="w-8 h-8 bg-orange-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <Clock className="w-4 h-4 text-orange-400" />
+                  <Clock className="w-4 h-4 text-orange-600" />
                 </div>
-                <p className="text-lg font-bold text-orange-400">{formatCurrency(summary.pendingExpense)}</p>
+                <p className="text-lg font-bold text-orange-600">{formatCurrency(summary.pendingExpense)}</p>
                 <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">A Pagar</p>
-                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.expense.filter(m => m.status === 'pending').length} lançamento(s)</p>
+                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.expense.filter(m => m.status === 'pending').length} lançamento(s)</p>
               </div>
-              <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+              <div className="bg-white rounded-xl p-4 border border-slate-200">
                 <div className="w-8 h-8 bg-red-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-red-400" />
+                  <CheckCircle2 className="w-4 h-4 text-red-600" />
                 </div>
-                <p className="text-lg font-bold text-red-400">{formatCurrency(summary.paidExpense)}</p>
+                <p className="text-lg font-bold text-red-600">{formatCurrency(summary.paidExpense)}</p>
                 <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Pago</p>
-                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.expense.filter(m => m.status === 'paid').length} lançamento(s)</p>
+                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.expense.filter(m => m.status === 'paid').length} lançamento(s)</p>
               </div>
-              <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+              <div className="bg-white rounded-xl p-4 border border-slate-200">
                 <div className="w-8 h-8 bg-slate-500/[0.12] rounded-lg flex items-center justify-center mb-2">
-                  <TrendingDown className="w-4 h-4 text-slate-400" />
+                  <TrendingDown className="w-4 h-4 text-slate-500" />
                 </div>
-                <p className="text-lg font-bold text-slate-100">{formatCurrency(summary.expense)}</p>
+                <p className="text-lg font-bold text-slate-900">{formatCurrency(summary.expense)}</p>
                 <p className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Total</p>
-                <p className="text-xs text-slate-600 mt-0.5">{entriesByType.expense.length} lançamento(s)</p>
+                <p className="text-xs text-slate-400 mt-0.5">{entriesByType.expense.length} lançamento(s)</p>
               </div>
             </div>
           )}
 
           {/* Entries table */}
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-x-auto">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-900">
+              <thead className="bg-slate-50">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Descrição</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Categoria</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Cliente</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Vencimento</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Status</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Ação</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Descrição</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Categoria</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Cliente</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Vencimento</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Valor</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Status</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Ação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody className="divide-y divide-slate-200">
                 {entriesByType[entriesSubTab].length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-slate-500 text-sm">
@@ -775,27 +775,27 @@ const AdminView = () => {
                     </td>
                   </tr>
                 ) : entriesByType[entriesSubTab].map(m => (
-                  <tr key={m.id} className={`hover:bg-white/[0.04] transition-colors ${m.status === 'pending' ? 'border-l-2 border-orange-500/40' : ''}`}>
+                  <tr key={m.id} className={`hover:bg-slate-100 transition-colors ${m.status === 'pending' ? 'border-l-2 border-orange-500/40' : ''}`}>
                     <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-slate-100">{m.demandTitle}</p>
+                      <p className="text-sm font-medium text-slate-900">{m.demandTitle}</p>
                       {m.notes && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">{m.notes}</p>}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-400">{m.category || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-400">{m.clientName || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-400">{formatDate(m.completedAt)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500">{m.category || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500">{m.clientName || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500">{formatDate(m.completedAt)}</td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`text-sm font-bold ${entriesSubTab === 'income' ? 'text-blue-400' : 'text-red-400'}`}>
+                      <span className={`text-sm font-bold ${entriesSubTab === 'income' ? 'text-blue-600' : 'text-red-600'}`}>
                         {entriesSubTab === 'income' ? '+' : '-'}{formatCurrency(m.value)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       {m.status === 'paid' ? (
-                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/[0.1] text-emerald-400 inline-flex items-center gap-1">
+                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/[0.1] text-emerald-600 inline-flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" />
                           {entriesSubTab === 'income' ? 'Recebido' : 'Pago'}
                         </span>
                       ) : (
-                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-orange-500/[0.1] text-orange-400 inline-flex items-center gap-1">
+                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-orange-500/[0.1] text-orange-600 inline-flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {entriesSubTab === 'income' ? 'A Receber' : 'A Pagar'}
                         </span>
@@ -806,7 +806,7 @@ const AdminView = () => {
                         {m.status === 'pending' && (
                           <button
                             onClick={() => setConfirmPay(m.id)}
-                            className={`text-xs text-white px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                            className={`text-xs text-slate-900 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
                               entriesSubTab === 'income'
                                 ? 'bg-blue-600 hover:bg-blue-700'
                                 : 'bg-green-600 hover:bg-green-700'
@@ -820,7 +820,7 @@ const AdminView = () => {
                         )}
                         <button
                           onClick={() => deleteMovement(m.id)}
-                          className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/[0.1] rounded-lg transition-colors"
+                          className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-500/[0.1] rounded-lg transition-colors"
                           title="Excluir"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -837,24 +837,24 @@ const AdminView = () => {
 
       {/* ── Confirm Pay Modal ── */}
       {confirmPay && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-green-500/[0.12] rounded-xl flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-green-400" />
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
               </div>
-              <h3 className="text-lg font-bold text-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">
                 {confirmPayMovement?.type === 'income' ? 'Confirmar recebimento' : 'Confirmar pagamento'}
               </h3>
             </div>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-slate-500 text-sm mb-6">
               {confirmPayMovement?.type === 'income'
                 ? 'Confirmar que este recebimento foi realizado hoje? Esta ação ficará registrada no histórico.'
                 : 'Confirmar que este pagamento foi realizado hoje? Esta ação ficará registrada no histórico.'
               }
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmPay(null)} className="flex-1 border border-white/[0.08] text-slate-400 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+              <button onClick={() => setConfirmPay(null)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">
                 Cancelar
               </button>
               <button onClick={() => handleMarkPaid(confirmPay)} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-bold">
@@ -867,20 +867,20 @@ const AdminView = () => {
 
       {/* ── New Entry Modal ── */}
       {showEntryModal && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-              <h2 className="text-lg font-bold text-slate-100">
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900">
                 {entryForm.type === 'income' ? 'Nova Entrada' : 'Nova Saída'}
               </h2>
-              <button onClick={() => setShowEntryModal(false)} className="text-slate-400 hover:text-slate-300 p-1 rounded-lg hover:bg-white/[0.06]">
+              <button onClick={() => setShowEntryModal(false)} className="text-slate-500 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               {/* Type selector */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Tipo *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Tipo *</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -888,7 +888,7 @@ const AdminView = () => {
                     className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
                       entryForm.type === 'income'
                         ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'border-white/[0.08] text-slate-400 hover:bg-white/[0.04]'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
                     <ArrowUpCircle className="w-4 h-4" /> Entrada
@@ -899,7 +899,7 @@ const AdminView = () => {
                     className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
                       entryForm.type === 'expense'
                         ? 'bg-red-600 border-red-600 text-white'
-                        : 'border-white/[0.08] text-slate-400 hover:bg-white/[0.04]'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
                     <ArrowDownCircle className="w-4 h-4" /> Saída
@@ -909,7 +909,7 @@ const AdminView = () => {
 
               {/* Status toggle */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Status *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Status *</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -917,7 +917,7 @@ const AdminView = () => {
                     className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
                       entryForm.status === 'paid'
                         ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'border-white/[0.08] text-slate-400 hover:bg-white/[0.04]'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4" /> Já realizado
@@ -928,7 +928,7 @@ const AdminView = () => {
                     className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
                       entryForm.status === 'pending'
                         ? 'bg-orange-600 border-orange-600 text-white'
-                        : 'border-white/[0.08] text-slate-400 hover:bg-white/[0.04]'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
                     <Clock className="w-4 h-4" /> Previsão
@@ -939,11 +939,11 @@ const AdminView = () => {
               {/* Category */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-slate-300">Categoria *</label>
+                  <label className="text-sm font-medium text-slate-700">Categoria *</label>
                   <button
                     type="button"
                     onClick={() => { setShowNewCatInput(v => !v); setNewCatName(''); }}
-                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Nova categoria
                   </button>
@@ -962,7 +962,7 @@ const AdminView = () => {
                     <button type="button" onClick={handleAddCustomCategory} className="px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
                       Criar
                     </button>
-                    <button type="button" onClick={() => setShowNewCatInput(false)} className="px-3 py-2.5 border border-white/[0.08] text-slate-400 rounded-lg text-sm hover:bg-white/[0.04]">
+                    <button type="button" onClick={() => setShowNewCatInput(false)} className="px-3 py-2.5 border border-slate-200 text-slate-500 rounded-lg text-sm hover:bg-slate-100">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -970,7 +970,7 @@ const AdminView = () => {
                   <select
                     value={entryForm.category}
                     onChange={e => setEntryForm(f => ({ ...f, category: e.target.value }))}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Selecione...</option>
                     {availableCategories.map(c => (
@@ -981,22 +981,22 @@ const AdminView = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Descrição *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Descrição *</label>
                 <input
                   type="text"
                   value={entryForm.description}
                   onChange={e => setEntryForm(f => ({ ...f, description: e.target.value }))}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Descreva o lançamento..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Cliente <span className="text-slate-500 font-normal">(opcional)</span></label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Cliente <span className="text-slate-500 font-normal">(opcional)</span></label>
                 <select
                   value={entryForm.clientId}
                   onChange={e => setEntryForm(f => ({ ...f, clientId: e.target.value }))}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Nenhum</option>
                   {clients.filter(c => c.status === 'active').map(c => (
@@ -1007,43 +1007,43 @@ const AdminView = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Valor (R$) *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Valor (R$) *</label>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={entryForm.value}
                     onChange={e => setEntryForm(f => ({ ...f, value: e.target.value }))}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0,00"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
                     {entryForm.status === 'pending' ? 'Data de vencimento *' : 'Data *'}
                   </label>
                   <input
                     type="date"
                     value={entryForm.date}
                     onChange={e => setEntryForm(f => ({ ...f, date: e.target.value }))}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Observações <span className="text-slate-500 font-normal">(opcional)</span></label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Observações <span className="text-slate-500 font-normal">(opcional)</span></label>
                 <textarea
                   value={entryForm.notes}
                   onChange={e => setEntryForm(f => ({ ...f, notes: e.target.value }))}
                   rows={2}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Anotações adicionais..."
                 />
               </div>
             </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05]">
-              <button onClick={() => { setShowEntryModal(false); setShowNewCatInput(false); }} className="flex-1 border border-white/[0.08] text-slate-400 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-200">
+              <button onClick={() => { setShowEntryModal(false); setShowNewCatInput(false); }} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">
                 Cancelar
               </button>
               <button
@@ -1060,11 +1060,11 @@ const AdminView = () => {
 
       {/* ── Audit Log Modal ── */}
       {showAuditLog && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-              <h2 className="text-lg font-bold text-slate-100">Histórico de Alterações</h2>
-              <button onClick={() => setShowAuditLog(false)} className="text-slate-400 hover:text-slate-300 p-1 rounded-lg hover:bg-white/[0.06]">
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-2xl max-h-[80dvh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900">Histórico de Alterações</h2>
+              <button onClick={() => setShowAuditLog(false)} className="text-slate-500 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1072,16 +1072,16 @@ const AdminView = () => {
               {recentAudit.length === 0 ? (
                 <div className="p-8 text-center text-slate-500 text-sm">Nenhuma alteração registrada</div>
               ) : (
-                <div className="divide-y divide-white/[0.05]">
+                <div className="divide-y divide-slate-200">
                   {recentAudit.map(log => (
                     <div key={log.id} className="px-6 py-3">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-semibold text-slate-100">
+                        <p className="text-sm font-semibold text-slate-900">
                           {log.action === 'payment_marked' ? 'Pagamento confirmado' : 'Valor atualizado'}
                         </p>
                         <span className="text-xs text-slate-500">{formatDateTime(log.createdAt)}</span>
                       </div>
-                      <p className="text-xs text-slate-500">Por: <span className="font-medium text-slate-400">{log.userName}</span></p>
+                      <p className="text-xs text-slate-500">Por: <span className="font-medium text-slate-500">{log.userName}</span></p>
                       {log.oldValue && log.newValue && (
                         <p className="text-xs text-slate-500 mt-0.5">{log.oldValue} → {log.newValue}</p>
                       )}

@@ -35,22 +35,22 @@ export const Login = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#0f172a] flex-col justify-between p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-white flex-col justify-between p-12">
         <div className="flex items-center">
           <img src="/logo.svg" alt="Growth Expert" className="h-10 w-auto" />
         </div>
         <div>
-          <h1 className="text-white text-5xl font-extrabold leading-tight tracking-tight mb-4">
+          <h1 className="text-slate-900 text-5xl font-semibold leading-tight tracking-tight mb-4">
             Operação<br />sem<br />fricção.
           </h1>
-          <p className="text-slate-400 text-base max-w-xs leading-relaxed">
+          <p className="text-slate-500 text-base max-w-xs leading-relaxed">
             Gerencie demandas, profissionais e financeiro da sua agência em um único lugar.
           </p>
         </div>
         <div className="flex items-center gap-6">
           {[['Demandas', 'Kanban completo'], ['Financeiro', 'Automático'], ['Relatórios', 'Em tempo real']].map(([t, s]) => (
             <div key={t}>
-              <p className="text-white text-sm font-semibold">{t}</p>
+              <p className="text-slate-900 text-sm font-semibold">{t}</p>
               <p className="text-slate-500 text-xs">{s}</p>
             </div>
           ))}
@@ -58,18 +58,18 @@ export const Login = () => {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center bg-[#0d1117] px-8">
+      <div className="flex-1 flex items-center justify-center bg-slate-50 px-8">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center mb-10">
             <img src="/logo.svg" alt="Growth Expert" className="h-8 w-auto" />
           </div>
 
-          <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">Entrar</h2>
-          <p className="text-slate-400 text-sm mb-8">Acesse o painel da sua agência.</p>
+          <h2 className="text-2xl font-semibold text-slate-900 mb-1 tracking-tight">Entrar</h2>
+          <p className="text-slate-500 text-sm mb-8">Acesse o painel da sua agência.</p>
 
           {error && (
-            <div className="flex items-center gap-2 bg-red-500/[0.1] border border-red-500/[0.3] text-red-400 rounded-lg px-4 py-3 mb-5 text-sm">
+            <div className="flex items-center gap-2 bg-red-500/[0.1] border border-red-500/[0.3] text-red-600 rounded-lg px-4 py-3 mb-5 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -77,24 +77,24 @@ export const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">E-mail</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">E-mail</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full px-3 py-2.5 border border-white/[0.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="seu@email.com"
                 required
                 autoFocus
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Senha</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Senha</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-3 py-2.5 border border-white/[0.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="••••••••"
                 required
               />
@@ -108,7 +108,7 @@ export const Login = () => {
             </button>
           </form>
 
-          <p className="text-[10px] text-slate-700 mt-8 text-center select-all">build {__BUILD_ID__}</p>
+          <p className="text-[10px] text-slate-600 mt-8 text-center select-all">build {__BUILD_ID__}</p>
         </div>
       </div>
     </div>

@@ -36,41 +36,41 @@ const PIPELINE: {
     status: 'new',
     label: 'Novo',
     headerBorder: 'border-blue-500/50',
-    headerText: 'text-blue-400',
+    headerText: 'text-blue-600',
     dot: 'bg-blue-400',
-    badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    badge: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
   },
   {
     status: 'contacted',
     label: 'Contatado',
     headerBorder: 'border-yellow-500/50',
-    headerText: 'text-yellow-400',
+    headerText: 'text-yellow-700',
     dot: 'bg-yellow-400',
-    badge: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    badge: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
   },
   {
     status: 'proposal',
     label: 'Proposta',
     headerBorder: 'border-orange-500/50',
-    headerText: 'text-orange-400',
+    headerText: 'text-orange-600',
     dot: 'bg-orange-400',
-    badge: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    badge: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
   },
   {
     status: 'client',
     label: 'Fechado',
     headerBorder: 'border-green-500/50',
-    headerText: 'text-green-400',
+    headerText: 'text-green-600',
     dot: 'bg-green-400',
-    badge: 'bg-green-500/10 text-green-400 border-green-500/20',
+    badge: 'bg-green-500/10 text-green-600 border-green-500/20',
   },
   {
     status: 'lost',
     label: 'Perdido',
     headerBorder: 'border-slate-600',
-    headerText: 'text-slate-400',
+    headerText: 'text-slate-500',
     dot: 'bg-slate-500',
-    badge: 'bg-slate-500/10 text-slate-400 border-slate-600',
+    badge: 'bg-slate-500/10 text-slate-500 border-slate-600',
   },
 ];
 
@@ -116,24 +116,24 @@ const DraggableLeadCard = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-[#0d1117] border border-white/[0.07] rounded-xl p-3 cursor-grab active:cursor-grabbing select-none group hover:border-white/20 transition-colors"
+      className="bg-slate-50 border border-slate-200 rounded-xl p-3 cursor-grab active:cursor-grabbing select-none group hover:border-slate-300 transition-colors"
     >
       {/* drag handle area */}
       <div {...attributes} {...listeners} className="mb-2">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-slate-100 leading-tight">{lead.name}</p>
+          <p className="text-sm font-semibold text-slate-900 leading-tight">{lead.name}</p>
           {lead.source === 'apify' && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 flex-shrink-0 font-medium">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 flex-shrink-0 font-medium">
               Maps
             </span>
           )}
           {lead.source === 'meta' && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 flex-shrink-0 font-medium">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 flex-shrink-0 font-medium">
               Meta
             </span>
           )}
           {lead.source === 'website' && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 flex-shrink-0 font-medium">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 flex-shrink-0 font-medium">
               Site
             </span>
           )}
@@ -157,7 +157,7 @@ const DraggableLeadCard = ({
           </div>
         )}
         {lead.website && (
-          <div className="flex items-center gap-1.5 text-xs text-blue-400">
+          <div className="flex items-center gap-1.5 text-xs text-blue-600">
             <Globe className="w-3 h-3 flex-shrink-0" />
             <a
               href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
@@ -171,7 +171,7 @@ const DraggableLeadCard = ({
           </div>
         )}
         {lead.rating != null && (
-          <div className="flex items-center gap-1 text-xs text-yellow-400">
+          <div className="flex items-center gap-1 text-xs text-yellow-700">
             <Star className="w-3 h-3 fill-yellow-400" />
             <span className="font-semibold">{lead.rating.toFixed(1)}</span>
             {lead.reviewCount && (
@@ -182,16 +182,16 @@ const DraggableLeadCard = ({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-1.5 pt-2 border-t border-white/[0.05]">
+      <div className="flex gap-1.5 pt-2 border-t border-slate-200">
         <button
           onClick={e => { e.stopPropagation(); onOpen(lead); }}
-          className="flex-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] py-1 rounded-lg transition-colors font-medium"
+          className="flex-1 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-100 py-1 rounded-lg transition-colors font-medium"
         >
           Ver detalhes
         </button>
         <button
           onClick={e => { e.stopPropagation(); onDelete(lead.id); }}
-          className="p-1 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+          className="p-1 text-red-600/60 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -202,8 +202,8 @@ const DraggableLeadCard = ({
 
 // Snapshot card used in DragOverlay
 const LeadCardSnapshot = ({ lead }: { lead: Lead }) => (
-  <div className="bg-[#0d1117] border border-blue-500/40 rounded-xl p-3 shadow-2xl w-64 rotate-2 opacity-90">
-    <p className="text-sm font-semibold text-slate-100">{lead.name}</p>
+  <div className="bg-slate-50 border border-blue-500/40 rounded-xl p-3 shadow-2xl w-64 rotate-2 opacity-90">
+    <p className="text-sm font-semibold text-slate-900">{lead.name}</p>
     {lead.category && <p className="text-xs text-slate-500 mt-0.5">{lead.category}</p>}
     {lead.city && (
       <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1.5">
@@ -231,14 +231,14 @@ const LeadColumn = ({
   return (
     <div className="flex flex-col w-64 flex-shrink-0">
       {/* Column header */}
-      <div className={`flex items-center justify-between px-3 py-2.5 mb-3 rounded-xl border-l-2 bg-[#161b22] ${stage.headerBorder}`}>
+      <div className={`flex items-center justify-between px-3 py-2.5 mb-3 rounded-xl border-l-2 bg-slate-50 ${stage.headerBorder}`}>
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${stage.dot}`} />
           <span className={`text-xs font-bold uppercase tracking-wider ${stage.headerText}`}>
             {stage.label}
           </span>
         </div>
-        <span className="text-xs font-bold text-slate-500 bg-[#0d1117] px-2 py-0.5 rounded-full">
+        <span className="text-xs font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full">
           {leads.length}
         </span>
       </div>
@@ -262,8 +262,8 @@ const LeadColumn = ({
         </SortableContext>
 
         {leads.length === 0 && (
-          <div className="h-20 flex items-center justify-center border border-dashed border-white/[0.06] rounded-xl">
-            <p className="text-xs text-slate-600">Solte aqui</p>
+          <div className="h-20 flex items-center justify-center border border-dashed border-slate-200 rounded-xl">
+            <p className="text-xs text-slate-400">Solte aqui</p>
           </div>
         )}
       </div>
@@ -648,8 +648,8 @@ export const Leads = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Leads</h1>
-          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">{leads.length} lead(s) no funil</p>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Leads</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{leads.length} lead(s) no funil</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
@@ -679,7 +679,7 @@ export const Leads = () => {
                 {syncStatus === 'idle'    && <RefreshCw className="w-4 h-4" />}
                 {syncStatus === 'idle' ? 'Sincronizar Meta' : syncMsg}
               </button>
-              <span className="text-[10px] text-slate-600 pl-1">
+              <span className="text-[10px] text-slate-400 pl-1">
                 {lastSyncAt
                   ? `sinc. ${Math.round((Date.now() - lastSyncAt.getTime()) / 60000) || '<1'} min atrás · auto 5min`
                   : 'auto-sync ativo · a cada 5min'}
@@ -691,7 +691,7 @@ export const Leads = () => {
             onClick={exportCSV}
             disabled={filteredBySearch.length === 0}
             title="Exportar leads em CSV para disparo em outras plataformas"
-            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             <Download className="w-4 h-4" />
             Exportar CSV{search ? ` (${filteredBySearch.length})` : ''}
@@ -699,7 +699,7 @@ export const Leads = () => {
 
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
             Novo Lead
@@ -709,11 +709,11 @@ export const Leads = () => {
 
       {/* DB error banner */}
       {dbError && (
-        <div className="flex-shrink-0 flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
+        <div className="flex-shrink-0 flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-600 rounded-xl px-4 py-3 text-sm">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">Leads não estão sendo salvos no banco de dados.</p>
-            <p className="text-xs text-red-400/80 mt-0.5">
+            <p className="text-xs text-red-600/80 mt-0.5">
               Execute o SQL abaixo no Supabase para criar a tabela:{' '}
               <code className="font-mono">
                 create table leads (id uuid primary key, name text not null, phone text, website text, address text, city text, rating numeric, review_count integer, category text, status text not null default 'new', notes text, source text not null default 'manual', created_at timestamptz not null default now(), converted_client_id text);
@@ -725,13 +725,13 @@ export const Leads = () => {
 
       {/* Search */}
       <div className="flex-shrink-0 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
         <input
           type="text"
           placeholder="Filtrar por nome, cidade ou segmento…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 border border-white/[0.08] rounded-xl text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
@@ -764,13 +764,13 @@ export const Leads = () => {
       {/* ── Apify Modal ──────────────────────────────────────────────────────────── */}
       {showApify && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-2xl w-full max-w-3xl max-h-[90dvh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[90dvh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-emerald-400" />
-                <h2 className="text-lg font-bold text-slate-100">Buscar Leads no Google Maps</h2>
+                <Target className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-lg font-bold text-slate-900">Buscar Leads no Google Maps</h2>
               </div>
-              <button onClick={() => setShowApify(false)} className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-white/[0.06]">
+              <button onClick={() => setShowApify(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -783,14 +783,14 @@ export const Leads = () => {
                 const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
                 const near = pct >= 80;
                 const barCls = quotaReached ? 'bg-red-500' : near ? 'bg-amber-500' : 'bg-emerald-500';
-                const txtCls = quotaReached ? 'text-red-400' : near ? 'text-amber-400' : 'text-emerald-400';
+                const txtCls = quotaReached ? 'text-red-600' : near ? 'text-amber-700' : 'text-emerald-600';
                 return (
-                  <div className="bg-[#161b22] rounded-xl p-4 border border-white/[0.05]">
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-slate-200">Empresas deste mês</span>
+                      <span className="text-sm font-semibold text-slate-800">Empresas deste mês</span>
                       <span className={`text-sm font-bold ${txtCls}`}>{used}/{limit}</span>
                     </div>
-                    <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                       <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
                     </div>
                     <p className="text-xs text-slate-500 mt-2">
@@ -805,31 +805,31 @@ export const Leads = () => {
               {/* Search fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Segmento / Tipo de empresa</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Segmento / Tipo de empresa</label>
                   <input type="text" value={segment} onChange={e => setSegment(e.target.value)}
                     placeholder="ex: agência de marketing digital"
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Cidade / Estado</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Cidade / Estado</label>
                   <input type="text" value={city} onChange={e => setCity(e.target.value)}
                     placeholder="ex: São Paulo, SP"
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">
                     Empresas nesta busca
                     <span className="text-slate-500 font-normal ml-1">(máx. {remaining})</span>
                   </label>
                   <input type="number" min={1} max={remaining || 1} value={searchCount}
                     onChange={e => setSearchCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <p className="text-[11px] text-slate-500 mt-1">Consome {effectiveCount} da sua cota mensal.</p>
                 </div>
               </div>
 
               {/* Advanced filter */}
-              <label className="flex items-center gap-3 cursor-pointer select-none p-3 rounded-xl border border-white/[0.06] bg-[#161b22] hover:border-white/[0.12] transition-colors">
+              <label className="flex items-center gap-3 cursor-pointer select-none p-3 rounded-xl border border-slate-200 bg-slate-50 hover:border-slate-300 transition-colors">
                 <div className="relative flex-shrink-0">
                   <input
                     type="checkbox"
@@ -837,12 +837,12 @@ export const Leads = () => {
                     onChange={e => setFilterNoWebsite(e.target.checked)}
                     className="sr-only"
                   />
-                  <div className={`w-9 h-5 rounded-full transition-colors ${filterNoWebsite ? 'bg-emerald-600' : 'bg-slate-700'}`}>
+                  <div className={`w-9 h-5 rounded-full transition-colors ${filterNoWebsite ? 'bg-emerald-600' : 'bg-slate-100'}`}>
                     <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform ${filterNoWebsite ? 'translate-x-4' : 'translate-x-0.5'}`} />
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-200">Apenas empresas <span className="text-emerald-400">sem site</span></p>
+                  <p className="text-sm font-medium text-slate-800">Apenas empresas <span className="text-emerald-600">sem site</span></p>
                   <p className="text-xs text-slate-500 mt-0.5">Filtra os resultados para mostrar só quem não tem site — leads ideais para agência</p>
                 </div>
               </label>
@@ -858,14 +858,14 @@ export const Leads = () => {
               </button>
 
               {apifyStatus === 'error' && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">{apifyMsg}</div>
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-600">{apifyMsg}</div>
               )}
 
               {apifyStatus === 'done' && results.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold text-slate-200">{apifyMsg}</p>
-                    <button onClick={toggleAll} className="text-xs text-blue-400 hover:underline flex items-center gap-1">
+                    <p className="text-sm font-semibold text-slate-800">{apifyMsg}</p>
+                    <button onClick={toggleAll} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
                       {displayedResults.every(({ idx }) => selected.has(idx)) && displayedResults.length > 0
                         ? <><CheckSquare className="w-3.5 h-3.5" />Desmarcar todos</>
                         : <><Square className="w-3.5 h-3.5" />Selecionar todos</>
@@ -879,8 +879,8 @@ export const Leads = () => {
                       onClick={() => setFilterNoWebsite(false)}
                       className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
                         !filterNoWebsite
-                          ? 'border-blue-500/50 bg-blue-500/10 text-blue-400'
-                          : 'border-white/[0.08] text-slate-500 hover:border-white/20'
+                          ? 'border-blue-500/50 bg-blue-500/10 text-blue-600'
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300'
                       }`}
                     >
                       Todos ({results.length})
@@ -889,8 +889,8 @@ export const Leads = () => {
                       onClick={() => setFilterNoWebsite(true)}
                       className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
                         filterNoWebsite
-                          ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                          : 'border-white/[0.08] text-slate-500 hover:border-white/20'
+                          ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600'
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300'
                       }`}
                     >
                       Sem site ({noWebsiteCount})
@@ -904,26 +904,26 @@ export const Leads = () => {
                     {displayedResults.map(({ item, idx }) => (
                       <div key={idx} onClick={() => toggleSelect(idx)}
                         className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                          selected.has(idx) ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-white/[0.06] hover:border-white/20 bg-[#161b22]'
+                          selected.has(idx) ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-slate-200 hover:border-slate-300 bg-slate-50'
                         }`}>
                         <div className="mt-0.5 flex-shrink-0">
-                          {selected.has(idx) ? <CheckSquare className="w-4 h-4 text-emerald-400" /> : <Square className="w-4 h-4 text-slate-500" />}
+                          {selected.has(idx) ? <CheckSquare className="w-4 h-4 text-emerald-600" /> : <Square className="w-4 h-4 text-slate-500" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-slate-100">{item.title}</p>
+                            <p className="text-sm font-semibold text-slate-900">{item.title}</p>
                             {!item.website
-                              ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-semibold">Sem site</span>
-                              : <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-white/[0.06]">Tem site</span>
+                              ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/20 font-semibold">Sem site</span>
+                              : <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-200">Tem site</span>
                             }
                           </div>
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                             {item.categoryName && <span className="text-xs text-slate-500">{item.categoryName}</span>}
                             {item.city && <span className="text-xs text-slate-500 flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.city}</span>}
                             {item.phone && <span className="text-xs text-slate-500 flex items-center gap-0.5"><Phone className="w-3 h-3" />{item.phone}</span>}
-                            {item.totalScore != null && <span className="text-xs text-yellow-400 flex items-center gap-0.5"><Star className="w-3 h-3 fill-yellow-400" />{item.totalScore.toFixed(1)}</span>}
+                            {item.totalScore != null && <span className="text-xs text-yellow-700 flex items-center gap-0.5"><Star className="w-3 h-3 fill-yellow-400" />{item.totalScore.toFixed(1)}</span>}
                             {item.website && (
-                              <span className="text-xs text-blue-400/60 flex items-center gap-0.5 truncate max-w-[140px]">
+                              <span className="text-xs text-blue-600/60 flex items-center gap-0.5 truncate max-w-[140px]">
                                 <Globe className="w-3 h-3 flex-shrink-0" />
                                 <span className="truncate">{item.website.replace(/^https?:\/\//, '')}</span>
                               </span>
@@ -943,8 +943,8 @@ export const Leads = () => {
             </div>
 
             {apifyStatus === 'done' && selected.size > 0 && (
-              <div className="px-6 py-4 border-t border-white/[0.05] flex items-center justify-between">
-                <p className="text-sm text-slate-400">{selected.size} empresa(s) selecionada(s)</p>
+              <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+                <p className="text-sm text-slate-500">{selected.size} empresa(s) selecionada(s)</p>
                 <button onClick={handleImport}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold">
                   Importar para Leads <ArrowRight className="w-4 h-4" />
@@ -958,49 +958,49 @@ export const Leads = () => {
       {/* ── Add Manual ───────────────────────────────────────────────────────────── */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-              <h2 className="text-lg font-bold text-slate-100">Novo Lead Manual</h2>
-              <button onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-white/[0.06]"><X className="w-5 h-5" /></button>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900">Novo Lead Manual</h2>
+              <button onClick={() => setShowAdd(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-lg hover:bg-slate-100"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Nome da empresa *</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Nome da empresa *</label>
                 <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} autoFocus
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Ex: XYZ Marketing" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Telefone</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Telefone</label>
                   <input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="(11) 9999-9999" />
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="(11) 9999-9999" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-1.5">Cidade</label>
+                  <label className="block text-sm font-medium text-slate-800 mb-1.5">Cidade</label>
                   <input type="text" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}
-                    className="w-full border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="São Paulo" />
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="São Paulo" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Website</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Website</label>
                 <input type="text" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://empresa.com.br" />
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://empresa.com.br" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Segmento</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Segmento</label>
                 <input type="text" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: E-commerce, Clínica..." />
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: E-commerce, Clínica..." />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Notas</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Notas</label>
                 <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={3}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Observações iniciais..." />
               </div>
             </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05]">
-              <button onClick={() => setShowAdd(false)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">Cancelar</button>
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-200">
+              <button onClick={() => setShowAdd(false)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">Cancelar</button>
               <button onClick={handleAddManual} disabled={!form.name.trim()}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm font-semibold">
                 Adicionar Lead
@@ -1013,35 +1013,35 @@ export const Leads = () => {
       {/* ── Detail Modal ─────────────────────────────────────────────────────────── */}
       {showDetail && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-              <h2 className="text-lg font-bold text-slate-100 truncate flex-1 mr-4">{showDetail.name}</h2>
-              <button onClick={() => setShowDetail(null)} className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-white/[0.06] flex-shrink-0"><X className="w-5 h-5" /></button>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-lg">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900 truncate flex-1 mr-4">{showDetail.name}</h2>
+              <button onClick={() => setShowDetail(null)} className="text-slate-500 hover:text-slate-800 p-1 rounded-lg hover:bg-slate-100 flex-shrink-0"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-5">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {showDetail.phone && (
-                  <div className="flex items-center gap-2 text-slate-400"><Phone className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.phone}</div>
+                  <div className="flex items-center gap-2 text-slate-500"><Phone className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.phone}</div>
                 )}
                 {showDetail.email && (
-                  <div className="flex items-center gap-2 text-slate-400"><Mail className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.email}</div>
+                  <div className="flex items-center gap-2 text-slate-500"><Mail className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.email}</div>
                 )}
                 {showDetail.city && (
-                  <div className="flex items-center gap-2 text-slate-400"><MapPin className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.city}</div>
+                  <div className="flex items-center gap-2 text-slate-500"><MapPin className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.city}</div>
                 )}
                 {showDetail.website && (
                   <div className="flex items-center gap-2 col-span-2">
-                    <Globe className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                    <Globe className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
                     <a href={showDetail.website.startsWith('http') ? showDetail.website : `https://${showDetail.website}`}
                       target="_blank" rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline text-xs flex items-center gap-1">
+                      className="text-blue-600 hover:underline text-xs flex items-center gap-1">
                       {showDetail.website.replace(/^https?:\/\//, '')}
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 )}
                 {showDetail.rating != null && (
-                  <div className="flex items-center gap-1.5 text-yellow-400">
+                  <div className="flex items-center gap-1.5 text-yellow-700">
                     <Star className="w-3.5 h-3.5 fill-yellow-400" />
                     <span className="font-semibold">{showDetail.rating.toFixed(1)}</span>
                     {showDetail.reviewCount && <span className="text-slate-500 text-xs">({showDetail.reviewCount} avaliações)</span>}
@@ -1050,12 +1050,12 @@ export const Leads = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2">Status no Funil</label>
+                <label className="block text-sm font-medium text-slate-800 mb-2">Status no Funil</label>
                 <div className="grid grid-cols-5 gap-1.5">
                   {PIPELINE.map(p => (
                     <button key={p.status} onClick={() => setDetailStatus(p.status)}
                       className={`px-2 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                        detailStatus === p.status ? p.badge : 'border-white/[0.06] text-slate-500 hover:border-white/20'
+                        detailStatus === p.status ? p.badge : 'border-slate-200 text-slate-500 hover:border-slate-300'
                       }`}>
                       {p.label}
                     </button>
@@ -1064,22 +1064,22 @@ export const Leads = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">Notas</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">Notas</label>
                 <textarea value={detailNotes} onChange={e => setDetailNotes(e.target.value)} rows={4}
-                  className="w-full border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Observações, histórico de contato..." />
               </div>
 
               {showDetail.status !== 'client' && (
                 <button onClick={() => convertToClient(showDetail)}
-                  className="w-full flex items-center justify-center gap-2 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 py-2.5 rounded-lg text-sm font-semibold transition-colors">
+                  className="w-full flex items-center justify-center gap-2 border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 py-2.5 rounded-lg text-sm font-semibold transition-colors">
                   <Building2 className="w-4 h-4" />
                   Converter em Cliente
                 </button>
               )}
             </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-white/[0.05]">
-              <button onClick={() => setShowDetail(null)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">Cancelar</button>
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-200">
+              <button onClick={() => setShowDetail(null)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">Cancelar</button>
               <button onClick={saveDetail} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold">Salvar</button>
             </div>
           </div>
@@ -1089,11 +1089,11 @@ export const Leads = () => {
       {/* ── Delete Confirm ───────────────────────────────────────────────────────── */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#21262d] rounded-xl border border-white/[0.08] shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-slate-100 mb-2">Excluir lead?</h3>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Excluir lead?</h3>
             <p className="text-slate-500 text-sm mb-6">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 border border-white/[0.08] text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.04]">Cancelar</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 border border-slate-200 text-slate-500 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100">Cancelar</button>
               <button onClick={() => { deleteLead(deleteId); setDeleteId(null); }} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold">Excluir</button>
             </div>
           </div>

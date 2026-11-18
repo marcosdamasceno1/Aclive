@@ -124,8 +124,8 @@ export const Reports = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Relatórios</h1>
-          <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Análise de produção e financeiro</p>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Relatórios</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Análise de produção e financeiro</p>
         </div>
         <button
           onClick={exportCSV}
@@ -137,7 +137,7 @@ export const Reports = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-[#21262d] rounded-xl p-4 border border-white/[0.08]">
+      <div className="bg-white rounded-xl p-4 border border-slate-200">
         <p className="text-sm font-semibold text-slate-500 mb-3">Filtros do relatório</p>
         <div className="flex flex-wrap gap-3">
           <div>
@@ -146,7 +146,7 @@ export const Reports = () => {
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              className="border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -155,7 +155,7 @@ export const Reports = () => {
               type="date"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              className="border border-white/[0.08] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -163,7 +163,7 @@ export const Reports = () => {
             <select
               value={professionalFilter}
               onChange={e => setProfessionalFilter(e.target.value)}
-              className="border border-white/[0.08] rounded-lg px-3 py-2 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">Todos</option>
               {professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -174,7 +174,7 @@ export const Reports = () => {
             <select
               value={clientFilter}
               onChange={e => setClientFilter(e.target.value)}
-              className="border border-white/[0.08] rounded-lg px-3 py-2 text-sm bg-[#21262d] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">Todos</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.companyName}</option>)}
@@ -184,7 +184,7 @@ export const Reports = () => {
             <div className="flex items-end">
               <button
                 onClick={() => { setStartDate(''); setEndDate(''); setProfessionalFilter('all'); setClientFilter('all'); }}
-                className="border border-white/[0.08] text-slate-500 hover:bg-white/[0.04] px-3 py-2 rounded-lg text-sm transition-colors"
+                className="border border-slate-200 text-slate-500 hover:bg-slate-100 px-3 py-2 rounded-lg text-sm transition-colors"
               >
                 Limpar filtros
               </button>
@@ -201,9 +201,9 @@ export const Reports = () => {
           { label: 'Valor total', value: formatCurrency(stats.totalValue), accent: 'bg-violet-500' },
           { label: 'Atrasadas', value: stats.overdueCount, accent: 'bg-red-500/[0.1]0' },
         ].map(({ label, value, accent }) => (
-          <div key={label} className="bg-[#21262d] rounded-xl p-5 border border-white/[0.08]">
+          <div key={label} className="bg-white rounded-xl p-5 border border-slate-200">
             <div className={`inline-block w-1 h-6 rounded-full mb-3 ${accent}`} />
-            <p className="text-3xl font-extrabold text-white tracking-tight leading-none">{value}</p>
+            <p className="text-3xl font-semibold text-slate-900 tracking-tight leading-none">{value}</p>
             <p className="text-xs font-medium text-slate-500 mt-2 uppercase tracking-wide">{label}</p>
           </div>
         ))}
@@ -211,10 +211,10 @@ export const Reports = () => {
 
       {/* Charts row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
-            <Users className="w-4 h-4 text-slate-400" />
-            <h3 className="text-base font-bold text-slate-100">Ranking de Produtividade</h3>
+            <Users className="w-4 h-4 text-slate-500" />
+            <h3 className="text-base font-bold text-slate-900">Ranking de Produtividade</h3>
           </div>
           {productionByProfessional.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -232,14 +232,14 @@ export const Reports = () => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[240px] flex items-center justify-center text-slate-400 text-sm">Sem dados no período</div>
+            <div className="h-[240px] flex items-center justify-center text-slate-500 text-sm">Sem dados no período</div>
           )}
         </div>
 
-        <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
-            <Building2 className="w-4 h-4 text-slate-400" />
-            <h3 className="text-base font-bold text-slate-100">Custo Operacional por Cliente</h3>
+            <Building2 className="w-4 h-4 text-slate-500" />
+            <h3 className="text-base font-bold text-slate-900">Custo Operacional por Cliente</h3>
           </div>
           {costByClient.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -256,17 +256,17 @@ export const Reports = () => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[240px] flex items-center justify-center text-slate-400 text-sm">Sem dados no período</div>
+            <div className="h-[240px] flex items-center justify-center text-slate-500 text-sm">Sem dados no período</div>
           )}
         </div>
       </div>
 
       {/* Charts row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
-            <DollarSign className="w-4 h-4 text-slate-400" />
-            <h3 className="text-base font-bold text-slate-100">Resumo Financeiro</h3>
+            <DollarSign className="w-4 h-4 text-slate-500" />
+            <h3 className="text-base font-bold text-slate-900">Resumo Financeiro</h3>
           </div>
           {financialSummary.some(f => f.value > 0) ? (
             <div className="flex items-center gap-6">
@@ -295,27 +295,27 @@ export const Reports = () => {
                     <p className="text-sm font-bold text-green-600">{formatCurrency(financialSummary[1].value)}</p>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-white/[0.05]">
+                <div className="pt-2 border-t border-slate-200">
                   <p className="text-xs text-slate-500">Total</p>
-                  <p className="text-base font-bold text-slate-100">
+                  <p className="text-base font-bold text-slate-900">
                     {formatCurrency(financialSummary[0].value + financialSummary[1].value)}
                   </p>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="h-[180px] flex items-center justify-center text-slate-400 text-sm">Sem dados financeiros</div>
+            <div className="h-[180px] flex items-center justify-center text-slate-500 text-sm">Sem dados financeiros</div>
           )}
         </div>
 
         {/* Overdue demands */}
-        <div className="bg-[#21262d] rounded-xl p-6 border border-white/[0.08]">
+        <div className="bg-white rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="w-4 h-4 text-red-400" />
-            <h3 className="text-base font-bold text-slate-100">Demandas Atrasadas ({overdueDemands.length})</h3>
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+            <h3 className="text-base font-bold text-slate-900">Demandas Atrasadas ({overdueDemands.length})</h3>
           </div>
           {overdueDemands.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
+            <div className="flex items-center justify-center h-40 text-slate-500 text-sm">
               Nenhuma demanda atrasada 🎉
             </div>
           ) : (
@@ -327,12 +327,12 @@ export const Reports = () => {
                 return (
                   <div key={d.id} className="flex items-center justify-between p-3 bg-red-500/[0.08] rounded-xl border border-red-500/[0.2]">
                     <div className="flex-1 min-w-0 mr-3">
-                      <p className="text-sm font-semibold text-slate-100 truncate">{d.title}</p>
+                      <p className="text-sm font-semibold text-slate-900 truncate">{d.title}</p>
                       <p className="text-xs text-slate-500">{client?.companyName} · {prof?.name}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-xs font-bold text-red-600">{daysOverdue}d atrasado</p>
-                      <p className="text-xs text-slate-400">{formatDate(d.deadline)}</p>
+                      <p className="text-xs text-slate-500">{formatDate(d.deadline)}</p>
                     </div>
                   </div>
                 );
@@ -344,44 +344,44 @@ export const Reports = () => {
 
       {/* Professional productivity table */}
       {productionByProfessional.length > 0 && (
-        <div className="bg-[#21262d] rounded-xl border border-white/[0.08] overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/[0.05]">
-            <h3 className="text-base font-bold text-slate-100">Produção Detalhada por Profissional</h3>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h3 className="text-base font-bold text-slate-900">Produção Detalhada por Profissional</h3>
           </div>
           <table className="w-full">
-            <thead className="bg-slate-900">
+            <thead className="bg-slate-50">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Profissional</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Total</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Concluídas</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Taxa</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide">Valor gerado</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Profissional</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Total</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Concluídas</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Taxa</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-900 uppercase tracking-wide">Valor gerado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.05]">
+            <tbody className="divide-y divide-slate-200">
               {productionByProfessional.map((row, idx) => {
                 const rate = row.total > 0 ? Math.round((row.completed / row.total) * 100) : 0;
                 return (
-                  <tr key={row.name} className="hover:bg-white/[0.04] transition-colors">
+                  <tr key={row.name} className="hover:bg-slate-100 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 bg-[#0d1117] rounded-full flex items-center justify-center text-xs font-bold text-slate-500">
+                        <span className="w-5 h-5 bg-slate-50 rounded-full flex items-center justify-center text-xs font-bold text-slate-500">
                           {idx + 1}
                         </span>
-                        <span className="text-sm font-semibold text-slate-100">{row.name}</span>
+                        <span className="text-sm font-semibold text-slate-900">{row.name}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-slate-500">{row.total}</td>
                     <td className="px-4 py-3 text-center text-sm font-semibold text-emerald-600">{row.completed}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <div className="flex-1 max-w-20 bg-[#0d1117] rounded-full h-1.5">
+                        <div className="flex-1 max-w-20 bg-slate-50 rounded-full h-1.5">
                           <div className="bg-emerald-500/[0.1]0 h-1.5 rounded-full" style={{ width: `${rate}%` }} />
                         </div>
                         <span className="text-xs font-medium text-slate-500">{rate}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm font-bold text-slate-100">{formatCurrency(row.value)}</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-slate-900">{formatCurrency(row.value)}</td>
                   </tr>
                 );
               })}

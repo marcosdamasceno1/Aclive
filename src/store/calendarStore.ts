@@ -71,12 +71,12 @@ export const useCalendarStore = create<CalendarState>()((set, get) => ({
 }));
 
 export const CALENDAR_COLORS = [
-  { id: 'blue',   label: 'Azul',     dot: 'bg-blue-500',    chip: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  { id: 'green',  label: 'Verde',    dot: 'bg-emerald-500', chip: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-  { id: 'orange', label: 'Laranja',  dot: 'bg-orange-500',  chip: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
-  { id: 'red',    label: 'Vermelho', dot: 'bg-red-500',     chip: 'bg-red-500/20 text-red-300 border-red-500/30' },
-  { id: 'purple', label: 'Roxo',     dot: 'bg-violet-500',  chip: 'bg-violet-500/20 text-violet-300 border-violet-500/30' },
-  { id: 'pink',   label: 'Rosa',     dot: 'bg-pink-500',    chip: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
+  { id: 'blue',   label: 'Azul',     dot: 'bg-blue-500',    chip: 'bg-blue-500/20 text-blue-700 border-blue-500/30' },
+  { id: 'green',  label: 'Verde',    dot: 'bg-emerald-500', chip: 'bg-emerald-500/20 text-emerald-700 border-emerald-500/30' },
+  { id: 'orange', label: 'Laranja',  dot: 'bg-orange-500',  chip: 'bg-orange-500/20 text-orange-700 border-orange-500/30' },
+  { id: 'red',    label: 'Vermelho', dot: 'bg-red-500',     chip: 'bg-red-500/20 text-red-700 border-red-500/30' },
+  { id: 'purple', label: 'Roxo',     dot: 'bg-violet-500',  chip: 'bg-violet-500/20 text-violet-700 border-violet-500/30' },
+  { id: 'pink',   label: 'Rosa',     dot: 'bg-pink-500',    chip: 'bg-pink-500/20 text-pink-700 border-pink-500/30' },
 ] as const;
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
@@ -84,8 +84,8 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
 };
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
-  low: 'bg-slate-500/20 text-slate-400',
-  medium: 'bg-blue-500/20 text-blue-300',
-  high: 'bg-orange-500/20 text-orange-300',
-  urgent: 'bg-red-500/20 text-red-300',
+  low: 'bg-slate-500/20 text-slate-500',
+  medium: 'bg-blue-500/20 text-blue-700',
+  high: 'bg-orange-500/20 text-orange-700',
+  urgent: 'bg-red-500/20 text-red-700',
 };

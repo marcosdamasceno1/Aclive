@@ -14,7 +14,17 @@ import { normalizeConfig, type Answers, type FormConfig, type Outcome } from '..
 import { SUPABASE_URL, ANON_KEY } from '../lib/supabaseConfig';
 
 type Fbq = ((...args: unknown[]) => void) & { callMethod?: unknown; queue?: unknown[]; loaded?: boolean; version?: string; push?: unknown };
-declare global { interface Window { fbq?: Fbq; _fbq?: Fbq } }
+type PublicFormData = { id?: string; name: string; config: unknown; pixelId?: string | null };
+declare global { interface Window { fbq?: Fbq; _fbq?: Fbq; __gxForm?: Promise<PublicFormData | null> } }
+
+const fetchPublicForm = async (agency: string, slug: string): Promise<PublicFormData | null> => {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_form`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
+    body: JSON.stringify({ p_agency: agency.toLowerCase(), p_slug: slug.toLowerCase() }),
+  });
+  return res.ok ? res.json() : null;
+};
 
 const call = async (fn: string, body: Record<string, unknown>, keepalive = false) => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
@@ -67,6 +77,8 @@ export const PublicForm = () => {
   const pixel = useRef<string | null>(null);
   const submitEvent = useRef<'Lead' | 'CompleteRegistration'>('Lead');
   const tracking = useRef(readTracking());
+  // Eventos do funil esperam a visita ser registrada (a sessão precisa existir)
+  const viewDone = useRef<Promise<unknown>>(Promise.resolve());
 
   const fbcValue = () => {
     const c = cookie('_fbc');
@@ -78,37 +90,58 @@ export const PublicForm = () => {
   useEffect(() => {
     let alive = true;
     const pageViewId = newEventId('pv');
-    call('form-get', { agency, form: formSlug, tracking: tracking.current, device: device(), pageViewEventId: pageViewId, sourceUrl: window.location.href, fbp: cookie('_fbp'), fbc: fbcValue() })
-      .then(({ ok, data }) => {
-        if (!alive) return;
-        if (!ok || !data.form) { setState('missing'); document.title = 'Formulário indisponível'; return; }
-        const form = data.form as { name: string; config: unknown; pixelId?: string };
-        const cfg = normalizeConfig(form.config);
-        session.current = (data.sessionId as string) ?? null;
-        submitEvent.current = cfg.tracking.submitEvent;
-        document.title = form.name;
-        if (form.pixelId && /^\d{5,20}$/.test(form.pixelId)) {
-          pixel.current = form.pixelId;
-          loadPixel(form.pixelId);
-          window.fbq?.('track', 'PageView', {}, { eventID: pageViewId });
-          window.fbq?.('track', 'ViewContent', { content_name: form.name }, { eventID: `${pageViewId}_vc` });
+
+    const show = (form: PublicFormData, sessionId: string | null) => {
+      const cfg = normalizeConfig(form.config);
+      session.current = sessionId;
+      submitEvent.current = cfg.tracking.submitEvent;
+      document.title = form.name;
+      if (form.pixelId && /^\d{5,20}$/.test(form.pixelId)) {
+        pixel.current = form.pixelId;
+        loadPixel(form.pixelId);
+        window.fbq?.('track', 'PageView', {}, { eventID: pageViewId });
+        window.fbq?.('track', 'ViewContent', { content_name: form.name }, { eventID: `${pageViewId}_vc` });
+      }
+      setConfig(cfg);
+      setState('ready');
+    };
+
+    // Caminho rápido: o index.html já começou a buscar o formulário direto do
+    // banco. A visita (funil + API de Conversões) é registrada em segundo plano.
+    const early = window.__gxForm ?? fetchPublicForm(agency, formSlug);
+    early.then(async (form) => {
+      if (!alive) return;
+      if (form && form.id) {
+        const sessionId = crypto.randomUUID?.() ?? null;
+        show(form, sessionId);
+        if (sessionId) {
+          viewDone.current = call('form-event', {
+            type: 'view', sessionId, formId: form.id, tracking: tracking.current, device: device(),
+            eventId: pageViewId, sourceUrl: window.location.href, fbp: cookie('_fbp'), fbc: fbcValue(),
+          }, true).catch(() => {});
         }
-        setConfig(cfg);
-        setState('ready');
-      })
-      .catch(() => alive && setState('missing'));
+        return;
+      }
+      // Reserva: função form-get (caso a migração rápida ainda não tenha sido rodada)
+      const { ok, data } = await call('form-get', { agency, form: formSlug, tracking: tracking.current, device: device(), pageViewEventId: pageViewId, sourceUrl: window.location.href, fbp: cookie('_fbp'), fbc: fbcValue() });
+      if (!alive) return;
+      if (!ok || !data.form) { setState('missing'); document.title = 'Formulário indisponível'; return; }
+      show(data.form as PublicFormData, (data.sessionId as string) ?? null);
+    }).catch(() => alive && setState('missing'));
     return () => { alive = false; };
   }, [agency, formSlug]);
 
   const onStart = () => {
     const eventId = newEventId('fs');
     if (pixel.current) window.fbq?.('trackCustom', 'FormStart', {}, { eventID: eventId });
-    if (session.current) void call('form-event', { sessionId: session.current, type: 'start', step: 0, eventId, fbp: cookie('_fbp'), fbc: fbcValue(), sourceUrl: window.location.href }, true).catch(() => {});
+    const sid = session.current;
+    if (sid) void viewDone.current.then(() => call('form-event', { sessionId: sid, type: 'start', step: 0, eventId, fbp: cookie('_fbp'), fbc: fbcValue(), sourceUrl: window.location.href }, true)).catch(() => {});
   };
 
   const onStep = (answered: number) => {
     if (pixel.current) window.fbq?.('trackCustom', 'FormStep', { step: answered });
-    if (session.current) void call('form-event', { sessionId: session.current, type: 'step', step: answered }, true).catch(() => {});
+    const sid = session.current;
+    if (sid) void viewDone.current.then(() => call('form-event', { sessionId: sid, type: 'step', step: answered }, true)).catch(() => {});
   };
 
   const onSubmit = async (answers: Answers, outcome: Outcome, honeypot: string) => {
@@ -132,7 +165,7 @@ export const PublicForm = () => {
   };
 
   if (state === 'loading') {
-    return <div className="min-h-[100dvh] flex items-center justify-center bg-white"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-500 rounded-full animate-spin" /></div>;
+    return <div id="gx-boot"><i /></div>;
   }
   if (state === 'missing' || !config) {
     return (

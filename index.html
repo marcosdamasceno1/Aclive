@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
     <title>Growth Expert</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Abre a conexão com o Supabase enquanto o resto da página carrega -->
+    <link rel="preconnect" href="https://nkxyecdxgaxpnezfjkap.supabase.co" crossorigin />
     <script>
       // Restore path encoded by 404.html redirect (SPA routing on static hosts)
       (function () {
@@ -16,10 +17,36 @@
           window.history.replaceState(null, '', decoded);
         }
       })();
+
+      (function () {
+        var m = window.location.pathname.match(/^\/f\/([a-z0-9-]+)\/([a-z0-9-]+)\/?$/i);
+        if (m) {
+          // Formulário público: começa a buscar o formulário AGORA, em paralelo
+          // com o download do código da página (economiza uma ida e volta).
+          var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reHllY2R4Z2F4cG5lemZqa2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NzgzMTEsImV4cCI6MjA5NTI1NDMxMX0.norNo8ksplzq99jXD27iOYrbVcZuaCJ2XCpEIO2TIr0';
+          window.__gxForm = fetch('https://nkxyecdxgaxpnezfjkap.supabase.co/rest/v1/rpc/get_public_form', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: key, Authorization: 'Bearer ' + key },
+            body: JSON.stringify({ p_agency: m[1].toLowerCase(), p_slug: m[2].toLowerCase() })
+          }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+        } else {
+          // Script do Google (login do Drive) só no sistema, nunca no formulário.
+          var s = document.createElement('script');
+          s.src = 'https://accounts.google.com/gsi/client';
+          s.async = true; s.defer = true;
+          document.head.appendChild(s);
+        }
+      })();
     </script>
+    <style>
+      /* Carregando: aparece na hora, antes do código da página */
+      #gx-boot{min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#fff}
+      #gx-boot i{width:28px;height:28px;border:3px solid #e2e8f0;border-top-color:#64748b;border-radius:50%;animation:gxspin .7s linear infinite}
+      @keyframes gxspin{to{transform:rotate(360deg)}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="gx-boot"><i></i></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

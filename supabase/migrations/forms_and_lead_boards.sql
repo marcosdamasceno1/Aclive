@@ -90,6 +90,12 @@ ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS answers    JSONB;
 ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS tracking   JSONB;
 ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS email      TEXT;
 
+-- A regra antiga só aceitava 'apify' e 'manual' e barrava leads do site, da
+-- Meta e dos formulários.
+ALTER TABLE public.leads DROP CONSTRAINT IF EXISTS leads_source_check;
+ALTER TABLE public.leads ADD CONSTRAINT leads_source_check
+  CHECK (source IN ('apify', 'manual', 'meta', 'website', 'form'));
+
 -- ── 4. Formulários ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.forms (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),

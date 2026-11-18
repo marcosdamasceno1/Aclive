@@ -3,7 +3,7 @@
  * Usado na página pública (/f/agencia/formulario) e na prévia do construtor.
  * Mantenha leve: a página pública carrega só este componente + schema.ts.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Answers, FormConfig, Outcome, Question } from '../../lib/forms/schema';
 import {
   COUNTRIES, computeOutcome, disqualifyingOption, fontFamily, isChoice,
@@ -129,7 +129,7 @@ export const FormRunner = ({ config, mode, previewTarget, onStart, onStep, onSub
   // Teclado: Enter continua; letras escolhem opções. O ouvinte é registrado
   // uma vez e sempre lê o estado mais recente (sem versão antiga presa).
   const latest = useRef({ next, pickOption, current, screen, submitting });
-  latest.current = { next, pickOption, current, screen, submitting };
+  useLayoutEffect(() => { latest.current = { next, pickOption, current, screen, submitting }; });
   useEffect(() => {
     if (mode !== 'live') return;
     const onKey = (e: KeyboardEvent) => {

@@ -7,7 +7,7 @@ import { getProfessionLabel } from '../utils/formatters';
 import { sendWhatsAppText } from '../utils/whatsapp';
 import { requestGoogleToken, revokeGoogleToken } from '../lib/googleDrive';
 import type { UserRole, ProfessionType } from '../types';
-import { Plus, Trash2, X, Shield, Users, Info, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, Link2, Link2Off, Loader2, MessageCircle, Target, Copy, RefreshCw, Globe } from 'lucide-react';
+import { Plus, Trash2, X, Shield, Users, Lock, Briefcase, Pencil, Zap, Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, Link2, Link2Off, Loader2, MessageCircle, Target, Copy, RefreshCw, Globe } from 'lucide-react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -137,7 +137,7 @@ export const Settings = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [userForm, setUserForm] = useState(emptyUserForm);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'system' | 'integrations'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'integrations'>('users');
   const [integrationTab, setIntegrationTab] = useState<'whatsapp' | 'drive' | 'meta-leads' | 'site'>('whatsapp');
 
   const SITE_WEBHOOK_BASE = 'https://nkxyecdxgaxpnezfjkap.supabase.co/functions/v1/site-leads-webhook';
@@ -299,17 +299,6 @@ export const Settings = () => {
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Usuários
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('system')}
-          className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'system' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Info className="w-4 h-4" />
-            Sistema
           </div>
         </button>
         <button
@@ -489,54 +478,6 @@ export const Settings = () => {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'system' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Informações do sistema</h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Nome do sistema', value: 'Gestão Operacional de Agência de Marketing' },
-                { label: 'Versão', value: '1.0.0' },
-                { label: 'Banco de dados', value: 'Supabase (PostgreSQL)' },
-                { label: 'Tecnologia', value: 'React + TypeScript + Tailwind CSS' },
-              ].map(({ label, value }) => (
-                <div key={label} className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-slate-500 mb-0.5">{label}</p>
-                  <p className="text-sm font-semibold text-slate-800">{value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-slate-200 pt-4">
-              <p className="text-sm font-semibold text-slate-800 mb-2">Regras do sistema</p>
-              <ul className="space-y-2 text-sm text-slate-500">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
-                  Uma tarefa só gera valor financeiro uma única vez (ao ser movida para "Concluído").
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
-                  O saldo do profissional aumenta automaticamente ao concluir uma tarefa.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
-                  Apenas administradores podem criar novos usuários e definir seus acessos.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
-                  Profissionais visualizam apenas suas próprias tarefas e valores.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-500/[0.1]0 rounded-full flex-shrink-0 mt-1.5" />
-                  Pagamentos duplicados são bloqueados automaticamente pelo sistema.
-                </li>
-              </ul>
             </div>
           </div>
         </div>

@@ -525,10 +525,12 @@ const AdminView = () => {
     );
   };
 
+  const providersToPay = providers.filter(p => p.pendingTotal > 0).length;
+
   const TABS = [
     { key: 'summary', label: 'Resumo' },
     { key: 'entries', label: 'Lançamentos' },
-    { key: 'providers', label: 'Prestadores', badge: summary.providersCount },
+    { key: 'providers', label: 'Prestadores', badge: providersToPay },
   ] as const;
 
   const KIND_FILTERS = [
@@ -599,7 +601,7 @@ const AdminView = () => {
             <Stat label="Pago no mês" value={formatCurrency(summary.paidOut)}
               sub={summary.toPay > 0 ? `+ ${formatCurrency(summary.toPay)} em contas a pagar` : 'inclui prestadores pagos'} />
             <Stat label="Prestadores a pagar" value={formatCurrency(summary.providersTotal)} tone={summary.providersTotal > 0 ? 'text-orange-600' : 'text-slate-900'}
-              sub={`${summary.providersCount} demanda(s) concluída(s)`} />
+              sub={`${providersToPay} prestador(es) · ${summary.providersCount} demanda(s)`} />
             <Stat label="Saldo do mês" value={formatCurrency(summary.balance)} tone={summary.balance >= 0 ? 'text-slate-900' : 'text-red-600'}
               sub={`Previsto: ${formatCurrency(summary.forecast)}`} />
           </div>

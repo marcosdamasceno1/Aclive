@@ -985,7 +985,7 @@ export const Settings = () => {
                   <button
                     onClick={handleSaveClientId}
                     disabled={!driveClientId.trim() || driveClientId === googleClientId}
-                    className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-white rounded-lg transition-colors"
+                    className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 rounded-lg transition-colors"
                   >
                     {driveSaved ? <CheckCircle className="w-4 h-4 text-emerald-600" /> : 'Salvar'}
                   </button>
@@ -1053,7 +1053,7 @@ export const Settings = () => {
                     />
                     <button
                       onClick={() => copyToClipboard(siteWebhookFullUrl, setCopiedSiteUrl)}
-                      className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                      className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
                     >
                       {copiedSiteUrl ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedSiteUrl ? 'Copiado!' : 'Copiar'}
@@ -1127,7 +1127,7 @@ export const Settings = () => {
                   />
                   <button
                     onClick={() => copyToClipboard(WEBHOOK_URL, setCopiedWebhook)}
-                    className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                    className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
                   >
                     {copiedWebhook ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedWebhook ? 'Copiado!' : 'Copiar'}
@@ -1174,7 +1174,7 @@ export const Settings = () => {
                       />
                       <button
                         onClick={() => copyToClipboard(metaLeadsVerifyToken, setCopiedVerifyToken)}
-                        className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-white rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                        className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
                       >
                         {copiedVerifyToken ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                         {copiedVerifyToken ? 'Copiado!' : 'Copiar'}

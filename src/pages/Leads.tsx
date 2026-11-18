@@ -691,7 +691,7 @@ export const Leads = () => {
             onClick={exportCSV}
             disabled={filteredBySearch.length === 0}
             title="Exportar leads em CSV para disparo em outras plataformas"
-            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             <Download className="w-4 h-4" />
             Exportar CSV{search ? ` (${filteredBySearch.length})` : ''}
@@ -699,7 +699,7 @@ export const Leads = () => {
 
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
             Novo Lead

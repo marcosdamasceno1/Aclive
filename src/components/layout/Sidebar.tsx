@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users,
-  Kanban, DollarSign, BarChart3, Settings, LogOut, Target,
+  Kanban, DollarSign, BarChart3, Settings, LogOut, Target, FileText,
   ChevronLeft, ChevronRight, CalendarDays, X, Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -59,6 +59,7 @@ export const Sidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
     { to: '/kanban',    icon: Kanban,          label: 'Esteira de Produção',  pageKey: 'kanban' },
     { to: '/calendar',  icon: CalendarDays,    label: 'Calendário',           pageKey: 'calendar' },
     { to: '/leads',     icon: Target,          label: 'Leads',                pageKey: 'leads' },
+    { to: '/forms',     icon: FileText,        label: 'Formulários',          pageKey: 'forms' },
     // Drive oculto por ora. Código e rota preservados — basta descomentar.
     // { to: '/drive',    icon: HardDrive,    label: 'Drive',                pageKey: 'drive' },
   ].filter(i => access(i.pageKey));

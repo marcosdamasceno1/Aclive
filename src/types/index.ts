@@ -134,9 +134,18 @@ export interface Lead {
   category?: string;
   status: LeadStatus;
   notes?: string;
-  source: 'apify' | 'manual' | 'meta' | 'website';
+  source: 'apify' | 'manual' | 'meta' | 'website' | 'form';
   createdAt: string;
   convertedClientId?: string;
+  /** Janela (kanban) e etapa na aba Leads; vazio = janela padrão pela origem */
+  boardId?: string | null;
+  stageId?: string | null;
+  tagIds?: string[];
+  formId?: string | null;
+  /** Respostas do formulário, já legíveis */
+  answers?: { question: string; answer: string }[] | null;
+  /** UTMs, fbclid, gclid, página de origem e resultado */
+  tracking?: Record<string, string> | null;
 }
 
 // Aprovação de vídeo/legenda por link público (cliente aprova sem login)

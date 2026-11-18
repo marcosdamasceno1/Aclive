@@ -10,6 +10,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { useLeadsStore } from '../store/leadsStore';
 import { useClientsStore } from '../store/clientsStore';
 import { useCompanySettingsStore } from '../store/companySettingsStore';
+import { useAuthStore } from '../store/authStore';
+import { useLeadBoardsStore, colorOf, statusForStage, type LeadStage, type LeadBoard } from '../store/leadBoardsStore';
+import { BoardSettingsModal, TagsModal } from './leads/BoardModals';
 import { apifyQuota, apifyStart, apifyPoll, type Quota } from '../lib/apifySearch';
 import type { Lead, LeadStatus } from '../types';
 
@@ -20,6 +23,7 @@ import {
   Plus, Search, Trash2, X, ExternalLink, Phone, MapPin,
   Star, Globe, Target, Loader2, CheckSquare, Square, Key,
   Building2, ArrowRight, AlertTriangle, Mail, RefreshCw, CheckCircle, Download,
+  Settings2, Tag as TagIcon, FileText,
 } from 'lucide-react';
 
 // ─── Pipeline config ───────────────────────────────────────────────────────────
@@ -74,7 +78,13 @@ const PIPELINE: {
   },
 ];
 
-const getStage = (s: LeadStatus) => PIPELINE.find(p => p.status === s) || PIPELINE[0];
+// Sem a migração de janelas, a aba funciona como antes (uma janela fixa).
+const LEGACY_COLORS: Record<LeadStatus, string> = { new: 'blue', contacted: 'amber', proposal: 'orange', client: 'green', lost: 'slate' };
+const LEGACY_BOARD: LeadBoard = { id: 'legacy', name: 'Comercial', position: 0, sources: [] };
+const LEGACY_STAGES: LeadStage[] = PIPELINE.map((p, i) => ({
+  id: p.status, boardId: 'legacy', name: p.label, color: LEGACY_COLORS[p.status], position: i,
+  kind: p.status === 'client' ? 'won' : p.status === 'lost' ? 'lost' : 'open', legacyStatus: p.status,
+}));
 
 // ─── Apify ─────────────────────────────────────────────────────────────────────
 
@@ -103,6 +113,8 @@ const DraggableLeadCard = ({
   onOpen: (l: Lead) => void;
   onDelete: (id: string) => void;
 }) => {
+  const allTags = useLeadBoardsStore(s => s.tags);
+  const leadTags = allTags.filter(t => lead.tagIds?.includes(t.id));
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: lead.id });
 
@@ -137,7 +149,22 @@ const DraggableLeadCard = ({
               Site
             </span>
           )}
+          {lead.source === 'form' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 flex-shrink-0 font-medium">
+              Form
+            </span>
+          )}
         </div>
+        {leadTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {leadTags.map(t => (
+              <span key={t.id} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${colorOf(t.color).chip}`}>{t.name}</span>
+            ))}
+          </div>
+        )}
+        {lead.tracking?.utm_campaign && (
+          <p className="text-[10px] text-slate-400 mt-1 truncate">📣 {lead.tracking.utm_campaign}</p>
+        )}
         {lead.category && (
           <p className="text-xs text-slate-500 mt-0.5 truncate">{lead.category}</p>
         )}
@@ -221,21 +248,22 @@ const LeadColumn = ({
   onOpen,
   onDelete,
 }: {
-  stage: typeof PIPELINE[number];
+  stage: LeadStage;
   leads: Lead[];
   onOpen: (l: Lead) => void;
   onDelete: (id: string) => void;
 }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: stage.status });
+  const { setNodeRef, isOver } = useDroppable({ id: stage.id });
+  const c = colorOf(stage.color);
 
   return (
     <div className="flex flex-col w-64 flex-shrink-0">
       {/* Column header */}
-      <div className={`flex items-center justify-between px-3 py-2.5 mb-3 rounded-xl border-l-2 bg-slate-50 ${stage.headerBorder}`}>
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${stage.dot}`} />
-          <span className={`text-xs font-bold uppercase tracking-wider ${stage.headerText}`}>
-            {stage.label}
+      <div className={`flex items-center justify-between px-3 py-2.5 mb-3 rounded-xl border-l-2 bg-slate-50 ${c.border}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
+          <span className={`text-xs font-bold uppercase tracking-wider truncate ${c.text}`}>
+            {stage.name}
           </span>
         </div>
         <span className="text-xs font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full">
@@ -278,9 +306,25 @@ const LS_META_IDS = 'meta_imported_ids';
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
 export const Leads = () => {
-  const { leads, addLead, updateLead, updateStatus, deleteLead, importLeads, dbError } = useLeadsStore();
+  const { leads, addLead, updateLead, deleteLead, importLeads, dbError } = useLeadsStore();
   const { addClient } = useClientsStore();
   const { metaLeadsPageId, metaLeadsPageToken } = useCompanySettingsStore();
+  const { boards, tags, placement, boardStages, init: initBoards } = useLeadBoardsStore();
+  const role = useAuthStore(s => s.currentUser?.role);
+  const canManageBoards = role === 'admin' || role === 'manager';
+  const legacy = boards.length === 0;
+  const viewBoards = legacy ? [LEGACY_BOARD] : boards;
+  const [boardSel, setBoardSel] = useState<string | null>(null);
+  const activeBoard = viewBoards.find(b => b.id === boardSel) ?? viewBoards[0];
+  const columns = useMemo(() => (legacy ? LEGACY_STAGES : boardStages(activeBoard.id)), [legacy, boardStages, activeBoard.id]);
+  const where = useCallback(
+    (l: Lead) => (legacy ? { boardId: 'legacy', stageId: l.status as string | null } : placement(l)),
+    [legacy, placement],
+  );
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [showBoardSettings, setShowBoardSettings] = useState<'edit' | 'new' | null>(null);
+  const [showTags, setShowTags] = useState(false);
+  useEffect(() => { void initBoards(); }, [initBoards]);
 
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -318,7 +362,8 @@ export const Leads = () => {
 
   // Detail edit
   const [detailNotes, setDetailNotes]   = useState('');
-  const [detailStatus, setDetailStatus] = useState<LeadStatus>('new');
+  const [detailStage, setDetailStage] = useState<{ boardId: string; stageId: string | null }>({ boardId: 'legacy', stageId: null });
+  const [detailTags, setDetailTags] = useState<string[]>([]);
 
   // Meta sync
   const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
@@ -332,14 +377,24 @@ export const Leads = () => {
   );
 
   const filteredBySearch = useMemo(() => {
-    if (!search) return leads;
     const s = search.toLowerCase();
     return leads.filter(l =>
-      l.name.toLowerCase().includes(s) ||
-      l.city?.toLowerCase().includes(s) ||
-      l.category?.toLowerCase().includes(s)
+      where(l).boardId === activeBoard.id &&
+      (!tagFilter.length || tagFilter.some(t => l.tagIds?.includes(t))) &&
+      (!s ||
+        l.name.toLowerCase().includes(s) ||
+        l.phone?.toLowerCase().includes(s) ||
+        l.email?.toLowerCase().includes(s) ||
+        l.city?.toLowerCase().includes(s) ||
+        l.category?.toLowerCase().includes(s))
     );
-  }, [leads, search]);
+  }, [leads, search, where, activeBoard.id, tagFilter]);
+
+  const boardCount = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const l of leads) { const b = where(l).boardId ?? ''; m[b] = (m[b] ?? 0) + 1; }
+    return m;
+  }, [leads, where]);
 
   // ─── Exportar CSV (para disparo de mensagens em outras plataformas) ─────────
   const exportCSV = () => {
@@ -350,7 +405,7 @@ export const Leads = () => {
       new: 'Novo', contacted: 'Contatado', proposal: 'Proposta', client: 'Cliente', lost: 'Perdido',
     };
     const sourceLabel: Record<string, string> = {
-      apify: 'Google Maps', meta: 'Meta Ads', website: 'Site', manual: 'Manual',
+      apify: 'Google Maps', meta: 'Meta Ads', website: 'Site', manual: 'Manual', form: 'Formulário',
     };
     // Telefone pronto p/ disparo: só dígitos com DDI 55 (WhatsApp/plataformas)
     const waPhone = (raw?: string): string => {
@@ -360,7 +415,7 @@ export const Leads = () => {
       return '55' + d;
     };
 
-    const headers = ['Nome', 'WhatsApp (DDI)', 'Telefone', 'Email', 'Cidade', 'Categoria', 'Status', 'Origem', 'Site', 'Observações', 'Criado em'];
+    const headers = ['Nome', 'WhatsApp (DDI)', 'Telefone', 'Email', 'Cidade', 'Categoria', 'Etapa', 'Tags', 'Origem', 'Campanha', 'Site', 'Observações', 'Criado em'];
     const rows = list.map(l => [
       l.name || '',
       waPhone(l.phone),
@@ -368,8 +423,10 @@ export const Leads = () => {
       l.email || '',
       l.city || '',
       l.category || '',
-      statusLabel[l.status] || l.status,
+      columns.find(c => c.id === where(l).stageId)?.name || statusLabel[l.status] || l.status,
+      tags.filter(t => l.tagIds?.includes(t.id)).map(t => t.name).join('; '),
       sourceLabel[l.source] || l.source,
+      l.tracking?.utm_campaign || '',
       l.website || '',
       l.notes || '',
       l.createdAt ? new Date(l.createdAt).toLocaleDateString('pt-BR') : '',
@@ -389,12 +446,23 @@ export const Leads = () => {
     URL.revokeObjectURL(url);
   };
 
-  const byColumn = useMemo(() =>
-    PIPELINE.reduce((acc, p) => {
-      acc[p.status] = filteredBySearch.filter(l => l.status === p.status);
-      return acc;
-    }, {} as Record<LeadStatus, Lead[]>),
-  [filteredBySearch]);
+  const byColumn = useMemo(() => {
+    const acc: Record<string, Lead[]> = {};
+    for (const c of columns) acc[c.id] = [];
+    for (const l of filteredBySearch) {
+      const sid = where(l).stageId;
+      if (sid && acc[sid]) acc[sid].push(l); else if (columns[0]) acc[columns[0].id].push(l);
+    }
+    return acc;
+  }, [filteredBySearch, columns, where]);
+
+  const moveLead = (lead: Lead, boardId: string, stageId: string, extra: Partial<Lead> = {}) => {
+    if (legacy) { updateLead(lead.id, { status: stageId as LeadStatus, ...extra }); return; }
+    const st = boardStages(boardId);
+    const stage = st.find(s => s.id === stageId);
+    if (!stage) return;
+    updateLead(lead.id, { boardId, stageId, status: statusForStage(stage, st[0]?.id === stageId), ...extra });
+  };
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null;
 
@@ -418,13 +486,10 @@ export const Leads = () => {
     const lead = leads.find(l => l.id === active.id);
     if (!lead) return;
 
-    // `over.id` is either a column status or another lead id
-    const targetStatus = PIPELINE.find(p => p.status === over.id)?.status
-      ?? leads.find(l => l.id === over.id)?.status;
-
-    if (targetStatus && targetStatus !== lead.status) {
-      updateStatus(lead.id, targetStatus);
-    }
+    // `over.id` é uma coluna (etapa) ou outro lead
+    const overLead = leads.find(l => l.id === over.id);
+    const targetStage = columns.find(c => c.id === over.id)?.id ?? (overLead ? where(overLead).stageId : null);
+    if (targetStage && targetStage !== where(lead).stageId) moveLead(lead, activeBoard.id, targetStage);
   };
 
   // ─── Apify ─────────────────────────────────────────────────────────────────
@@ -517,6 +582,7 @@ export const Leads = () => {
       notes: form.notes || undefined,
       status: 'new',
       source: 'manual',
+      ...(legacy ? {} : { boardId: activeBoard.id, stageId: columns[0]?.id ?? null }),
     });
     setForm(emptyForm);
     setShowAdd(false);
@@ -527,14 +593,25 @@ export const Leads = () => {
   const openDetail = (lead: Lead) => {
     setShowDetail(lead);
     setDetailNotes(lead.notes || '');
-    setDetailStatus(lead.status);
+    const w = where(lead);
+    setDetailStage({ boardId: w.boardId ?? activeBoard.id, stageId: w.stageId });
+    setDetailTags(lead.tagIds ?? []);
   };
 
   const saveDetail = () => {
     if (!showDetail) return;
-    updateLead(showDetail.id, { notes: detailNotes, status: detailStatus });
+    const changedTags = JSON.stringify(detailTags) !== JSON.stringify(showDetail.tagIds ?? []);
+    const extra: Partial<Lead> = { notes: detailNotes, ...(changedTags ? { tagIds: detailTags } : {}) };
+    const w = where(showDetail);
+    if (detailStage.stageId && (detailStage.stageId !== w.stageId || detailStage.boardId !== w.boardId)) {
+      moveLead(showDetail, detailStage.boardId, detailStage.stageId, extra);
+    } else {
+      updateLead(showDetail.id, extra);
+    }
     setShowDetail(null);
   };
+
+  const detailStages = legacy ? LEGACY_STAGES : boardStages(detailStage.boardId);
 
   const convertToClient = (lead: Lead) => {
     addClient({
@@ -546,7 +623,9 @@ export const Leads = () => {
       notes: lead.notes || `Lead importado via ${lead.source === 'apify' ? 'Apify/Google Maps' : 'manual'}`,
       status: 'prospect',
     });
-    updateLead(lead.id, { status: 'client' });
+    const won = (legacy ? LEGACY_STAGES : boardStages(where(lead).boardId ?? activeBoard.id)).find(s => s.kind === 'won');
+    if (won) moveLead(lead, where(lead).boardId ?? activeBoard.id, won.id);
+    else updateLead(lead.id, { status: 'client' });
     setShowDetail(null);
   };
 
@@ -723,12 +802,55 @@ export const Leads = () => {
         </div>
       )}
 
+      {/* Janelas */}
+      <div className="flex-shrink-0 flex items-center gap-2 overflow-x-auto pb-1">
+        {viewBoards.map(b => (
+          <button key={b.id} onClick={() => setBoardSel(b.id)}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium whitespace-nowrap border transition-colors ${
+              b.id === activeBoard.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}>
+            {b.name}
+            <span className={`text-[11px] px-1.5 rounded-full ${b.id === activeBoard.id ? 'bg-white/20' : 'bg-slate-100'}`}>{boardCount[b.id] ?? 0}</span>
+          </button>
+        ))}
+        {canManageBoards && !legacy && (
+          <>
+            <button onClick={() => setShowBoardSettings('new')} className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-blue-600 hover:bg-blue-50 whitespace-nowrap">
+              <Plus className="w-4 h-4" />Janela
+            </button>
+            <div className="ml-auto flex gap-1.5">
+              <button onClick={() => setShowBoardSettings('edit')} title="Editar janela e etapas" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 whitespace-nowrap">
+                <Settings2 className="w-4 h-4" />Etapas
+              </button>
+              <button onClick={() => setShowTags(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 whitespace-nowrap">
+                <TagIcon className="w-4 h-4" />Tags
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {tags.length > 0 && (
+        <div className="flex-shrink-0 flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs text-slate-500 mr-1">Filtrar por tag:</span>
+          {tags.map(t => {
+            const on = tagFilter.includes(t.id);
+            return (
+              <button key={t.id} onClick={() => setTagFilter(f => on ? f.filter(x => x !== t.id) : [...f, t.id])}
+                className={`text-xs px-2 py-0.5 rounded-full border transition-all ${on ? `${colorOf(t.color).chip} ring-1 ring-blue-400` : 'border-slate-200 text-slate-500 bg-white'}`}>
+                {t.name}
+              </button>
+            );
+          })}
+          {tagFilter.length > 0 && <button onClick={() => setTagFilter([])} className="text-xs text-blue-600 ml-1">limpar</button>}
+        </div>
+      )}
+
       {/* Search */}
       <div className="flex-shrink-0 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
         <input
           type="text"
-          placeholder="Filtrar por nome, cidade ou segmento…"
+          placeholder="Filtrar por nome, telefone, e-mail, cidade ou segmento…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -743,12 +865,12 @@ export const Leads = () => {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 h-full min-h-96" style={{ minWidth: `${PIPELINE.length * 272}px` }}>
-            {PIPELINE.map(stage => (
+          <div className="flex gap-4 h-full min-h-96" style={{ minWidth: `${columns.length * 272}px` }}>
+            {columns.map(stage => (
               <LeadColumn
-                key={stage.status}
+                key={stage.id}
                 stage={stage}
-                leads={byColumn[stage.status] || []}
+                leads={byColumn[stage.id] || []}
                 onOpen={openDetail}
                 onDelete={id => setDeleteId(id)}
               />
@@ -1013,12 +1135,12 @@ export const Leads = () => {
       {/* ── Detail Modal ─────────────────────────────────────────────────────────── */}
       {showDetail && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-lg">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-lg max-h-[92dvh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
               <h2 className="text-lg font-bold text-slate-900 truncate flex-1 mr-4">{showDetail.name}</h2>
               <button onClick={() => setShowDetail(null)} className="text-slate-500 hover:text-slate-800 p-1 rounded-lg hover:bg-slate-100 flex-shrink-0"><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 overflow-y-auto">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {showDetail.phone && (
                   <div className="flex items-center gap-2 text-slate-500"><Phone className="w-3.5 h-3.5 flex-shrink-0" />{showDetail.phone}</div>
@@ -1050,18 +1172,63 @@ export const Leads = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-2">Status no Funil</label>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {PIPELINE.map(p => (
-                    <button key={p.status} onClick={() => setDetailStatus(p.status)}
-                      className={`px-2 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                        detailStatus === p.status ? p.badge : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <label className="text-sm font-medium text-slate-800">Etapa</label>
+                  {!legacy && viewBoards.length > 1 && (
+                    <select value={detailStage.boardId} onChange={e => setDetailStage({ boardId: e.target.value, stageId: boardStages(e.target.value)[0]?.id ?? null })}
+                      className="border border-slate-200 rounded-lg px-2 py-1 text-xs bg-white">
+                      {viewBoards.map(b => <option key={b.id} value={b.id}>Janela: {b.name}</option>)}
+                    </select>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {detailStages.map(st => (
+                    <button key={st.id} onClick={() => setDetailStage(d => ({ ...d, stageId: st.id }))}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                        detailStage.stageId === st.id ? colorOf(st.color).chip : 'border-slate-200 text-slate-500 hover:border-slate-300'
                       }`}>
-                      {p.label}
+                      {st.name}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {tags.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-800 mb-2">Tags</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map(t => {
+                      const on = detailTags.includes(t.id);
+                      return (
+                        <button key={t.id} onClick={() => setDetailTags(v => on ? v.filter(x => x !== t.id) : [...v, t.id])}
+                          className={`text-xs px-2 py-1 rounded-full border ${on ? colorOf(t.color).chip : 'border-slate-200 text-slate-500'}`}>
+                          {t.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {showDetail.answers && showDetail.answers.length > 0 && (
+                <div className="bg-slate-50 rounded-xl p-3 space-y-1.5">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" />Respostas{showDetail.tracking?.form ? ` · ${showDetail.tracking.form}` : ''}</p>
+                  {showDetail.answers.map((a, i) => (
+                    <p key={i} className="text-sm"><span className="text-slate-500">{a.question}:</span> <span className="text-slate-900">{a.answer || '—'}</span></p>
+                  ))}
+                </div>
+              )}
+
+              {showDetail.tracking && Object.keys(showDetail.tracking).some(k => k.startsWith('utm_') || k === 'fbclid' || k === 'gclid') && (
+                <div className="text-xs text-slate-500 space-y-0.5">
+                  <p className="font-semibold text-slate-600">Origem do anúncio</p>
+                  {['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].filter(k => showDetail.tracking?.[k]).map(k => (
+                    <p key={k} className="break-all"><span className="text-slate-400">{k}:</span> {showDetail.tracking![k]}</p>
+                  ))}
+                  {showDetail.tracking.fbclid && <p>Clique de anúncio Meta (fbclid)</p>}
+                  {showDetail.tracking.gclid && <p>Clique de anúncio Google (gclid)</p>}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1.5">Notas</label>
@@ -1070,7 +1237,7 @@ export const Leads = () => {
                   placeholder="Observações, histórico de contato..." />
               </div>
 
-              {showDetail.status !== 'client' && (
+              {showDetail.status !== 'client' && !showDetail.convertedClientId && (
                 <button onClick={() => convertToClient(showDetail)}
                   className="w-full flex items-center justify-center gap-2 border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 py-2.5 rounded-lg text-sm font-semibold transition-colors">
                   <Building2 className="w-4 h-4" />
@@ -1085,6 +1252,14 @@ export const Leads = () => {
           </div>
         </div>
       )}
+
+      {showBoardSettings && !legacy && (
+        <BoardSettingsModal
+          board={showBoardSettings === 'edit' ? activeBoard : null}
+          onClose={(id) => { setShowBoardSettings(null); if (id) setBoardSel(id); }}
+        />
+      )}
+      {showTags && <TagsModal onClose={() => setShowTags(false)} />}
 
       {/* ── Delete Confirm ───────────────────────────────────────────────────────── */}
       {deleteId && (

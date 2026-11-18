@@ -23,6 +23,9 @@ import { Financial } from './pages/Financial';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { Leads } from './pages/Leads';
+import { Forms } from './pages/Forms';
+import { useFormsStore } from './store/formsStore';
+import { useLeadBoardsStore } from './store/leadBoardsStore';
 import { Calendar } from './pages/Calendar';
 import { Master } from './pages/Master';
 import { ApprovalPage } from './pages/ApprovalPage';
@@ -79,6 +82,7 @@ function App() {
         await Promise.allSettled([
           initProfessionals(), initClients(), initDemands(), initFinancial(),
           initLeads(), initCalendar(), initApprovals(), initCompanySettings(),
+          useLeadBoardsStore.getState().init(),
         ]);
       }
       useAuthStore.getState().loadUsers();
@@ -101,6 +105,8 @@ function App() {
 
     const clearAllStores = () => {
       useLeadsStore.setState({ leads: [], dbError: null });
+      useFormsStore.setState({ forms: [], stats: {}, companySlug: null, loaded: false, error: null });
+      useLeadBoardsStore.setState({ boards: [], stages: [], tags: [], loaded: false, error: null });
       useProfessionalsStore.setState({ professionals: [] });
       useClientsStore.setState({ clients: [] });
       useDemandsStore.setState({ demands: [] });
@@ -199,6 +205,8 @@ function App() {
           <Route path="kanban"       element={<AgencyRoute><Kanban /></AgencyRoute>} />
           <Route path="financial"    element={<AgencyRoute><Financial /></AgencyRoute>} />
           <Route path="leads"        element={<AgencyRoute><Leads /></AgencyRoute>} />
+          <Route path="forms"        element={<AgencyRoute><Forms /></AgencyRoute>} />
+          <Route path="forms/:id"    element={<AgencyRoute><Forms /></AgencyRoute>} />
           <Route path="calendar"     element={<AgencyRoute><Calendar /></AgencyRoute>} />
           <Route path="social"       element={<Navigate to="/kanban" replace />} />
           <Route path="drive"        element={<AgencyRoute><Drive /></AgencyRoute>} />
